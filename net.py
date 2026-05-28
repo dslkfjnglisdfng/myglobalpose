@@ -67,7 +67,12 @@ class GPNet(torch.nn.Module):
         show_stationary = False
         show_torque = False
 
-    def __init__(self):
+    def __init__(
+        self,
+        enable_l4_prephysics=False,
+        l4_prephysics_module=None,
+        l4_euler_seq='XYZ',
+    ):
         from articulate.utils.torch import RNN, RNNWithInit
         super(GPNet, self).__init__()
         self.plnet = RNNWithInit(input_linear=False,
@@ -112,6 +117,15 @@ class GPNet(torch.nn.Module):
         self.physics_model = cart.get_dynamic_model('models/SMPL_male.pkl')
         # self.rnn_initialize()  # using T-pose
         self.eval()
+        self.enable_l4_prephysics = bool(enable_l4_prephysics)
+        self.l4_prephysics = None
+        self.last_l4_prephysics_debug = {}
+        if self.enable_l4_prephysics:
+            from l4_tail_update_qstate import L4PrePhysicsRefiner
+            self.l4_prephysics = L4PrePhysicsRefiner(
+                l4_prephysics_module,
+                euler_seq=l4_euler_seq,
+            )
 
         if self.Visualization.enable:
             from articulate.utils.unity import MotionViewer
@@ -150,6 +164,9 @@ class GPNet(torch.nn.Module):
         self.is_init = False
         self.contact = np.zeros(5, dtype=bool)
         self.contact_counter = np.zeros(5, dtype=int)
+        self.last_l4_prephysics_debug = {}
+        if self.l4_prephysics is not None:
+            self.l4_prephysics.reset()
 
     @torch.no_grad()
     def _explain_residual_force(self, contact, contact_Jacobian, contact_position, residual_force):
@@ -175,7 +192,78 @@ class GPNet(torch.nn.Module):
         return force, error, B
 
     @torch.no_grad()
-    def forward_frame(self, a, w, R):
+    def forward_prephysics_features(self, a, w, R, prephysics_tran=None, euler_seq='XYZ'):
+        r"""
+        Run only the official neural PL/IK/VR stack for one frame.
+
+        This helper intentionally does not touch carticulate physics state: no
+        ``get_state_R``, ``update_state``, QP, LSQR, contact tracking, or final
+        post-physics pose/translation is used. It is for L4 pre-physics cache
+        extraction; ``forward_frame`` remains the official inference path.
+        """
+        from l4_q75_utils import pose_tran_to_q75
+
+        aRB = a.mm(R[5])
+        wRB = w.mm(R[5])
+        RRB = R[5].t().matmul(R[:5])
+        gR0 = -R[5, 1]
+
+        # PL-s1
+        x = torch.cat((aRB.ravel(), wRB.ravel(), RRB.ravel(), gR0))
+        x, self.pl1hc = self.plnet.rnn(x.view(1, 1, -1), self.pl1hc)
+        x = self.plnet.linear2(x.squeeze())
+        gR1 = art.math.normalize_tensor(x[15:])
+        RRB = art.math.from_to_rotation_matrix(gR0, gR1).matmul(RRB)
+
+        # IK-s1
+        x = torch.cat((RRB.ravel(), gR1, x[:15]))
+        x, self.ik1hc = self.iknet.net1.rnn(x.view(1, 1, -1), self.ik1hc)
+        x = self.iknet.net1.linear2(x.squeeze())
+        gR2 = art.math.normalize_tensor(x[69:])
+        RRB = art.math.from_to_rotation_matrix(gR1, gR2).matmul(RRB)
+
+        # IK-s2
+        x = torch.cat((RRB.ravel(), gR2, x[:69]))
+        x, self.ik2hc = self.iknet.net2.rnn(x.view(1, 1, -1), self.ik2hc)
+        x = self.iknet.net2.linear2(x.squeeze())
+
+        RRJ = art.math.r6d_to_rotation_matrix(x).cpu()
+        glb_pose = torch.eye(3).repeat(1, 24, 1, 1)
+        glb_pose[:, self.j_reduce] = RRJ.view(1, 15, 3, 3)
+        pose = self.body_model.inverse_kinematics_R(glb_pose).view(24, 3, 3)
+        pose[self.j_ignore, ...] = torch.eye(3)
+        pRJ = self.body_model.forward_kinematics(pose.unsqueeze(0))[1][0, 1:]
+        pose[0] = R[5].mm(art.math.from_to_rotation_matrix(gR2, gR0).squeeze()).cpu()
+
+        # VR-s1
+        aRB = a.cpu().mm(pose[0])
+        wRB = w.cpu().mm(pose[0])
+        x = torch.cat((RRJ.ravel(), pRJ.ravel(), aRB.ravel(), wRB.ravel(), gR2.cpu())).to(gR2.device)
+        x, self.vr1hc = self.vrnet.rnn(x.view(1, 1, -1), self.vr1hc)
+        x = self.vrnet.linear2(x.squeeze())
+
+        vRR_V, vRR_H, stationary_prob = x[0].item(), x[1:4].cpu(), x[4:].sigmoid().cpu()
+        vWR = pose[0].mm(vRR_H.unsqueeze(-1)).squeeze(-1)
+        vWR[1] = vRR_V
+        if prephysics_tran is None:
+            prephysics_tran = torch.zeros(3)
+        q75_prephysics = pose_tran_to_q75(
+            pose.detach().cpu().view(1, 24, 3, 3),
+            prephysics_tran.detach().cpu().view(1, 3),
+            euler_seq=euler_seq,
+        )[0]
+        return {
+            'pose_prephysics': pose.detach().cpu(),
+            'q75_prephysics': q75_prephysics.detach().cpu(),
+            'v_root_vr': vWR.detach().cpu(),
+            'stationary_prob': stationary_prob.detach().cpu(),
+            'RRJ': RRJ.detach().cpu(),
+            'pRJ': pRJ.detach().cpu(),
+            'gR2': gR2.detach().cpu(),
+        }
+
+    @torch.no_grad()
+    def forward_frame(self, a, w, R, l4_a=None, l4_w=None, l4_R=None):
         aRB = a.mm(R[5])
         wRB = w.mm(R[5])
         RRB = R[5].t().matmul(R[:5])
@@ -209,6 +297,26 @@ class GPNet(torch.nn.Module):
         pRJ = self.body_model.forward_kinematics(pose.unsqueeze(0))[1][0, 1:]
         pose[0] = R[5].mm(art.math.from_to_rotation_matrix(gR2, gR0).squeeze()).cpu()
 
+        if self.l4_prephysics is not None:
+            if self.is_init:
+                _, prephysics_tran_np, _ = self.physics_model.get_state_R()
+                prephysics_tran = torch.from_numpy(prephysics_tran_np).float()
+            else:
+                prephysics_tran = torch.zeros(3)
+            l4_a = a if l4_a is None else l4_a
+            l4_w = w if l4_w is None else l4_w
+            l4_R = R if l4_R is None else l4_R
+            pose, _, l4_changed = self.l4_prephysics.refine(pose, prephysics_tran, l4_a, l4_w, l4_R)
+            self.last_l4_prephysics_debug = dict(self.l4_prephysics.last_debug)
+            if l4_changed:
+                pose_body = pose.clone()
+                pose_body[0] = torch.eye(3)
+                glb_pose_body, joint_body = self.body_model.forward_kinematics(pose_body.unsqueeze(0))[:2]
+                RRJ = glb_pose_body[0, self.j_reduce].contiguous()
+                pRJ = joint_body[0, 1:]
+                root_from_imu = R[5].t().mm(pose[0].to(R.device))
+                gR2 = root_from_imu.t().mm(gR0.view(3, 1)).view(3)
+
         # VR-s1
         aRB = a.cpu().mm(pose[0])
         wRB = w.cpu().mm(pose[0])
@@ -220,6 +328,10 @@ class GPNet(torch.nn.Module):
         vRR_V, vRR_H, stationary_prob = x[0].item(), x[1:4].cpu(), x[4:].sigmoid().cpu()
         vWR = pose[0].mm(vRR_H.unsqueeze(-1)).squeeze(-1)
         vWR[1] = vRR_V
+        if self.l4_prephysics is not None:
+            vWR, _ = self.l4_prephysics.refine_velocity(vWR, stationary_prob)
+            self.last_l4_prephysics_debug = dict(self.l4_prephysics.last_debug)
+            self.last_l4_prephysics_debug['stationary_prob'] = stationary_prob.detach().cpu().clone()
         cjoint = torch.cat((torch.zeros(1, 3), pRJ.mm(pose[0].t())))[self.j_contact, :]
         stationary_weight = (stationary_prob * 5 - 3).clip(0, 1)
         velocity = (stationary_weight.unsqueeze(0).mm(self.last_cjoint - cjoint)[0] / self.dt + self.beta_velocity * vWR) / (self.beta_velocity + stationary_weight.sum())

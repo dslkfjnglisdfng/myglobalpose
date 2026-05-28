@@ -1,6 +1,12 @@
 models
 data/temp
+data/experiments
+data/dataset_work
 data/test_datasets
 data/weights.pt
 .idea
+.codegraph/
+.cursor/
 __pycache__/
+carticulate/*.so
+logs/
