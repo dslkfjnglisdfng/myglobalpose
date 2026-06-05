@@ -1,5 +1,6 @@
 import torch
 
+from control_point_physics_refine import refine_control_points
 from l4_q75_utils import pose_tran_to_q75, prephysics_feature, prephysics_feature_dim, q75_to_pose_tran
 
 
@@ -7,6 +8,53 @@ class UniformCubicBSpline(torch.nn.Module):
     def __init__(self, dt=1.0 / 60.0):
         super().__init__()
         self.dt = float(dt)
+
+    def evaluate_at(self, control, index, u, return_derivatives=False):
+        squeeze_batch = control.dim() == 2
+        if squeeze_batch:
+            control = control.unsqueeze(0)
+        if control.shape[1] < 3:
+            raise ValueError('evaluate_at expects at least 3 control points including ghosts.')
+        index = int(index)
+        if index < 0 or index + 2 >= control.shape[1]:
+            raise IndexError(f'Cannot evaluate spline at index={index} for control length {control.shape[1]}.')
+        u = float(u)
+        if u < 0.0 or u > 1.0:
+            raise ValueError(f'u must be in [0, 1], got {u}.')
+
+        p0 = control[:, max(index - 1, 0)]
+        p1 = control[:, index]
+        p2 = control[:, index + 1]
+        p3 = control[:, index + 2]
+        u2 = u * u
+        u3 = u2 * u
+        omt = 1.0 - u
+        q = (
+            (omt ** 3) * p0
+            + (3.0 * u3 - 6.0 * u2 + 4.0) * p1
+            + (-3.0 * u3 + 3.0 * u2 + 3.0 * u + 1.0) * p2
+            + u3 * p3
+        ) / 6.0
+        if not return_derivatives:
+            return q.squeeze(0) if squeeze_batch else q
+
+        dq_du = (
+            -3.0 * (omt ** 2) * p0
+            + (9.0 * u2 - 12.0 * u) * p1
+            + (-9.0 * u2 + 6.0 * u + 3.0) * p2
+            + 3.0 * u2 * p3
+        ) / 6.0
+        d2q_du2 = (
+            6.0 * omt * p0
+            + (18.0 * u - 12.0) * p1
+            + (-18.0 * u + 6.0) * p2
+            + 6.0 * u * p3
+        ) / 6.0
+        qdot = dq_du / self.dt
+        qddot = d2q_du2 / (self.dt ** 2)
+        if squeeze_batch:
+            return q.squeeze(0), qdot.squeeze(0), qddot.squeeze(0)
+        return q, qdot, qddot
 
     def forward(self, control, return_derivatives=False):
         squeeze_batch = control.dim() == 2
@@ -48,10 +96,13 @@ class StreamingTailUpdateQState(torch.nn.Module):
         acc_dropout=0.0,
         gyro_dropout=0.0,
         orientation_dropout=0.0,
+        control_stride=1,
     ):
         super().__init__()
         if tail_update != 4:
             raise ValueError('This migration keeps the approved L=4 tail-update contract.')
+        if int(control_stride) < 1:
+            raise ValueError(f'control_stride must be >= 1, got {control_stride}.')
         if boundary_strategy not in ('repeat', 'linear_extrap'):
             raise ValueError(f'Unsupported boundary strategy: {boundary_strategy}')
         if pose_input_mode not in ('euler_q75', 'rot6d'):
@@ -89,6 +140,7 @@ class StreamingTailUpdateQState(torch.nn.Module):
         self.acc_dropout = float(acc_dropout)
         self.gyro_dropout = float(gyro_dropout)
         self.orientation_dropout = float(orientation_dropout)
+        self.control_stride = int(control_stride)
         self.pose_feature_dim = self.n_input - 90
         self.input = torch.nn.Linear(self.n_input, hidden_size)
         self.cell = torch.nn.GRUCell(hidden_size, hidden_size)
@@ -109,7 +161,8 @@ class StreamingTailUpdateQState(torch.nn.Module):
                 torch.nn.ReLU(),
                 torch.nn.Linear(hidden_size, hidden_size),
             )
-        self.spline = UniformCubicBSpline(dt)
+        self.spline = UniformCubicBSpline(float(dt) * self.control_stride)
+        self.control_point_refine_config = None
         self.reset_stream()
         torch.nn.init.zeros_(self.new_control.weight)
         torch.nn.init.zeros_(self.new_control.bias)
@@ -134,6 +187,11 @@ class StreamingTailUpdateQState(torch.nn.Module):
         self.control_buffer = None
         self.base_buffer = None
         self.velocity_buffer = None
+        self.frame_index = 0
+        self.generated_control_count = 0
+
+    def set_control_point_refine(self, config=None):
+        self.control_point_refine_config = config
 
     def _initial_hidden(self, batch_size, device, dtype):
         return torch.zeros(batch_size, self.hidden_size, device=device, dtype=dtype)
@@ -191,11 +249,15 @@ class StreamingTailUpdateQState(torch.nn.Module):
             feature = self._dropout_slice(feature, imu_start + 36, imu_start + 90, self.orientation_dropout)
         return feature
 
-    def _ghost(self, buffer):
+    def _ghost(self, buffer, count=1):
+        ghosts = []
         last = buffer[:, -1:]
         if self.boundary_strategy == 'repeat' or buffer.shape[1] < 2:
-            return last
-        return last + (last - buffer[:, -2:-1])
+            return last.expand(-1, int(count), -1).clone()
+        step = last - buffer[:, -2:-1]
+        for i in range(1, int(count) + 1):
+            ghosts.append(last + step * i)
+        return torch.cat(ghosts, dim=1)
 
     def _freeze_root(self, delta):
         if self.freeze_root_translation and self.state_dim >= 3:
@@ -203,7 +265,7 @@ class StreamingTailUpdateQState(torch.nn.Module):
             delta[..., :3] = 0.0
         return delta
 
-    def step(self, feature_t, base_q_t):
+    def step(self, feature_t, base_q_t, *_, **__):
         if feature_t.dim() == 1:
             feature_t = feature_t.unsqueeze(0)
         if base_q_t.dim() == 1:
@@ -217,15 +279,19 @@ class StreamingTailUpdateQState(torch.nn.Module):
         feature_t = self._apply_feature_dropout(feature_t)
         z = torch.relu(self.input(feature_t))
         self.hidden = self.cell(z, self.hidden)
+        should_generate_control = self.control_buffer is None or (self.frame_index % self.control_stride == 0)
         new_delta = self._freeze_root(self.new_control(self.hidden) * self.residual_scale)
-        new_control = base_q_t + new_delta
 
-        if self.control_buffer is None:
+        if should_generate_control and self.control_buffer is None:
+            new_control = base_q_t + new_delta
             self.control_buffer = new_control.unsqueeze(1)
             self.base_buffer = base_q_t.unsqueeze(1)
             tail_delta_norm = new_delta.new_tensor(0.0)
             updated_count = 1
-        else:
+            generated_control = True
+            self.generated_control_count = 1
+        elif should_generate_control:
+            new_control = base_q_t + new_delta
             frozen_control = self.control_buffer.detach()
             frozen_base = self.base_buffer.detach()
             update_count = min(self.tail_update, frozen_control.shape[1])
@@ -242,27 +308,86 @@ class StreamingTailUpdateQState(torch.nn.Module):
             self.base_buffer = torch.cat((old_base, tail_base, base_q_t.unsqueeze(1)), dim=1)
             tail_delta_norm = tail_delta.norm(dim=-1).mean()
             updated_count = update_count + 1
+            generated_control = True
+            self.generated_control_count += 1
+        else:
+            tail_delta_norm = new_delta.new_tensor(0.0)
+            updated_count = 0
+            generated_control = False
 
-        control_decode = torch.cat((self.control_buffer, self._ghost(self.control_buffer)), dim=1)
-        base_decode = torch.cat((self.base_buffer, self._ghost(self.base_buffer)), dim=1)
+        cp_refine_debug = {'enabled': False}
+        decode_buffer = self.control_buffer
+        if self.control_point_refine_config and self.control_point_refine_config.get('enabled', False):
+            refined_control, q_refined_debug, qdot_refined_debug, qddot_refined_debug, cp_refine_debug = refine_control_points(
+                self.spline,
+                self.control_buffer,
+                self.base_buffer,
+                steps=self.control_point_refine_config.get('steps', 10),
+                lr=self.control_point_refine_config.get('lr', 3e-3),
+                lambda_prior=self.control_point_refine_config.get('lambda_prior', 1.0),
+                lambda_q=self.control_point_refine_config.get('lambda_q', 1.0),
+                lambda_v=self.control_point_refine_config.get('lambda_v', 0.03),
+                lambda_a=self.control_point_refine_config.get('lambda_a', 0.0003),
+                lambda_contact=self.control_point_refine_config.get('lambda_contact', 0.0),
+                lambda_dyn=self.control_point_refine_config.get('lambda_dyn', 0.0),
+                contact_gate_mode=self.control_point_refine_config.get('contact_gate_mode', 'heuristic'),
+                contact_height_threshold=self.control_point_refine_config.get('contact_height_threshold', 0.08),
+                contact_velocity_threshold=self.control_point_refine_config.get('contact_velocity_threshold', 0.20),
+                refine_window=self.control_point_refine_config.get('refine_window', 0),
+                optimize_body_only=self.control_point_refine_config.get('optimize_body_only', True),
+            )
+            if self.control_point_refine_config.get('persist_refined_buffer', False):
+                self.control_buffer = refined_control
+                decode_buffer = self.control_buffer
+            else:
+                decode_buffer = refined_control
+            cp_refine_debug['persist_refined_buffer'] = bool(
+                self.control_point_refine_config.get('persist_refined_buffer', False)
+            )
+            if self.control_point_refine_config.get('save_debug_tensors', False):
+                cp_refine_debug['C_refined'] = refined_control.detach().cpu().clone()
+                cp_refine_debug['q_refined'] = q_refined_debug.detach().cpu().clone()
+                cp_refine_debug['qdot_refined'] = qdot_refined_debug.detach().cpu().clone()
+                cp_refine_debug['qddot_refined'] = qddot_refined_debug.detach().cpu().clone()
+
+        control_decode = torch.cat((decode_buffer, self._ghost(decode_buffer, count=2)), dim=1)
+        base_decode = torch.cat((self.base_buffer, self._ghost(self.base_buffer, count=2)), dim=1)
         q_control, qdot_control, qddot_control = self.spline(control_decode, return_derivatives=True)
         q_base, qdot_base, qddot_base = self.spline(base_decode, return_derivatives=True)
         current_index = self.control_buffer.shape[1] - 1
-        residual_t = q_control[:, current_index] - q_base[:, current_index]
+        frame_phase = self.frame_index % self.control_stride
+        decode_u = float(frame_phase) / float(self.control_stride)
+        q_eval, qdot_eval, qddot_eval = self.spline.evaluate_at(
+            control_decode,
+            current_index,
+            decode_u,
+            return_derivatives=True,
+        )
+        q_base_eval = self.spline.evaluate_at(base_decode, current_index, decode_u)
+        residual_t = q_eval - q_base_eval
         residual_t = self._freeze_root(residual_t)
         q_t = base_q_t + residual_t
+        control_residual = self.control_buffer - self.base_buffer
+        self.frame_index += 1
 
         return {
             'q_t': q_t,
-            'qdot_t': qdot_control[:, current_index],
-            'qddot_t': qddot_control[:, current_index],
+            'qdot_t': qdot_eval,
+            'qddot_t': qddot_eval,
             'residual_t': residual_t,
+            'control_point_prior_t': control_residual.square().mean(),
+            'control_point_refine': cp_refine_debug,
             'new_delta_norm': new_delta.norm(dim=-1).mean(),
             'tail_delta_norm': tail_delta_norm,
             'buffer_length': self.control_buffer.shape[1],
             'updated_control_count': updated_count,
             'frozen_control_count': max(0, self.control_buffer.shape[1] - updated_count),
             'uses_future_frames': False,
+            'control_stride': self.control_stride,
+            'frame_phase': frame_phase,
+            'decode_u': decode_u,
+            'generated_control': generated_control,
+            'generated_control_count': self.generated_control_count,
         }
 
     def refine_velocity(self, v_root_vr, stationary_prob=None):
@@ -327,6 +452,7 @@ class L4PrePhysicsRefiner(torch.nn.Module):
                 'residual_norm': 0.0,
                 'changed': False,
                 'tail_update': 4,
+                'control_stride': 1,
                 'uses_future_frames': False,
                 'delta_v_root': torch.zeros(3),
                 'delta_v_root_norm': 0.0,
@@ -349,21 +475,32 @@ class L4PrePhysicsRefiner(torch.nn.Module):
         ).to(module_device)
         result = self.qstate_module.step(feature, q75.to(module_device))
         q_refined = result['q_t'][0].detach().cpu()
+        qdot_refined = result['qdot_t'][0].detach().cpu()
+        qddot_refined = result['qddot_t'][0].detach().cpu()
         residual = q_refined - q75
         changed = float(residual.norm()) > self.residual_epsilon
         self.last_debug = {
             'q75_before': q75.detach().clone(),
             'q75_after': q_refined.detach().clone(),
+            'qdot_after': qdot_refined.detach().clone(),
+            'qddot_after': qddot_refined.detach().clone(),
             'pose_before': pose.detach().cpu().clone(),
             'residual': residual.detach().clone(),
             'residual_norm': float(residual.norm()),
             'changed': changed,
             'tail_update': 4,
+            'control_stride': int(result.get('control_stride', getattr(self.qstate_module, 'control_stride', 1))),
             'uses_future_frames': bool(result.get('uses_future_frames', False)),
             'updated_control_count': int(result.get('updated_control_count', 0)),
             'frozen_control_count': int(result.get('frozen_control_count', 0)),
+            'buffer_length': int(result.get('buffer_length', 0)),
+            'frame_phase': int(result.get('frame_phase', 0)),
+            'decode_u': float(result.get('decode_u', 0.0)),
+            'generated_control': bool(result.get('generated_control', True)),
+            'generated_control_count': int(result.get('generated_control_count', 0)),
             'new_delta_norm': float(result.get('new_delta_norm', 0.0)),
             'tail_delta_norm': float(result.get('tail_delta_norm', 0.0)),
+            'control_point_refine': result.get('control_point_refine', {'enabled': False}),
         }
         if not changed:
             return pose, prephysics_tran, False

@@ -10,13 +10,28 @@ import articulate as art
 from l4_q75_utils import prephysics_feature, prephysics_feature_dim, q75_to_pose_tran
 from l4_tail_update_qstate import StreamingTailUpdateQState
 from l4_velocity_losses import finite_difference_translation_velocity, velocity_residual_losses
-from net import GPNet
-from test import MotionEvaluator
 
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-METRIC_NAMES = MotionEvaluator.names
+METRIC_NAMES = (
+    'L SIP Err (deg)',
+    'L Angle Err (deg)',
+    'L Joint Err (cm)',
+    'L Vertex Err (cm)',
+    'G SIP Err (deg)',
+    'G Angle Err (deg)',
+    'G Joint Err (cm)',
+    'G Vertex Err (cm)',
+    'Root Jitter (km/s^3)',
+    'Joint Jitter (km/s^3)',
+)
 _BODY_MODEL = None
+
+
+def _load_runtime_eval_modules():
+    from net import GPNet
+    from test import MotionEvaluator
+    return GPNet, MotionEvaluator
 
 
 def load_cache_files(cache_path):
@@ -335,6 +350,7 @@ def delta_metrics(model_metrics, baseline_metrics):
 def get_or_run_baseline(record):
     if 'pose_baseline' in record and 'tran_baseline' in record:
         return record['pose_baseline'], record['tran_baseline']
+    GPNet, _ = _load_runtime_eval_modules()
     net = GPNet(enable_l4_prephysics=False).eval().to(DEVICE)
     net.rnn_initialize(record['pose_gt'][0])
     pose_baseline = torch.zeros_like(record['pose_gt'])
@@ -352,6 +368,7 @@ def get_or_run_baseline(record):
 
 @torch.no_grad()
 def evaluate_physics(model, records, max_eval_sequences=0):
+    GPNet, MotionEvaluator = _load_runtime_eval_modules()
     model.eval()
     evaluator = MotionEvaluator()
     rows = []

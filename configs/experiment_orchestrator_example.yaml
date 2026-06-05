@@ -1,0 +1,138 @@
+# Example-only task file for the GlobalPose Parallel Experiment Orchestrator.
+# These dummy tasks validate scheduling, CPU/GPU resource handling, dependency
+# blocking, logs, state files, summary parsing, and PROJECT_STATUS.md writeback.
+# They do not train a model, run S4/S5, generate checkpoints, or touch official
+# weights/evaluators.
+#
+# Streaming-compatible cache rule for future real tasks:
+# For each sequence:
+# 1. reset / initialize RNN state;
+# 2. call official GPNet.rnn_initialize(init_pose, init_velocity);
+# 3. run frame-by-frame forward;
+# 4. save upstream module streaming outputs;
+# 5. downstream training must consume upstream streaming outputs.
+#
+# Do not use this old batch/cache contract as a new mainline training cache:
+#   gpnet.plnet([(pl_input, pl_target[0])])
+# It is allowed only for historical diagnostics or explicit ablation controls.
+
+name: experiment_orchestrator_dummy_example
+state_file: data/experiments/orchestrator_states/experiment_orchestrator_example.json
+allow_same_user_gpu_share: false
+
+tasks:
+  - id: dummy_a_cpu_parse
+    name: "Dummy A CPU parse"
+    type: parse
+    command: "python -c \"import json, pathlib, time; time.sleep(1); pathlib.Path('data/experiments/orchestrator_dummy_example/dummy_a').mkdir(parents=True, exist_ok=True); pathlib.Path('data/experiments/orchestrator_dummy_example/dummy_a/result.json').write_text(json.dumps({'status':'ok','task':'A','metric':1.0}))\""
+    dependencies: []
+    gpu_required: false
+    estimated_gpu_mem_gb: 0
+    priority: 1
+    working_dir: "."
+    env: {}
+    outputs:
+      - data/experiments/orchestrator_dummy_example/dummy_a/result.json
+    log_path: logs/orchestrator/dummy_a_cpu_parse.log
+    summary_parser: parse_generic_json
+    project_status_section: "Parallel Experiment Orchestrator Skill"
+    allow_parallel: true
+    max_runtime_minutes: 1
+    retry:
+      max_retries: 0
+      retry_on_failure: false
+    notes: "Dummy CPU task A; C depends on this task."
+    tags: ["dummy", "cpu", "parse"]
+
+  - id: dummy_b_cpu_doc
+    name: "Dummy B CPU doc"
+    type: doc
+    command: "python -c \"import json, pathlib, time; time.sleep(1); pathlib.Path('data/experiments/orchestrator_dummy_example/dummy_b').mkdir(parents=True, exist_ok=True); pathlib.Path('data/experiments/orchestrator_dummy_example/dummy_b/result.json').write_text(json.dumps({'status':'ok','task':'B','metric':2.0}))\""
+    dependencies: []
+    gpu_required: false
+    estimated_gpu_mem_gb: 0
+    priority: 1
+    working_dir: "."
+    env: {}
+    outputs:
+      - data/experiments/orchestrator_dummy_example/dummy_b/result.json
+    log_path: logs/orchestrator/dummy_b_cpu_doc.log
+    summary_parser: parse_generic_json
+    project_status_section: "Parallel Experiment Orchestrator Skill"
+    allow_parallel: true
+    max_runtime_minutes: 1
+    retry:
+      max_retries: 0
+      retry_on_failure: false
+    notes: "Dummy CPU task B; independent from A and can run in parallel."
+    tags: ["dummy", "cpu", "doc"]
+
+  - id: dummy_c_depends_on_a
+    name: "Dummy C depends on A"
+    type: parse
+    command: "python -c \"import json, pathlib; pathlib.Path('data/experiments/orchestrator_dummy_example/dummy_c').mkdir(parents=True, exist_ok=True); pathlib.Path('data/experiments/orchestrator_dummy_example/dummy_c/result.json').write_text(json.dumps({'status':'ok','task':'C','depends_on':'A'}))\""
+    dependencies: ["dummy_a_cpu_parse"]
+    gpu_required: false
+    estimated_gpu_mem_gb: 0
+    priority: 2
+    working_dir: "."
+    env: {}
+    outputs:
+      - data/experiments/orchestrator_dummy_example/dummy_c/result.json
+    log_path: logs/orchestrator/dummy_c_depends_on_a.log
+    summary_parser: parse_generic_json
+    project_status_section: "Parallel Experiment Orchestrator Skill"
+    allow_parallel: true
+    max_runtime_minutes: 1
+    retry:
+      max_retries: 0
+      retry_on_failure: false
+    notes: "Dummy dependency task; dry-run should show it waits for A."
+    tags: ["dummy", "dependency"]
+
+  - id: dummy_d_gpu_probe
+    name: "Dummy D GPU probe"
+    type: audit
+    command: "python -c \"import json, os, pathlib; pathlib.Path('data/experiments/orchestrator_dummy_example/dummy_d_gpu').mkdir(parents=True, exist_ok=True); pathlib.Path('data/experiments/orchestrator_dummy_example/dummy_d_gpu/result.json').write_text(json.dumps({'status':'ok','task':'D','cuda_visible_devices':os.environ.get('CUDA_VISIBLE_DEVICES')}))\""
+    dependencies: []
+    gpu_required: true
+    estimated_gpu_mem_gb: 1
+    priority: 1
+    working_dir: "."
+    env:
+      CUDA_VISIBLE_DEVICES: auto
+    outputs:
+      - data/experiments/orchestrator_dummy_example/dummy_d_gpu/result.json
+    log_path: logs/orchestrator/dummy_d_gpu_probe.log
+    summary_parser: parse_generic_json
+    project_status_section: "Parallel Experiment Orchestrator Skill"
+    allow_parallel: true
+    max_runtime_minutes: 1
+    retry:
+      max_retries: 0
+      retry_on_failure: false
+    notes: "Dummy GPU task; only records assigned CUDA_VISIBLE_DEVICES."
+    tags: ["dummy", "gpu", "audit"]
+
+  - id: dummy_e_cpu_only
+    name: "Dummy E CPU-only task"
+    type: other
+    command: "python -c \"import json, pathlib; pathlib.Path('data/experiments/orchestrator_dummy_example/dummy_e').mkdir(parents=True, exist_ok=True); pathlib.Path('data/experiments/orchestrator_dummy_example/dummy_e/result.json').write_text(json.dumps({'status':'ok','task':'E','cpu_only':True}))\""
+    dependencies: []
+    gpu_required: false
+    estimated_gpu_mem_gb: 0
+    priority: 3
+    working_dir: "."
+    env: {}
+    outputs:
+      - data/experiments/orchestrator_dummy_example/dummy_e/result.json
+    log_path: logs/orchestrator/dummy_e_cpu_only.log
+    summary_parser: parse_generic_json
+    project_status_section: "Parallel Experiment Orchestrator Skill"
+    allow_parallel: true
+    max_runtime_minutes: 1
+    retry:
+      max_retries: 0
+      retry_on_failure: false
+    notes: "Dummy CPU-only task E."
+    tags: ["dummy", "cpu"]

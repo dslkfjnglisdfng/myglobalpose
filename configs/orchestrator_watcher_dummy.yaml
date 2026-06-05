@@ -1,0 +1,53 @@
+# Dummy-only task file for validating tools/orchestrator_watcher.py.
+# This must not be replaced with real training/eval tasks.
+name: orchestrator_watcher_dummy
+state_file: data/experiments/orchestrator_states/orchestrator_watcher_dummy.json
+allow_same_user_gpu_share: false
+
+tasks:
+  - id: watcher_dummy_a
+    name: "Watcher dummy A"
+    type: parse
+    command: "python -c \"import json, pathlib, time; time.sleep(1); p=pathlib.Path('data/experiments/orchestrator_watcher_dummy/a'); p.mkdir(parents=True, exist_ok=True); (p/'result.json').write_text(json.dumps({'status':'ok','task':'a'}))\""
+    dependencies: []
+    gpu_required: false
+    estimated_gpu_mem_gb: 0
+    priority: 1
+    working_dir: "."
+    env: {}
+    outputs:
+      - data/experiments/orchestrator_watcher_dummy/a/result.json
+    log_path: logs/orchestrator/watcher_dummy_a.log
+    summary_parser: parse_generic_json
+    project_status_section: "Watcher Dummy Validation"
+    allow_parallel: true
+    max_runtime_minutes: 1
+    retry:
+      max_retries: 0
+      retry_on_failure: false
+    notes: "CPU-only dummy task for watcher validation."
+    tags: ["dummy", "watcher", "cpu"]
+
+  - id: watcher_dummy_b_after_a
+    name: "Watcher dummy B after A"
+    type: parse
+    command: "python -c \"import json, pathlib; p=pathlib.Path('data/experiments/orchestrator_watcher_dummy/b'); p.mkdir(parents=True, exist_ok=True); (p/'result.json').write_text(json.dumps({'status':'ok','task':'b','depends_on':'a'}))\""
+    dependencies:
+      - watcher_dummy_a
+    gpu_required: false
+    estimated_gpu_mem_gb: 0
+    priority: 2
+    working_dir: "."
+    env: {}
+    outputs:
+      - data/experiments/orchestrator_watcher_dummy/b/result.json
+    log_path: logs/orchestrator/watcher_dummy_b_after_a.log
+    summary_parser: parse_generic_json
+    project_status_section: "Watcher Dummy Validation"
+    allow_parallel: true
+    max_runtime_minutes: 1
+    retry:
+      max_retries: 0
+      retry_on_failure: false
+    notes: "Dependency dummy task for watcher validation."
+    tags: ["dummy", "watcher", "dependency"]

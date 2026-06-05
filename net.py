@@ -72,6 +72,17 @@ class GPNet(torch.nn.Module):
         enable_l4_prephysics=False,
         l4_prephysics_module=None,
         l4_euler_seq='XYZ',
+        physics_mode='original',
+        physics_backend='original_carticulate',
+        pl_backend='original',
+        pl_curve_module=None,
+        ik1_backend='original',
+        ik1_curve_module=None,
+        ik1_official_module=None,
+        l4_qdot_velocity_blend=0.5,
+        l4_qstate_alpha=0.1,
+        l4_qstate_max_delta=0.1,
+        l4_qstate_gate='no_gate',
     ):
         from articulate.utils.torch import RNN, RNNWithInit
         super(GPNet, self).__init__()
@@ -108,18 +119,51 @@ class GPNet(torch.nn.Module):
         # self.vrnet.load_state_dict(torch.load('data/weights/Tran-OV/VR/best_weights.pt'))
 
         # for testing
-        self.load_state_dict(torch.load('data/weights.pt'))
+        self.load_state_dict(torch.load('data/weights.pt', map_location='cpu'))
 
         self.B = np.array([[self.mu, -self.mu, 0,       0       ],
                            [1,       1,        1,       1       ],
                            [0,       0,        self.mu, -self.mu]]) / np.sqrt(1 + self.mu ** 2)  # basis of friction cone
         self.body_model = art.ParametricModel('models/SMPL_male.pkl', vert_mask=self.v_imu)
         self.physics_model = cart.get_dynamic_model('models/SMPL_male.pkl')
+        self.physics_backend = physics_backend
+        self.pl_backend = pl_backend
+        self.pl_curve = pl_curve_module
+        self.ik1_backend = ik1_backend
+        self.ik1_curve = ik1_curve_module
+        self.ik1_official = ik1_official_module
+        self.last_pl_curve_debug = {}
+        self.last_ik1_curve_debug = {}
+        if self.pl_backend not in ('original', 'curve_v1'):
+            raise ValueError(f'Unsupported pl_backend: {self.pl_backend}')
+        if self.pl_backend == 'curve_v1' and self.pl_curve is None:
+            raise ValueError('pl_backend=curve_v1 requires pl_curve_module.')
+        if self.ik1_backend not in ('original', 'curve_v1', 'control_point_v1', 'official_input_v1'):
+            raise ValueError(f'Unsupported ik1_backend: {self.ik1_backend}')
+        if self.ik1_backend in ('curve_v1', 'control_point_v1') and self.ik1_curve is None:
+            raise ValueError(f'ik1_backend={self.ik1_backend} requires ik1_curve_module.')
+        if self.ik1_backend == 'official_input_v1' and self.ik1_official is None:
+            raise ValueError('ik1_backend=official_input_v1 requires ik1_official_module.')
+        self.pip_physics_backend = None
+        self.last_pip_physics_debug = {}
+        if self.physics_backend == 'pip_physics_v1':
+            from pip_physics_backend import PIPPhysicsBackendV1
+            self.pip_physics_backend = PIPPhysicsBackendV1(dt=self.dt, use_imu_acc=False)
+        elif self.physics_backend != 'original_carticulate':
+            raise ValueError(f'Unsupported physics_backend: {self.physics_backend}')
         # self.rnn_initialize()  # using T-pose
         self.eval()
         self.enable_l4_prephysics = bool(enable_l4_prephysics)
         self.l4_prephysics = None
         self.last_l4_prephysics_debug = {}
+        from l4_physics_adapter import L4PhysicsAdapter
+        self.l4_physics_adapter = L4PhysicsAdapter(
+            mode=physics_mode,
+            qdot_velocity_blend=l4_qdot_velocity_blend,
+            qstate_alpha=l4_qstate_alpha,
+            qstate_max_delta=l4_qstate_max_delta,
+            qstate_gate=l4_qstate_gate,
+        )
         if self.enable_l4_prephysics:
             from l4_tail_update_qstate import L4PrePhysicsRefiner
             self.l4_prephysics = L4PrePhysicsRefiner(
@@ -140,12 +184,13 @@ class GPNet(torch.nn.Module):
                 self.viewer.show_torque(0, [1, 2, 4, 5, 16, 17, 18, 19])
 
     @torch.no_grad()
-    def rnn_initialize(self, init_pose=None, init_vel=None):
+    def rnn_initialize(self, init_pose=None, init_vel=None, offset_r=None):
         r"""
         Initialize the hidden states of the RNNs.
 
         :param init_pose: Pose in shape [24, 3, 3]. T-pose by default.
         :param init_vel: Root world-space velocity in shape [3]. Zero by default.
+        :param offset_r: Optional first-frame IMU position offset in shape [6, 3].
         """
         init_pose = torch.eye(3).expand(1, 24, 3, 3) if init_pose is None else init_pose.cpu().view(1, 24, 3, 3)
         init_vel = torch.zeros(3) if init_vel is None else init_vel.cpu().view(3)
@@ -165,8 +210,71 @@ class GPNet(torch.nn.Module):
         self.contact = np.zeros(5, dtype=bool)
         self.contact_counter = np.zeros(5, dtype=int)
         self.last_l4_prephysics_debug = {}
+        self.l4_physics_adapter.last_debug = {}
+        self.last_pip_physics_debug = {}
+        if self.pip_physics_backend is not None:
+            self.pip_physics_backend.reset()
         if self.l4_prephysics is not None:
             self.l4_prephysics.reset()
+        if self.pl_curve is not None:
+            if getattr(self.pl_curve, 'init_size', 18) == 18:
+                self.pl_curve.reset_stream(init_output=x1)
+            elif self.pl_curve.init_size == 36:
+                if offset_r is None:
+                    raise ValueError('PL curve init_size=36 requires offset_r for rnn_initialize.')
+                offset = offset_r.detach().cpu().reshape(-1)
+                if offset.shape[-1] != 18:
+                    raise ValueError(f'Expected offset_r flatten dim 18, got {offset.shape[-1]}.')
+                pl_init = torch.cat((offset, pRL, gR)).to(x1.device, x1.dtype)
+                self.pl_curve.reset_stream(init_feature=pl_init)
+            else:
+                raise ValueError(f'Unsupported PL curve init_size={self.pl_curve.init_size}.')
+        if self.ik1_curve is not None:
+            self.ik1_curve.reset_stream()
+
+    def _run_pl_stage(self, x_pl_in):
+        x, self.pl1hc = self.plnet.rnn(x_pl_in.view(1, 1, -1), self.pl1hc)
+        base = self.plnet.linear2(x.squeeze())
+        if self.pl_backend == 'curve_v1':
+            curve = self.pl_curve.step(x_pl_in.to(base.device), base)
+            pl_out = curve['pl_t'][0]
+            self.last_pl_curve_debug = dict(self.pl_curve.last_debug)
+        else:
+            pl_out = base
+            self.last_pl_curve_debug = {}
+        gR1 = art.math.normalize_tensor(pl_out[15:])
+        return pl_out, gR1
+
+    def _pl_control_tail(self, pRB, gR1):
+        if self.pl_curve is not None and getattr(self.pl_curve, 'control_buffer', None) is not None:
+            control = self.pl_curve.control_buffer[:, -4:, :].detach()
+            if control.shape[1] < 4:
+                pad = control[:, :1].expand(-1, 4 - control.shape[1], -1)
+                control = torch.cat((pad, control), dim=1)
+            return control[0].reshape(-1).to(pRB.device)
+        current = torch.cat((pRB, gR1)).view(1, 18).expand(4, 18)
+        return current.reshape(-1)
+
+    def _run_ik1_stage(self, RRB_after_pl, gR1, pRB):
+        x_ik1_official = torch.cat((RRB_after_pl.ravel(), gR1, pRB))
+        ik1_net = self.ik1_official if self.ik1_backend == 'official_input_v1' else self.iknet.net1
+        x, self.ik1hc = ik1_net.rnn(x_ik1_official.view(1, 1, -1), self.ik1hc)
+        base = ik1_net.linear2(x.squeeze())
+        if self.ik1_backend == 'curve_v1':
+            feature = torch.cat((RRB_after_pl.ravel(), gR1, self._pl_control_tail(pRB, gR1))).to(base.device)
+            curve = self.ik1_curve.step(feature, base, pRB.to(base.device))
+            ik1_out = curve['ik1_t'][0]
+            self.last_ik1_curve_debug = dict(self.ik1_curve.last_debug)
+        elif self.ik1_backend == 'control_point_v1':
+            feature = torch.cat((RRB_after_pl.ravel(), self._pl_control_tail(pRB, gR1), gR1)).to(base.device)
+            curve = self.ik1_curve.step(feature, base)
+            ik1_out = curve['ik1_t'][0]
+            self.last_ik1_curve_debug = dict(self.ik1_curve.last_debug)
+        else:
+            ik1_out = base
+            self.last_ik1_curve_debug = {}
+        gR2 = art.math.normalize_tensor(ik1_out[69:])
+        return ik1_out, gR2
 
     @torch.no_grad()
     def _explain_residual_force(self, contact, contact_Jacobian, contact_position, residual_force):
@@ -210,9 +318,7 @@ class GPNet(torch.nn.Module):
 
         # PL-s1
         x = torch.cat((aRB.ravel(), wRB.ravel(), RRB.ravel(), gR0))
-        x, self.pl1hc = self.plnet.rnn(x.view(1, 1, -1), self.pl1hc)
-        x = self.plnet.linear2(x.squeeze())
-        gR1 = art.math.normalize_tensor(x[15:])
+        x, gR1 = self._run_pl_stage(x)
         RRB = art.math.from_to_rotation_matrix(gR0, gR1).matmul(RRB)
 
         # IK-s1
@@ -263,6 +369,205 @@ class GPNet(torch.nn.Module):
         }
 
     @torch.no_grad()
+    def forward_until_ik1(self, a, w, R):
+        r"""
+        Diagnostic-only PL-s1/IK-s1 forward path for curve-state redesign.
+
+        This helper updates PL-s1 and IK-s1 recurrent states exactly like
+        ``forward_frame`` but stops before IK-s2. It does not touch IK-s2,
+        VR-s1, velocity fusion, carticulate physics, or L4 refinement.
+        """
+        aRB0 = a.mm(R[5])
+        wRB0 = w.mm(R[5])
+        RRB0 = R[5].t().matmul(R[:5])
+        gR0 = -R[5, 1]
+
+        # PL-s1
+        x_pl_in = torch.cat((aRB0.ravel(), wRB0.ravel(), RRB0.ravel(), gR0))
+        x_pl, gR1 = self._run_pl_stage(x_pl_in)
+        pRB = x_pl[:15]
+        RRB_after_pl = art.math.from_to_rotation_matrix(gR0, gR1).matmul(RRB0)
+
+        # IK-s1
+        x_ik1_in = torch.cat((RRB_after_pl.ravel(), gR1, pRB))
+        x_ik1, gR2 = self._run_ik1_stage(RRB_after_pl, gR1, pRB)
+        pRJ_ik1 = x_ik1[:69]
+        RRB_after_ik1 = art.math.from_to_rotation_matrix(gR1, gR2).matmul(RRB_after_pl)
+        ik2_teacher_input = torch.cat((RRB_after_ik1.ravel(), gR2, pRJ_ik1))
+
+        return {
+            'aRB0': aRB0.detach().cpu(),
+            'wRB0': wRB0.detach().cpu(),
+            'RRB0': RRB0.detach().cpu(),
+            'gR0': gR0.detach().cpu(),
+            'pl_input': x_pl_in.detach().cpu(),
+            'pRB': pRB.detach().cpu(),
+            'gR1': gR1.detach().cpu(),
+            'RRB_after_pl': RRB_after_pl.detach().cpu(),
+            'ik1_input': x_ik1_in.detach().cpu(),
+            'pRJ_ik1': pRJ_ik1.detach().cpu(),
+            'gR2': gR2.detach().cpu(),
+            'RRB_after_ik1': RRB_after_ik1.detach().cpu(),
+            'ik2_teacher_input': ik2_teacher_input.detach().cpu(),
+        }
+
+    @torch.no_grad()
+    def forward_frame_from_curve_pose(self, a, w, R, pose_curve, gR2_curve, vr_override=None, vr_override_delta=None):
+        r"""
+        Experimental no-IK-s2 downstream path.
+
+        ``pose_curve`` must come from the Curve-Control Pose Head branch. This
+        method recomputes all pose-dependent VR/physics inputs from that pose
+        and then runs the original VR-s1, velocity fusion, and physics logic.
+        It intentionally does not call IK-s2.
+        """
+        pose = pose_curve.detach().cpu().view(24, 3, 3)
+        vr_device = next(self.vrnet.parameters()).device
+        gR2 = gR2_curve.detach().to(vr_device).view(3)
+
+        pose_body = pose.clone()
+        pose_body[0] = torch.eye(3)
+        glb_pose_body, joint_body = self.body_model.forward_kinematics(pose_body.unsqueeze(0))[:2]
+        RRJ = glb_pose_body[0, self.j_reduce].contiguous()
+        pRJ = joint_body[0, 1:]
+
+        # VR-s1
+        aRB = a.cpu().mm(pose[0])
+        wRB = w.cpu().mm(pose[0])
+        x = torch.cat((RRJ.ravel(), pRJ.ravel(), aRB.ravel(), wRB.ravel(), gR2.detach().cpu())).to(vr_device)
+        x, self.vr1hc = self.vrnet.rnn(x.view(1, 1, -1), self.vr1hc)
+        official_vr = self.vrnet.linear2(x.squeeze())
+        x = official_vr
+        used_vr_override = vr_override is not None or vr_override_delta is not None
+        if vr_override is not None:
+            x = vr_override.detach().to(vr_device, official_vr.dtype).view(9)
+        elif vr_override_delta is not None:
+            x = official_vr + vr_override_delta.detach().to(vr_device, official_vr.dtype).view(9)
+
+        # get translation estimation
+        vRR_V, vRR_H, stationary_prob = x[0].item(), x[1:4].cpu(), x[4:].sigmoid().cpu()
+        vWR = pose[0].mm(vRR_H.unsqueeze(-1)).squeeze(-1)
+        vWR[1] = vRR_V
+        cjoint = torch.cat((torch.zeros(1, 3), pRJ.mm(pose[0].t())))[self.j_contact, :]
+        stationary_weight = (stationary_prob * 5 - 3).clip(0, 1)
+        velocity = (stationary_weight.unsqueeze(0).mm(self.last_cjoint - cjoint)[0] / self.dt + self.beta_velocity * vWR) / (self.beta_velocity + stationary_weight.sum())
+        velocity = self.l4_physics_adapter.adapt_root_velocity(
+            velocity,
+            self.last_l4_prephysics_debug if self.l4_prephysics is not None else {},
+        )
+        self.last_l4_prephysics_debug['physics_adapter'] = dict(self.l4_physics_adapter.last_debug)
+        self.last_cjoint = cjoint
+
+        if self.physics_backend == 'pip_physics_v1':
+            if not self.is_init:
+                self.is_init = True
+                tran_hint = torch.tensor([0, self.floor_y - cjoint[:, 1].min().item(), 0], dtype=torch.float32)
+            else:
+                tran_hint = None
+            refined_pose, refined_tran = self.pip_physics_backend.step(
+                pose_target=pose,
+                velocity_target=velocity,
+                stationary_prob=stationary_prob,
+                acc=a.cpu(),
+                tran_hint=tran_hint,
+            )
+            self.last_pip_physics_debug = dict(self.pip_physics_backend.last_debug)
+            return refined_pose, refined_tran
+
+        # physics optimization
+        if not self.is_init:
+            self.is_init = True
+            self.physics_model.set_state_R(pose.numpy(), np.array([0, self.floor_y - cjoint[:, 1].min().item(), 0]), np.zeros(75))
+        else:
+            pose_cur, tran_cur, qdot = self.physics_model.get_state_R()
+            cjoint_cur = np.vstack([self.physics_model.get_position(j) for j in self.j_contact])
+            cvel_cur = np.vstack([self.physics_model.get_linear_velocity(j) for j in self.j_contact])
+            cJ_cur = np.vstack([self.physics_model.get_linear_Jacobian(j) for j in self.j_contact])
+            cJdot_cur = np.vstack([self.physics_model.get_linear_Jacobian_dot(j) for j in self.j_contact])
+            M = self.physics_model.mass_matrix()
+            h = self.physics_model.inverse_dynamics(np.zeros(75))
+            stationary = stationary_prob.numpy() > 0.7
+
+            R_delta = art.math.axis_angle_to_rotation_matrix(torch.from_numpy(qdot[3:]) * self.alpha_pd * self.dt)
+            delta_pose = art.math.rotation_matrix_to_axis_angle(torch.from_numpy(pose_cur).bmm(R_delta).transpose(1, 2).bmm(pose)).ravel().numpy()
+            thetaddotdes = (self.kp_pose * delta_pose - self.kd_pose * qdot[3:]) / (1 + self.kd_pose * self.alpha_pd * self.dt)
+            cjoint = tran_cur + velocity.numpy() * self.dt + cjoint.numpy()
+            cjoint = art.math.lerp(cjoint, cjoint_cur, stationary_weight.view(5, 1).numpy())
+            delta_tran = cjoint - cjoint_cur - cvel_cur * self.alpha_pd * self.dt
+            rddotdes = (self.kp_tran * delta_tran - self.kd_tran * cvel_cur).ravel() / (1 + self.kd_tran * self.alpha_pd * self.dt)
+
+            cjoint_cur[0, 1] -= 0.15
+            cjoint[0, 1] -= 0.15
+            k = np.ones((5, 3)) * self.beta_cjoint
+            k[self.contact] *= 10
+            A = np.vstack((np.hstack((np.zeros((72, 3)), np.eye(72))), np.sqrt(k.reshape(15, 1)) * cJ_cur, np.sqrt(self.beta_torque) * M))
+            b = np.concatenate((thetaddotdes, np.sqrt(k.reshape(15)) * (-cJdot_cur @ qdot + rddotdes), np.sqrt(self.beta_torque) * (-h)))
+            qddot = lsqr(csc_array(A), b)[0]
+            residual_force = M[:6] @ qddot + h[:6]
+
+            vdist = np.abs(cjoint_cur[np.newaxis, :, 1] - cjoint_cur[:, np.newaxis, 1])
+            contact = stationary & (self.contact | (cjoint_cur[:, 1] < self.floor_y + 0.05))
+            if np.any(contact):
+                contact |= stationary & (vdist[contact].min(axis=0) < 0.05)
+            potential_contact = stationary & ~contact
+            if contact[0] or potential_contact[0]:
+                lleg = self.physics_model.get_position(4) - self.physics_model.get_position(1)
+                rleg = self.physics_model.get_position(5) - self.physics_model.get_position(2)
+                if min(np.arccos(-lleg[1] / np.linalg.norm(lleg)), np.arccos(-rleg[1] / np.linalg.norm(rleg))) < np.pi / 4:
+                    contact[0], potential_contact[0] = False, False
+
+            force, err, forceB = self._explain_residual_force(contact, cJ_cur, cjoint_cur, residual_force)
+            for i in np.argsort(cjoint_cur[:, 1]):
+                if err > 400 and potential_contact[i]:
+                    contact[i] = True
+                    force_new, err_new, forceB_new = self._explain_residual_force(contact, cJ_cur, cjoint_cur, residual_force)
+                    self.contact_counter[i] = self.contact_counter[i] + 1 if err_new / err < 0.6 else 0
+                    if self.contact_counter[i] >= 5:
+                        force, err, forceB = force_new, err_new, forceB_new
+                    else:
+                        contact[i] = False
+                else:
+                    self.contact_counter[i] = 0
+
+            near_ground = cjoint[:, 1] < self.floor_y + 0.15
+            for i in np.where(contact & near_ground)[0]:
+                cjoint[i, 1] = art.math.lerp(cjoint[i, 1], self.floor_y, 0.1)
+            cjoint[cjoint[:, 1] < self.floor_y, 1] = self.floor_y
+
+            delta_tran = cjoint - cjoint_cur - cvel_cur * self.alpha_pd * self.dt
+            rddotdes = (self.kp_tran * delta_tran - self.kd_tran * cvel_cur).ravel() / (1 + self.kd_tran * self.alpha_pd * self.dt)
+            if np.any(contact):
+                J = cJ_cur.reshape(5, 3, 75)[contact].reshape(-1, 75)
+                B = art.math.block_diagonal_matrix_np(forceB)
+                force = B @ force
+                torque = J.T @ force
+            else:
+                torque = np.zeros(75)
+            A = np.vstack((np.hstack((np.zeros((72, 3)), np.eye(72))), np.sqrt(k.reshape(15, 1)) * cJ_cur, np.sqrt(self.beta_torque * 3) * M))
+            b = np.concatenate((thetaddotdes, np.sqrt(k.reshape(15)) * (-cJdot_cur @ qdot + rddotdes), np.sqrt(self.beta_torque * 3) * (-h + torque)))
+            qddot = lsqr(csc_array(A), b)[0]
+            self.physics_model.update_state(qddot, self.dt)
+            self.contact = contact
+
+        refined_pose, refined_tran, qdot = self.physics_model.get_state_R()
+        debug = {
+            'RRJ': RRJ.detach().cpu(),
+            'pRJ': pRJ.detach().cpu(),
+            'aRB': aRB.detach().cpu(),
+            'wRB': wRB.detach().cpu(),
+            'gR2': gR2.detach().cpu(),
+            'stationary_prob': stationary_prob.detach().cpu(),
+            'used_vr_override': used_vr_override,
+            'official_vr_norm': official_vr.detach().norm().cpu(),
+        }
+        if used_vr_override:
+            debug.update({
+                'override_vr_norm': x.detach().norm().cpu(),
+                'override_delta_norm': (x.detach() - official_vr.detach()).norm().cpu(),
+            })
+        return torch.from_numpy(refined_pose), torch.from_numpy(refined_tran), debug
+
+    @torch.no_grad()
     def forward_frame(self, a, w, R, l4_a=None, l4_w=None, l4_R=None):
         aRB = a.mm(R[5])
         wRB = w.mm(R[5])
@@ -271,15 +576,11 @@ class GPNet(torch.nn.Module):
 
         # PL-s1
         x = torch.cat((aRB.ravel(), wRB.ravel(), RRB.ravel(), gR0))
-        x, self.pl1hc = self.plnet.rnn(x.view(1, 1, -1), self.pl1hc)
-        x = self.plnet.linear2(x.squeeze())        # pRB, gR
-        gR1 = art.math.normalize_tensor(x[15:])
+        x, gR1 = self._run_pl_stage(x)             # pRB, gR
         RRB = art.math.from_to_rotation_matrix(gR0, gR1).matmul(RRB)
 
         # IK-s1
-        x = torch.cat((RRB.ravel(), gR1, x[:15]))
-        x, self.ik1hc = self.iknet.net1.rnn(x.view(1, 1, -1), self.ik1hc)
-        x = self.iknet.net1.linear2(x.squeeze())   # pRJ, gR
+        x = self._run_ik1_stage(RRB, gR1, x[:15])[0]   # pRJ, gR
         gR2 = art.math.normalize_tensor(x[69:])
         RRB = art.math.from_to_rotation_matrix(gR1, gR2).matmul(RRB)
 
@@ -335,7 +636,28 @@ class GPNet(torch.nn.Module):
         cjoint = torch.cat((torch.zeros(1, 3), pRJ.mm(pose[0].t())))[self.j_contact, :]
         stationary_weight = (stationary_prob * 5 - 3).clip(0, 1)
         velocity = (stationary_weight.unsqueeze(0).mm(self.last_cjoint - cjoint)[0] / self.dt + self.beta_velocity * vWR) / (self.beta_velocity + stationary_weight.sum())
+        velocity = self.l4_physics_adapter.adapt_root_velocity(
+            velocity,
+            self.last_l4_prephysics_debug if self.l4_prephysics is not None else {},
+        )
+        self.last_l4_prephysics_debug['physics_adapter'] = dict(self.l4_physics_adapter.last_debug)
         self.last_cjoint = cjoint
+
+        if self.physics_backend == 'pip_physics_v1':
+            if not self.is_init:
+                self.is_init = True
+                tran_hint = torch.tensor([0, self.floor_y - cjoint[:, 1].min().item(), 0], dtype=torch.float32)
+            else:
+                tran_hint = None
+            refined_pose, refined_tran = self.pip_physics_backend.step(
+                pose_target=pose,
+                velocity_target=velocity,
+                stationary_prob=stationary_prob,
+                acc=a.cpu(),
+                tran_hint=tran_hint,
+            )
+            self.last_pip_physics_debug = dict(self.pip_physics_backend.last_debug)
+            return refined_pose, refined_tran
 
         # physics optimization
         if not self.is_init:

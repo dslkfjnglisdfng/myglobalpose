@@ -10,3 +10,13 @@ data/weights.pt
 __pycache__/
 carticulate/*.so
 logs/
+metrics/
+status/
+summary.txt
+*.pid
+*.so.backup
+*.bak_*
+*.env
+PROJECT_DOC_BACKUP*.md
+PROJECT_STATUS_BACKUP*.md
+PROJECT_STATUS.full_history_backup_*.md

@@ -1,0 +1,284 @@
+{
+  "name": "newik1_mainline_stage2_20260604",
+  "state_file": "data/experiments/orchestrator_states/newik1_mainline_stage2_20260604.json",
+  "allow_same_user_gpu_share": false,
+  "notes": "NewIK1_ControlPoint_v1 stage 2 after verified PL1 selection. PL1 is historical Run D fallback because fast NewPL candidates did not beat S4 38.694846. Uses teacher-forced pretraining, PL1 streaming adaptation caches, PL1-output adaptation, streaming-compatible NewIK1 S4 eval, and no S5/IK2 edits/old PL batch cache.",
+  "tasks": [
+    {
+      "id": "newik1_teacher_forced_amass_cache",
+      "name": "Build NewIK1 teacher-forced AMASS cache",
+      "type": "cache",
+      "command": "python newik1_control_cache.py --input-cache data/dataset_work/L4Cache/globalpose_amass_baseline_cache_diverse7_merged/baseline_cache_manifest.json --output-dir data/experiments/newik1_mainline_20260604/caches/teacher_forced_amass --mode teacher_forced --imu-input-mode auto --shard-size 50 --tail-len 4",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 8,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newik1_mainline_20260604/caches/teacher_forced_amass/newik1_control_cache_manifest.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_mainline_20260604/newik1_teacher_forced_amass_cache.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "NewIK1_ControlPoint_v1 stage 2",
+      "allow_parallel": true
+    },
+    {
+      "id": "newik1_teacher_forced_tc_train_cache",
+      "name": "Build NewIK1 teacher-forced TotalCapture train cache",
+      "type": "cache",
+      "command": "python newik1_control_cache.py --input-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/train_Roffset_A/baseline_cache_manifest.json --output-dir data/experiments/newik1_mainline_20260604/caches/teacher_forced_tc_train --mode teacher_forced --imu-input-mode processed --shard-size 50 --tail-len 4",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 8,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newik1_mainline_20260604/caches/teacher_forced_tc_train/newik1_control_cache_manifest.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_mainline_20260604/newik1_teacher_forced_tc_train_cache.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "NewIK1_ControlPoint_v1 stage 2",
+      "allow_parallel": true
+    },
+    {
+      "id": "newik1_teacher_forced_tc_val_cache",
+      "name": "Build NewIK1 teacher-forced TotalCapture validation cache",
+      "type": "cache",
+      "command": "python newik1_control_cache.py --input-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --output-dir data/experiments/newik1_mainline_20260604/caches/teacher_forced_tc_val --mode teacher_forced --imu-input-mode processed --shard-size 50 --tail-len 4",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 8,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newik1_mainline_20260604/caches/teacher_forced_tc_val/newik1_control_cache_manifest.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_mainline_20260604/newik1_teacher_forced_tc_val_cache.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "NewIK1_ControlPoint_v1 stage 2",
+      "allow_parallel": true
+    },
+    {
+      "id": "newik1_teacher_forced_amass_longtrain",
+      "name": "Train NewIK1 teacher-forced AMASS fast mainline",
+      "type": "train",
+      "command": "python newik1_control_train.py --train-cache data/experiments/newik1_mainline_20260604/caches/teacher_forced_amass/newik1_control_cache_manifest.json --val-cache data/experiments/newik1_mainline_20260604/caches/teacher_forced_tc_val/newik1_control_cache_manifest.json --output-dir data/experiments/newik1_mainline_20260604/teacher_forced_amass --experiment-name NewIK1_mainline_20260604_teacher_forced_amass --epochs 20 --lr 1e-4 --batch-size 16 --window 61 --max-val-sequences 5",
+      "dependencies": [
+        "newik1_teacher_forced_amass_cache",
+        "newik1_teacher_forced_tc_val_cache"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 12,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newik1_mainline_20260604/teacher_forced_amass/best_loss.pt",
+        "data/experiments/newik1_mainline_20260604/teacher_forced_amass/last.pt",
+        "data/experiments/newik1_mainline_20260604/teacher_forced_amass/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_mainline_20260604/newik1_teacher_forced_amass_longtrain.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "NewIK1_ControlPoint_v1 stage 2",
+      "allow_parallel": true
+    },
+    {
+      "id": "newik1_teacher_forced_tc_finetune",
+      "name": "Finetune NewIK1 teacher-forced on TotalCapture",
+      "type": "train",
+      "command": "python newik1_control_train.py --train-cache data/experiments/newik1_mainline_20260604/caches/teacher_forced_tc_train/newik1_control_cache_manifest.json --val-cache data/experiments/newik1_mainline_20260604/caches/teacher_forced_tc_val/newik1_control_cache_manifest.json --output-dir data/experiments/newik1_mainline_20260604/teacher_forced_tc_finetune --experiment-name NewIK1_mainline_20260604_teacher_forced_tc_finetune --epochs 10 --lr 3e-6 --batch-size 8 --window 61 --init-checkpoint data/experiments/newik1_mainline_20260604/teacher_forced_amass/best_loss.pt",
+      "dependencies": [
+        "newik1_teacher_forced_amass_longtrain",
+        "newik1_teacher_forced_tc_train_cache"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 12,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newik1_mainline_20260604/teacher_forced_tc_finetune/best_loss.pt",
+        "data/experiments/newik1_mainline_20260604/teacher_forced_tc_finetune/last.pt",
+        "data/experiments/newik1_mainline_20260604/teacher_forced_tc_finetune/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_mainline_20260604/newik1_teacher_forced_tc_finetune.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "NewIK1_ControlPoint_v1 stage 2",
+      "allow_parallel": true,
+      "append_log": true
+    },
+    {
+      "id": "newik1_pl1_streaming_amass_cache",
+      "name": "Build NewIK1 PL1-streaming AMASS adaptation cache",
+      "type": "cache",
+      "command": "python newik1_control_cache.py --input-cache data/dataset_work/L4Cache/globalpose_amass_baseline_cache_diverse7_merged/baseline_cache_manifest.json --output-dir data/experiments/newik1_mainline_20260604/caches/pl1_streaming_amass --mode pl1_streaming --imu-input-mode auto --pl-checkpoint data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_gtcontrol_finetune_v1/run_d_0p3_0p1_continue10/tc_finetune_10ep/best_loss.pt --shard-size 50 --tail-len 4",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 8,
+      "priority": 4,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newik1_mainline_20260604/caches/pl1_streaming_amass/newik1_control_cache_manifest.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_mainline_20260604/newik1_pl1_streaming_amass_cache.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "NewIK1_ControlPoint_v1 stage 2",
+      "allow_parallel": true
+    },
+    {
+      "id": "newik1_pl1_streaming_tc_train_cache",
+      "name": "Build NewIK1 PL1-streaming TotalCapture train adaptation cache",
+      "type": "cache",
+      "command": "python newik1_control_cache.py --input-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/train_Roffset_A/baseline_cache_manifest.json --output-dir data/experiments/newik1_mainline_20260604/caches/pl1_streaming_tc_train --mode pl1_streaming --imu-input-mode processed --pl-checkpoint data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_gtcontrol_finetune_v1/run_d_0p3_0p1_continue10/tc_finetune_10ep/best_loss.pt --shard-size 50 --tail-len 4",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 8,
+      "priority": 4,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newik1_mainline_20260604/caches/pl1_streaming_tc_train/newik1_control_cache_manifest.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_mainline_20260604/newik1_pl1_streaming_tc_train_cache.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "NewIK1_ControlPoint_v1 stage 2",
+      "allow_parallel": true
+    },
+    {
+      "id": "newik1_pl1_streaming_tc_val_cache",
+      "name": "Build NewIK1 PL1-streaming TotalCapture validation adaptation cache",
+      "type": "cache",
+      "command": "python newik1_control_cache.py --input-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --output-dir data/experiments/newik1_mainline_20260604/caches/pl1_streaming_tc_val --mode pl1_streaming --imu-input-mode processed --pl-checkpoint data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_gtcontrol_finetune_v1/run_d_0p3_0p1_continue10/tc_finetune_10ep/best_loss.pt --shard-size 50 --tail-len 4",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 8,
+      "priority": 4,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newik1_mainline_20260604/caches/pl1_streaming_tc_val/newik1_control_cache_manifest.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_mainline_20260604/newik1_pl1_streaming_tc_val_cache.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "NewIK1_ControlPoint_v1 stage 2",
+      "allow_parallel": true
+    },
+    {
+      "id": "newik1_pl1_output_amass_adaptation",
+      "name": "Adapt NewIK1 on PL1-output AMASS cache",
+      "type": "train",
+      "command": "python newik1_control_train.py --train-cache data/experiments/newik1_mainline_20260604/caches/pl1_streaming_amass/newik1_control_cache_manifest.json --val-cache data/experiments/newik1_mainline_20260604/caches/pl1_streaming_tc_val/newik1_control_cache_manifest.json --output-dir data/experiments/newik1_mainline_20260604/pl1_output_amass_adaptation --experiment-name NewIK1_mainline_20260604_pl1_output_amass_adaptation --epochs 10 --lr 1e-5 --batch-size 16 --window 61 --max-val-sequences 5 --init-checkpoint data/experiments/newik1_mainline_20260604/teacher_forced_tc_finetune/best_loss.pt",
+      "dependencies": [
+        "newik1_teacher_forced_tc_finetune",
+        "newik1_pl1_streaming_amass_cache",
+        "newik1_pl1_streaming_tc_val_cache"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 12,
+      "priority": 5,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newik1_mainline_20260604/pl1_output_amass_adaptation/best_loss.pt",
+        "data/experiments/newik1_mainline_20260604/pl1_output_amass_adaptation/last.pt",
+        "data/experiments/newik1_mainline_20260604/pl1_output_amass_adaptation/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_mainline_20260604/newik1_pl1_output_amass_adaptation.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "NewIK1_ControlPoint_v1 stage 2",
+      "allow_parallel": true
+    },
+    {
+      "id": "newik1_pl1_output_tc_finetune",
+      "name": "Finetune NewIK1 on PL1-output TotalCapture cache",
+      "type": "train",
+      "command": "python newik1_control_train.py --train-cache data/experiments/newik1_mainline_20260604/caches/pl1_streaming_tc_train/newik1_control_cache_manifest.json --val-cache data/experiments/newik1_mainline_20260604/caches/pl1_streaming_tc_val/newik1_control_cache_manifest.json --output-dir data/experiments/newik1_mainline_20260604/pl1_output_tc_finetune --experiment-name NewIK1_mainline_20260604_pl1_output_tc_finetune --epochs 10 --lr 3e-6 --batch-size 8 --window 61 --init-checkpoint data/experiments/newik1_mainline_20260604/pl1_output_amass_adaptation/best_loss.pt",
+      "dependencies": [
+        "newik1_pl1_output_amass_adaptation",
+        "newik1_pl1_streaming_tc_train_cache"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 12,
+      "priority": 6,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newik1_mainline_20260604/pl1_output_tc_finetune/best_loss.pt",
+        "data/experiments/newik1_mainline_20260604/pl1_output_tc_finetune/last.pt",
+        "data/experiments/newik1_mainline_20260604/pl1_output_tc_finetune/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_mainline_20260604/newik1_pl1_output_tc_finetune.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "NewIK1_ControlPoint_v1 stage 2",
+      "allow_parallel": true
+    },
+    {
+      "id": "newik1_final_s4_validation",
+      "name": "Validate PL1 plus NewIK1 control-point on TotalCapture S4",
+      "type": "eval",
+      "command": "python newik1_control_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --pl-checkpoint data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_gtcontrol_finetune_v1/run_d_0p3_0p1_continue10/tc_finetune_10ep/best_loss.pt --ik1-checkpoint data/experiments/newik1_mainline_20260604/pl1_output_tc_finetune/best_loss.pt --imu-input-mode processed --output-json data/experiments/newik1_mainline_20260604/s4/pl1_newik1_tc_best/result.json",
+      "dependencies": [
+        "newik1_pl1_output_tc_finetune"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 8,
+      "priority": 7,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newik1_mainline_20260604/s4/pl1_newik1_tc_best/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_mainline_20260604/newik1_final_s4_validation.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "NewIK1_ControlPoint_v1 stage 2",
+      "allow_parallel": true
+    },
+    {
+      "id": "newik1_select_final",
+      "name": "Parse NewIK1 final S4 decision",
+      "type": "parse",
+      "command": "python -c \"import json; from pathlib import Path; root=Path('data/experiments/newik1_mainline_20260604'); s4=root/'s4/pl1_newik1_tc_best/result.json'; data=json.loads(s4.read_text()); score=float(data['score']); pl1=38.69484578047692; original=38.753660; out={'status':'ok','newik1_score':score,'pl1_run_d_score':pl1,'original_processed_score':original,'beats_pl1_only':score < pl1,'beats_original_processed':score < original,'s4_json':str(s4),'checkpoint':'data/experiments/newik1_mainline_20260604/pl1_output_tc_finetune/best_loss.pt'}; p=root/'selection/final_selection.json'; p.parent.mkdir(parents=True, exist_ok=True); p.write_text(json.dumps(out, indent=2)+'\\n'); print(json.dumps(out, indent=2))\"",
+      "dependencies": [
+        "newik1_final_s4_validation"
+      ],
+      "gpu_required": false,
+      "estimated_gpu_mem_gb": 0,
+      "priority": 8,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_mainline_20260604/selection/final_selection.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_mainline_20260604/newik1_select_final.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "NewIK1_ControlPoint_v1 stage 2",
+      "allow_parallel": true
+    }
+  ]
+}

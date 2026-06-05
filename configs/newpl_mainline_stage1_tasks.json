@@ -1,0 +1,330 @@
+{
+  "name": "newpl_mainline_stage1_20260604",
+  "state_file": "data/experiments/orchestrator_states/newpl_mainline_stage1_20260604.json",
+  "allow_same_user_gpu_share": false,
+  "notes": "Formal NewPL current-loss mainline. AMASS uses the single available processed no-baseline PLCurve manifest for both train and validation cache arguments; TotalCapture uses separate train/val processed Roffset_A PLCurve caches. No NewIK1 tasks are included.",
+  "tasks": [
+    {
+      "id": "pl_gt_control_audit_amass_train",
+      "name": "GT PL control audit AMASS train cache",
+      "type": "audit",
+      "command": "conda run -n globalpose-gpu python pl_gt_control_audit.py --cache data/dataset_work/L4Cache/pl_curve_v2_processed_no_baseline_amass/pl_curve_cache_manifest.json --output-json data/experiments/newpl_mainline_20260604/audits/pl_gt_control_amass_train/result.json",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 4,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newpl_mainline_20260604/audits/pl_gt_control_amass_train/result.json"
+      ],
+      "log_path": "logs/orchestrator/newpl_mainline_20260604/pl_gt_control_audit_amass_train.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "NewPL current-loss AMASS longtrain + TC finetune",
+      "allow_parallel": true
+    },
+    {
+      "id": "pl_gt_control_audit_amass_val",
+      "name": "GT PL control audit AMASS validation cache",
+      "type": "audit",
+      "command": "conda run -n globalpose-gpu python pl_gt_control_audit.py --cache data/dataset_work/L4Cache/pl_curve_v2_processed_no_baseline_amass/pl_curve_cache_manifest.json --output-json data/experiments/newpl_mainline_20260604/audits/pl_gt_control_amass_val/result.json",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 4,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newpl_mainline_20260604/audits/pl_gt_control_amass_val/result.json"
+      ],
+      "log_path": "logs/orchestrator/newpl_mainline_20260604/pl_gt_control_audit_amass_val.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "NewPL current-loss AMASS longtrain + TC finetune",
+      "allow_parallel": true,
+      "notes": "Uses the same single AMASS PLCurve manifest as the AMASS train audit because no separate AMASS validation PLCurve manifest exists in the current project artifacts."
+    },
+    {
+      "id": "pl_gt_control_audit_tc_train",
+      "name": "GT PL control audit TotalCapture train cache",
+      "type": "audit",
+      "command": "conda run -n globalpose-gpu python pl_gt_control_audit.py --cache data/dataset_work/L4Cache/pl_curve_v2_processed_no_baseline_tc_train_Roffset_A/pl_curve_cache_manifest.json --output-json data/experiments/newpl_mainline_20260604/audits/pl_gt_control_tc_train/result.json",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 4,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newpl_mainline_20260604/audits/pl_gt_control_tc_train/result.json"
+      ],
+      "log_path": "logs/orchestrator/newpl_mainline_20260604/pl_gt_control_audit_tc_train.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "NewPL current-loss AMASS longtrain + TC finetune",
+      "allow_parallel": true
+    },
+    {
+      "id": "pl_gt_control_audit_tc_val",
+      "name": "GT PL control audit TotalCapture validation cache",
+      "type": "audit",
+      "command": "conda run -n globalpose-gpu python pl_gt_control_audit.py --cache data/dataset_work/L4Cache/pl_curve_v2_processed_no_baseline_tc_val_Roffset_A/pl_curve_cache_manifest.json --output-json data/experiments/newpl_mainline_20260604/audits/pl_gt_control_tc_val/result.json",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 4,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newpl_mainline_20260604/audits/pl_gt_control_tc_val/result.json"
+      ],
+      "log_path": "logs/orchestrator/newpl_mainline_20260604/pl_gt_control_audit_tc_val.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "NewPL current-loss AMASS longtrain + TC finetune",
+      "allow_parallel": true
+    },
+    {
+      "id": "newpl_amass_longtrain_current_loss",
+      "name": "NewPL AMASS longtrain current loss",
+      "type": "train",
+      "command": "conda run -n globalpose-gpu python pl_curve_train.py --train-cache data/dataset_work/L4Cache/pl_curve_v2_processed_no_baseline_amass/pl_curve_cache_manifest.json --val-cache data/dataset_work/L4Cache/pl_curve_v2_processed_no_baseline_amass/pl_curve_cache_manifest.json --output-dir data/experiments/newpl_mainline_20260604/amass_longtrain_current_loss --experiment-name NewPL_mainline_20260604_amass_longtrain_current_loss --epochs 20 --lr 1e-4 --batch-size 2 --pRB-weight 1.0 --gR1-weight 1.0 --baseline-pRB-weight 0 --baseline-gR1-weight 0 --pRB-dot-weight 0.03 --pRB-ddot-smooth-weight 0.000001 --gR1-dot-weight 0.03 --gR1-ddot-weight 0.001 --gt-control-pRB-weight 0.3 --gt-control-gR1-weight 0.1 --control-point-prior-weight 0.3 --tail-update-prior-weight 0.005 --disable-ik-distill",
+      "dependencies": [
+        "pl_gt_control_audit_amass_train",
+        "pl_gt_control_audit_amass_val"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 8,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newpl_mainline_20260604/amass_longtrain_current_loss/best_loss.pt",
+        "data/experiments/newpl_mainline_20260604/amass_longtrain_current_loss/last.pt",
+        "data/experiments/newpl_mainline_20260604/amass_longtrain_current_loss/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/newpl_mainline_20260604/newpl_amass_longtrain_current_loss.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "NewPL current-loss AMASS longtrain + TC finetune",
+      "allow_parallel": true
+    },
+    {
+      "id": "newpl_tc_finetune_current_loss",
+      "name": "NewPL TotalCapture finetune current loss",
+      "type": "train",
+      "command": "conda run -n globalpose-gpu python pl_curve_train.py --train-cache data/dataset_work/L4Cache/pl_curve_v2_processed_no_baseline_tc_train_Roffset_A/pl_curve_cache_manifest.json --val-cache data/dataset_work/L4Cache/pl_curve_v2_processed_no_baseline_tc_val_Roffset_A/pl_curve_cache_manifest.json --output-dir data/experiments/newpl_mainline_20260604/tc_finetune_current_loss --experiment-name NewPL_mainline_20260604_tc_finetune_current_loss --epochs 10 --lr 3e-6 --init-checkpoint data/experiments/newpl_mainline_20260604/amass_longtrain_current_loss/best_loss.pt --batch-size 2 --pRB-weight 1.0 --gR1-weight 1.0 --baseline-pRB-weight 0 --baseline-gR1-weight 0 --pRB-dot-weight 0.03 --pRB-ddot-smooth-weight 0.000001 --gR1-dot-weight 0.03 --gR1-ddot-weight 0.001 --gt-control-pRB-weight 0.3 --gt-control-gR1-weight 0.1 --control-point-prior-weight 0.3 --tail-update-prior-weight 0.005 --disable-ik-distill",
+      "dependencies": [
+        "newpl_amass_longtrain_current_loss",
+        "pl_gt_control_audit_tc_train",
+        "pl_gt_control_audit_tc_val"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 8,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newpl_mainline_20260604/tc_finetune_current_loss/best_loss.pt",
+        "data/experiments/newpl_mainline_20260604/tc_finetune_current_loss/last.pt",
+        "data/experiments/newpl_mainline_20260604/tc_finetune_current_loss/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/newpl_mainline_20260604/newpl_tc_finetune_current_loss.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "NewPL current-loss AMASS longtrain + TC finetune",
+      "allow_parallel": true
+    },
+    {
+      "id": "newpl_streaming_pl_audit_amass_best",
+      "name": "Streaming PL audit AMASS best versus original and Run D",
+      "type": "audit",
+      "command": "conda run -n globalpose-gpu python streaming_pl_output_audit.py --old-processed-checkpoint data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_gtcontrol_finetune_v1/run_d_0p3_0p1_continue10/tc_finetune_10ep/best_loss.pt --new-best-checkpoint data/experiments/newpl_mainline_20260604/amass_longtrain_current_loss/best_loss.pt --output-json data/experiments/newpl_mainline_20260604/audits/streaming_pl_amass_best/result.json",
+      "dependencies": [
+        "newpl_amass_longtrain_current_loss"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 4,
+      "priority": 4,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newpl_mainline_20260604/audits/streaming_pl_amass_best/result.json"
+      ],
+      "log_path": "logs/orchestrator/newpl_mainline_20260604/newpl_streaming_pl_audit_amass_best.log",
+      "summary_parser": "parse_streaming_pl_audit",
+      "project_status_section": "NewPL current-loss AMASS longtrain + TC finetune",
+      "allow_parallel": true
+    },
+    {
+      "id": "newpl_streaming_pl_audit_tc_best_last",
+      "name": "Streaming PL audit TC best and last versus original and Run D",
+      "type": "audit",
+      "command": "conda run -n globalpose-gpu python streaming_pl_output_audit.py --old-processed-checkpoint data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_gtcontrol_finetune_v1/run_d_0p3_0p1_continue10/tc_finetune_10ep/best_loss.pt --new-best-checkpoint data/experiments/newpl_mainline_20260604/tc_finetune_current_loss/best_loss.pt --new-last-checkpoint data/experiments/newpl_mainline_20260604/tc_finetune_current_loss/last.pt --output-json data/experiments/newpl_mainline_20260604/audits/streaming_pl_tc_best_last/result.json",
+      "dependencies": [
+        "newpl_tc_finetune_current_loss"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 4,
+      "priority": 4,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newpl_mainline_20260604/audits/streaming_pl_tc_best_last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newpl_mainline_20260604/newpl_streaming_pl_audit_tc_best_last.log",
+      "summary_parser": "parse_streaming_pl_audit",
+      "project_status_section": "NewPL current-loss AMASS longtrain + TC finetune",
+      "allow_parallel": true
+    },
+    {
+      "id": "newpl_s4_original_processed",
+      "name": "S4 validation original GPNet processed IMU",
+      "type": "eval",
+      "command": "conda run -n globalpose-gpu python pl_curve_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --imu-input-mode processed --output-json data/experiments/newpl_mainline_20260604/s4/original_processed/result.json",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 4,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newpl_mainline_20260604/s4/original_processed/result.json"
+      ],
+      "log_path": "logs/orchestrator/newpl_mainline_20260604/newpl_s4_original_processed.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "NewPL current-loss AMASS longtrain + TC finetune",
+      "allow_parallel": true
+    },
+    {
+      "id": "newpl_s4_run_d",
+      "name": "S4 validation historical Run D checkpoint",
+      "type": "eval",
+      "command": "conda run -n globalpose-gpu python pl_curve_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --checkpoint data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_gtcontrol_finetune_v1/run_d_0p3_0p1_continue10/tc_finetune_10ep/best_loss.pt --imu-input-mode processed --output-json data/experiments/newpl_mainline_20260604/s4/run_d_best/result.json",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 4,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newpl_mainline_20260604/s4/run_d_best/result.json"
+      ],
+      "log_path": "logs/orchestrator/newpl_mainline_20260604/newpl_s4_run_d.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "NewPL current-loss AMASS longtrain + TC finetune",
+      "allow_parallel": true
+    },
+    {
+      "id": "newpl_s4_amass_best",
+      "name": "S4 validation NewPL AMASS best checkpoint",
+      "type": "eval",
+      "command": "conda run -n globalpose-gpu python pl_curve_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --checkpoint data/experiments/newpl_mainline_20260604/amass_longtrain_current_loss/best_loss.pt --imu-input-mode processed --output-json data/experiments/newpl_mainline_20260604/s4/amass_best/result.json",
+      "dependencies": [
+        "newpl_amass_longtrain_current_loss"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 5,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newpl_mainline_20260604/s4/amass_best/result.json"
+      ],
+      "log_path": "logs/orchestrator/newpl_mainline_20260604/newpl_s4_amass_best.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "NewPL current-loss AMASS longtrain + TC finetune",
+      "allow_parallel": true
+    },
+    {
+      "id": "newpl_s4_tc_best",
+      "name": "S4 validation NewPL TC best checkpoint",
+      "type": "eval",
+      "command": "conda run -n globalpose-gpu python pl_curve_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --checkpoint data/experiments/newpl_mainline_20260604/tc_finetune_current_loss/best_loss.pt --imu-input-mode processed --output-json data/experiments/newpl_mainline_20260604/s4/tc_best/result.json",
+      "dependencies": [
+        "newpl_tc_finetune_current_loss"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 5,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newpl_mainline_20260604/s4/tc_best/result.json"
+      ],
+      "log_path": "logs/orchestrator/newpl_mainline_20260604/newpl_s4_tc_best.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "NewPL current-loss AMASS longtrain + TC finetune",
+      "allow_parallel": true
+    },
+    {
+      "id": "newpl_s4_tc_last",
+      "name": "S4 validation NewPL TC last checkpoint",
+      "type": "eval",
+      "command": "conda run -n globalpose-gpu python pl_curve_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --checkpoint data/experiments/newpl_mainline_20260604/tc_finetune_current_loss/last.pt --imu-input-mode processed --output-json data/experiments/newpl_mainline_20260604/s4/tc_last/result.json",
+      "dependencies": [
+        "newpl_tc_finetune_current_loss"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 5,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/newpl_mainline_20260604/s4/tc_last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newpl_mainline_20260604/newpl_s4_tc_last.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "NewPL current-loss AMASS longtrain + TC finetune",
+      "allow_parallel": true
+    },
+    {
+      "id": "newpl_select_pl1",
+      "name": "Select PL1 checkpoint from S4 results",
+      "type": "parse",
+      "command": "python -c \"import json; from pathlib import Path; root=Path('data/experiments/newpl_mainline_20260604'); load=lambda p: json.loads(Path(p).read_text()); score=lambda p: float(load(p).get('score') if load(p).get('score') is not None else load(p).get('aggregate', {}).get('score')); candidates=[('newpl_amass_best', root/'s4/amass_best/result.json', root/'amass_longtrain_current_loss/best_loss.pt'), ('newpl_tc_best', root/'s4/tc_best/result.json', root/'tc_finetune_current_loss/best_loss.pt'), ('newpl_tc_last', root/'s4/tc_last/result.json', root/'tc_finetune_current_loss/last.pt')]; run_d_json=root/'s4/run_d_best/result.json'; run_d_ckpt=Path('data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_gtcontrol_finetune_v1/run_d_0p3_0p1_continue10/tc_finetune_10ep/best_loss.pt'); rows=[{'name': n, 'score': score(j), 's4_json': str(j), 'checkpoint': str(c)} for n,j,c in candidates]; run_d={'name':'historical_run_d','score':score(run_d_json),'s4_json':str(run_d_json),'checkpoint':str(run_d_ckpt)}; best=min(rows, key=lambda r: r['score']); selected=best if best['score'] < run_d['score'] else run_d; out={'status':'ok','selection_rule':'lowest S4 among formal NewPL candidates if it beats historical Run D; otherwise fallback to Run D','historical_run_d_reference_score':38.694846,'historical_run_d_measured':run_d,'formal_newpl_candidates':rows,'selected_pl1':selected,'fallback_used':selected['name']=='historical_run_d'}; p=root/'selection/pl1_selection.json'; p.parent.mkdir(parents=True, exist_ok=True); p.write_text(json.dumps(out, indent=2)+'\\n'); print(json.dumps({'status':'ok','selected_pl1':selected,'fallback_used':out['fallback_used']}, indent=2))\"",
+      "dependencies": [
+        "newpl_streaming_pl_audit_amass_best",
+        "newpl_streaming_pl_audit_tc_best_last",
+        "newpl_s4_original_processed",
+        "newpl_s4_run_d",
+        "newpl_s4_amass_best",
+        "newpl_s4_tc_best",
+        "newpl_s4_tc_last"
+      ],
+      "gpu_required": false,
+      "estimated_gpu_mem_gb": 0,
+      "priority": 6,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newpl_mainline_20260604/selection/pl1_selection.json"
+      ],
+      "log_path": "logs/orchestrator/newpl_mainline_20260604/newpl_select_pl1.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "NewPL current-loss AMASS longtrain + TC finetune",
+      "allow_parallel": true
+    }
+  ]
+}

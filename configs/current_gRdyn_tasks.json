@@ -1,0 +1,86 @@
+{
+  "name": "current_gRdyn_batch",
+  "allow_same_user_gpu_share": true,
+  "tasks": [
+    {
+      "id": "pl_streaming_audit_original_old",
+      "name": "Streaming PL audit: original official/processed and old PLCurve_v2 processed",
+      "type": "audit",
+      "command": "conda run -n globalpose-gpu python streaming_pl_output_audit.py --output-json data/experiments/experiment_orchestrator/current_gRdyn_batch/pl_streaming_audit_original_old_s4.json",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 4,
+      "priority": 1,
+      "outputs": ["data/experiments/experiment_orchestrator/current_gRdyn_batch/pl_streaming_audit_original_old_s4.json"],
+      "log_path": "logs/orchestrator/pl_streaming_audit_original_old.log",
+      "summary_parser": "parse_streaming_pl_audit",
+      "project_status_section": "PLCurve_v2 processed no-baseline gR dynamics finetune",
+      "status": "pending"
+    },
+    {
+      "id": "plcurve_v2_gRdyn_finetune_existing",
+      "name": "PLCurve v2 processed no-baseline gRdot/gRddot finetune existing run",
+      "type": "train",
+      "command": "conda run -n globalpose-gpu python pl_curve_train.py --train-cache data/dataset_work/L4Cache/pl_curve_v2_processed_no_baseline_tc_train_Roffset_A/pl_curve_cache_manifest.json --val-cache data/dataset_work/L4Cache/pl_curve_v2_processed_no_baseline_tc_val_Roffset_A/pl_curve_cache_manifest.json --output-dir data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_finetune_v1/tc_finetune_10ep --experiment-name PLCurve_v2_processed_no_baseline_gRdyn_finetune_v1_tc10 --epochs 10 --lr 3e-6 --init-checkpoint data/experiments/pl_curve_v2_processed_no_baseline/tc_finetune_10ep/best_loss.pt --batch-size 2 --baseline-pRB-weight 0 --baseline-gR1-weight 0 --disable-ik-distill --gR1-dot-weight 0.03 --gR1-ddot-weight 0.001 --pRB-ddot-smooth-weight 1e-6",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 8,
+      "priority": 1,
+      "outputs": [
+        "data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_finetune_v1/tc_finetune_10ep/best_loss.pt",
+        "data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_finetune_v1/tc_finetune_10ep/last.pt",
+        "data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_finetune_v1/tc_finetune_10ep/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/plcurve_v2_gRdyn_finetune_existing.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "PLCurve_v2 processed no-baseline gR dynamics finetune",
+      "status": "pending",
+      "skip_if_outputs_exist": true
+    },
+    {
+      "id": "pl_streaming_audit_gRdyn_new",
+      "name": "Streaming PL audit: gRdyn best/last checkpoints",
+      "type": "audit",
+      "command": "conda run -n globalpose-gpu python streaming_pl_output_audit.py --new-best-checkpoint data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_finetune_v1/tc_finetune_10ep/best_loss.pt --new-last-checkpoint data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_finetune_v1/tc_finetune_10ep/last.pt --output-json data/experiments/experiment_orchestrator/current_gRdyn_batch/pl_streaming_audit_gRdyn_new_s4.json",
+      "dependencies": ["plcurve_v2_gRdyn_finetune_existing"],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 4,
+      "priority": 2,
+      "outputs": ["data/experiments/experiment_orchestrator/current_gRdyn_batch/pl_streaming_audit_gRdyn_new_s4.json"],
+      "log_path": "logs/orchestrator/pl_streaming_audit_gRdyn_new.log",
+      "summary_parser": "parse_streaming_pl_audit",
+      "project_status_section": "PLCurve_v2 processed no-baseline gR dynamics finetune",
+      "status": "pending"
+    },
+    {
+      "id": "plcurve_v2_gRdyn_s4_best",
+      "name": "S4 validation: gRdyn best checkpoint",
+      "type": "eval",
+      "command": "conda run -n globalpose-gpu python pl_curve_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --checkpoint data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_finetune_v1/tc_finetune_10ep/best_loss.pt --imu-input-mode processed --output-json data/experiments/experiment_orchestrator/current_gRdyn_batch/s4_gRdyn_best_processed.json",
+      "dependencies": ["plcurve_v2_gRdyn_finetune_existing"],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "outputs": ["data/experiments/experiment_orchestrator/current_gRdyn_batch/s4_gRdyn_best_processed.json"],
+      "log_path": "logs/orchestrator/plcurve_v2_gRdyn_s4_best.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "PLCurve_v2 processed no-baseline gR dynamics finetune",
+      "status": "pending"
+    },
+    {
+      "id": "plcurve_v2_gRdyn_s4_last",
+      "name": "S4 validation: gRdyn last checkpoint",
+      "type": "eval",
+      "command": "conda run -n globalpose-gpu python pl_curve_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --checkpoint data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_finetune_v1/tc_finetune_10ep/last.pt --imu-input-mode processed --output-json data/experiments/experiment_orchestrator/current_gRdyn_batch/s4_gRdyn_last_processed.json",
+      "dependencies": ["plcurve_v2_gRdyn_finetune_existing"],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "outputs": ["data/experiments/experiment_orchestrator/current_gRdyn_batch/s4_gRdyn_last_processed.json"],
+      "log_path": "logs/orchestrator/plcurve_v2_gRdyn_s4_last.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "PLCurve_v2 processed no-baseline gR dynamics finetune",
+      "status": "pending"
+    }
+  ]
+}
