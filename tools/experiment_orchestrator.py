@@ -32,6 +32,7 @@ import json
 import os
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -294,24 +295,28 @@ def select_gpu(
     gpus: List[Dict[str, Any]],
     reserved: Iterable[int],
     allow_same_user_share: bool = False,
+    allow_foreign_share: bool = False,
     max_utilization: int = 30,
 ) -> Optional[int]:
     if not task.get("gpu_required", False):
         return None
     need_mib = int(float(task.get("estimated_gpu_mem_gb", 0)) * 1024)
+    explicit_gpu = fixed_task_gpu(task)
     current_user = os.environ.get("USER")
     reserved_set = set(reserved)
     candidates = []
     for gpu in gpus:
+        if explicit_gpu is not None and gpu["index"] != explicit_gpu:
+            continue
         if gpu["index"] in reserved_set:
             continue
         foreign = [
             proc for proc in gpu.get("processes", [])
             if proc.get("owner") and proc.get("owner") != current_user
         ]
-        if foreign:
+        if foreign and not allow_foreign_share:
             continue
-        if gpu.get("processes") and not allow_same_user_share:
+        if gpu.get("processes") and not (allow_same_user_share or allow_foreign_share):
             continue
         if gpu["free_mib"] < need_mib:
             continue
@@ -322,6 +327,21 @@ def select_gpu(
         return None
     candidates.sort(key=lambda g: (-g["free_mib"], g["utilization"], g["index"]))
     return candidates[0]["index"]
+
+
+def fixed_task_gpu(task: Dict[str, Any]) -> Optional[int]:
+    value = (task.get("env") or {}).get("CUDA_VISIBLE_DEVICES")
+    if value is None:
+        return None
+    text = str(value).strip()
+    if text == "" or text == "auto":
+        return None
+    if "," in text:
+        raise RuntimeError(f"Task {task.get('id')} uses multiple CUDA_VISIBLE_DEVICES values: {text}")
+    try:
+        return int(text)
+    except ValueError as exc:
+        raise RuntimeError(f"Task {task.get('id')} has non-integer CUDA_VISIBLE_DEVICES={text!r}") from exc
 
 
 def output_conflicts(tasks: List[Dict[str, Any]]) -> List[Dict[str, str]]:
@@ -610,6 +630,7 @@ def dry_run(
     state: Dict[str, Any],
     force: bool,
     allow_same_user_share: bool,
+    allow_foreign_share: bool,
     max_gpu_utilization: int,
 ) -> Dict[str, Any]:
     conflicts = preflight_conflicts(tasks, force=force, state=state)
@@ -618,7 +639,7 @@ def dry_run(
     reserved = set()
     planned = []
     for task in ready:
-        gpu = select_gpu(task, gpus, reserved, allow_same_user_share, max_gpu_utilization)
+        gpu = select_gpu(task, gpus, reserved, allow_same_user_share, allow_foreign_share, max_gpu_utilization)
         if task.get("gpu_required") and gpu is None:
             planned.append({"task": task["id"], "action": "wait_for_gpu"})
         else:
@@ -664,7 +685,17 @@ def launch_task(task: Dict[str, Any], gpu: Optional[int], force: bool) -> Tuple[
     if gpu is not None:
         env["CUDA_VISIBLE_DEVICES"] = str(gpu)
     command = task["command"]
-    log_file.write(f"# task_id={task['id']}\n# start={now()}\n# gpu={gpu if gpu is not None else 'CPU'}\n# command={command}\n\n")
+    server = task.get("server") or socket.gethostname()
+    log_file.write(
+        f"# task_id={task['id']}\n"
+        f"# experiment_id={task.get('experiment_id', task['id'])}\n"
+        f"# server={server}\n"
+        f"# start={now()}\n"
+        f"# gpu={gpu if gpu is not None else 'CPU'}\n"
+        f"# checkpoint_path={task.get('checkpoint_path', '')}\n"
+        f"# json_path={task.get('json_path', '')}\n"
+        f"# command={command}\n\n"
+    )
     log_file.flush()
     proc = subprocess.Popen(
         command,
@@ -687,6 +718,7 @@ def run_scheduler(
     poll_seconds: int,
     force: bool,
     allow_same_user_share: bool,
+    allow_foreign_share: bool,
     max_gpu_utilization: int,
 ) -> Dict[str, Any]:
     conflicts = preflight_conflicts(tasks, force=force, state=state)
@@ -741,7 +773,7 @@ def run_scheduler(
                 tid = task["id"]
                 if not task.get("allow_parallel", True) and running:
                     continue
-                gpu = select_gpu(task, gpus, active_gpu, allow_same_user_share, max_gpu_utilization)
+                gpu = select_gpu(task, gpus, active_gpu, allow_same_user_share, allow_foreign_share, max_gpu_utilization)
                 if task.get("gpu_required") and gpu is None:
                     continue
                 if gpu is not None:
@@ -784,6 +816,7 @@ def main() -> None:
     parser.add_argument("--poll-seconds", type=int, default=15)
     parser.add_argument("--force", action="store_true", help="Allow overwriting existing logs/outputs. Default is false.")
     parser.add_argument("--allow-same-user-gpu-share", action="store_true")
+    parser.add_argument("--allow-foreign-gpu-share", action="store_true")
     parser.add_argument("--max-gpu-utilization", type=int, default=30)
     parser.add_argument("--write-skill-doc", action="store_true", help="Deprecated no-op; skill docs live in ~/.codex/skills/experiment-orchestrator.")
     args = parser.parse_args()
@@ -795,12 +828,13 @@ def main() -> None:
     state_file = Path(args.state_file) if args.state_file else Path(data.get("state_file") or default_state_file(task_file))
     project_status_path = Path(args.project_status)
     allow_same_user_share = bool(data.get("allow_same_user_gpu_share", False) or args.allow_same_user_gpu_share)
+    allow_foreign_share = bool(data.get("allow_foreign_gpu_share", False) or args.allow_foreign_gpu_share)
     if args.write_skill_doc and not args.dry_run and not args.run:
         print(json.dumps({"note": "--write-skill-doc is deprecated; no project document was modified."}, indent=2))
         return
     state = load_state(state_file, tasks, resume=args.resume)
     if args.dry_run:
-        print(json.dumps(dry_run(tasks, state, args.force, allow_same_user_share, args.max_gpu_utilization), indent=2, ensure_ascii=False))
+        print(json.dumps(dry_run(tasks, state, args.force, allow_same_user_share, allow_foreign_share, args.max_gpu_utilization), indent=2, ensure_ascii=False))
         return
     if not args.run:
         raise SystemExit("Specify --dry-run, --run, or --write-skill-doc.")
@@ -812,6 +846,7 @@ def main() -> None:
         poll_seconds=args.poll_seconds,
         force=args.force,
         allow_same_user_share=allow_same_user_share,
+        allow_foreign_share=allow_foreign_share,
         max_gpu_utilization=args.max_gpu_utilization,
     )
     print(json.dumps({"state_file": str(state_file), "tasks": final_state["tasks"]}, indent=2, ensure_ascii=False))

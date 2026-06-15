@@ -161,6 +161,41 @@ def smooth_centered(x, window, mode="moving_average"):
     raise ValueError(f"Unsupported smoothing mode: {mode}")
 
 
+def causal_butterworth_lowpass_sequence(x, fs=FPS, cutoff_hz=10.0, order=2):
+    """Apply a zero-lookahead Butterworth low-pass filter along time.
+
+    The state is initialized from the first sample, matching a streaming filter
+    that starts at rest on the first received IMU frame.  This function is used
+    for offline cache generation, but the contract is causal: output[t] depends
+    only on samples <= t.
+    """
+    x = x.float()
+    if x.shape[0] == 0:
+        return x
+    try:
+        from scipy.signal import butter, sosfilt, sosfilt_zi
+    except ImportError as exc:
+        raise RuntimeError("scipy.signal is required for causal Butterworth filtering") from exc
+    fs = float(fs)
+    cutoff_hz = float(cutoff_hz)
+    order = int(order)
+    if fs <= 0.0:
+        raise ValueError("fs must be positive")
+    if cutoff_hz <= 0.0 or cutoff_hz >= fs * 0.5:
+        raise ValueError(f"cutoff_hz must be in (0, fs/2), got cutoff_hz={cutoff_hz}, fs={fs}")
+    if order <= 0:
+        raise ValueError("order must be positive")
+    original_shape = x.shape
+    flat = x.detach().cpu().reshape(x.shape[0], -1).numpy()
+    sos = butter(order, cutoff_hz, btype="lowpass", fs=fs, output="sos")
+    zi_base = sosfilt_zi(sos)
+    out = flat.copy()
+    for col in range(flat.shape[1]):
+        zi = zi_base * flat[0, col]
+        out[:, col], _ = sosfilt(sos, flat[:, col], zi=zi)
+    return torch.from_numpy(out.copy()).reshape(original_shape).to(device=x.device, dtype=x.dtype)
+
+
 def finite_difference_first(x, fps=FPS):
     x = x.float()
     if x.shape[0] < 2:

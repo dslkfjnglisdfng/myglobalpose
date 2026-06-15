@@ -64,12 +64,20 @@ SMPL_BODY_BONES = (
     (11, 13), (13, 16), (16, 19), (19, 21),
 )
 
+IK1_LEAF_PRJ_INDICES = (17, 18, 3, 4, 14)
+
 
 def pRJ_bone_lengths(state):
     joints = state[..., :69].reshape(state.shape[:-1] + (23, 3))
     parents = torch.tensor([p for p, _ in SMPL_BODY_BONES], device=joints.device)
     children = torch.tensor([c for _, c in SMPL_BODY_BONES], device=joints.device)
     return (joints[..., children, :] - joints[..., parents, :]).norm(dim=-1)
+
+
+def leaf_pRJ(state):
+    joints = state[..., :69].reshape(state.shape[:-1] + (23, 3))
+    indices = torch.tensor(IK1_LEAF_PRJ_INDICES, device=joints.device)
+    return joints[..., indices, :]
 
 
 class NewIK1ControlPointModule(torch.nn.Module):
@@ -82,18 +90,22 @@ class NewIK1ControlPointModule(torch.nn.Module):
         residual_scale=0.005,
         dt=1.0 / 60.0,
         dropout=0.4,
+        output_mode='full',
     ):
         super().__init__()
         if state_dim != 72:
             raise ValueError('NewIK1_ControlPoint_v1 predicts full IK1 state pRJ[69]+gR2[3].')
         if tail_update != 4:
             raise ValueError('NewIK1_ControlPoint_v1 currently uses tail_len=4.')
+        if output_mode not in {'full', 'pRJ_only'}:
+            raise ValueError(f'Unsupported NewIK1 output_mode={output_mode!r}.')
         self.input_size = int(input_size)
         self.state_dim = int(state_dim)
         self.hidden_size = int(hidden_size)
         self.tail_update = int(tail_update)
         self.residual_scale = float(residual_scale)
         self.dt = float(dt)
+        self.output_mode = output_mode
         self.input = torch.nn.Linear(input_size + state_dim, hidden_size)
         self.dropout = torch.nn.Dropout(dropout) if dropout > 0 else torch.nn.Identity()
         self.cell = torch.nn.GRUCell(hidden_size, hidden_size)
@@ -152,7 +164,7 @@ class NewIK1ControlPointModule(torch.nn.Module):
         z = self.dropout(z)
         self.hidden = self.cell(z, self.hidden)
         new_delta = self.new_control(self.hidden) * self.residual_scale
-        new_control = normalize_ik1(base_ik1_t + new_delta)
+        new_control = self.apply_output_mode(base_ik1_t, new_delta)
         if self.control_buffer is None:
             self.control_buffer = new_control.unsqueeze(1)
             self.base_buffer = base_ik1_t.unsqueeze(1)
@@ -168,7 +180,7 @@ class NewIK1ControlPointModule(torch.nn.Module):
             tail_delta = self.tail_delta(self.hidden).reshape(
                 self.hidden.shape[0], self.tail_update, self.state_dim
             )[:, -update_count:] * self.residual_scale
-            tail_control = normalize_ik1(tail_control + tail_delta)
+            tail_control = self.apply_output_mode(tail_base, tail_delta)
             self.control_buffer = torch.cat((old_control, tail_control, new_control.unsqueeze(1)), dim=1)
             self.base_buffer = torch.cat((old_base, tail_base, base_ik1_t.unsqueeze(1)), dim=1)
             tail_delta_norm = tail_delta.norm(dim=-1).mean()
@@ -192,6 +204,14 @@ class NewIK1ControlPointModule(torch.nn.Module):
         }
         self.last_debug = {k: (v.detach().cpu() if torch.is_tensor(v) else v) for k, v in result.items()}
         return result
+
+    def apply_output_mode(self, base, delta):
+        if self.output_mode == 'full':
+            return normalize_ik1(base + delta)
+        if self.output_mode == 'pRJ_only':
+            candidate = torch.cat((base[..., :69] + delta[..., :69], base[..., 69:]), dim=-1)
+            return normalize_ik1(candidate)
+        raise RuntimeError(f'Unsupported output_mode={self.output_mode!r}.')
 
     def forward_sequence(self, features, base_outputs, init_output=None):
         squeeze_batch = features.dim() == 2
@@ -240,8 +260,39 @@ def newik1_loss(output, target, target_control_tail, weights):
     pred_tail = output['control_tail']
     pred_tail_g = art.math.normalize_tensor(pred_tail[..., 69:], avoid_nan=True)
     target_tail_g = art.math.normalize_tensor(target_control_tail[..., 69:], avoid_nan=True)
+    pred_control = output.get('new_control')
+    if pred_control is None:
+        pred_control = pred
+    pred_control = normalize_ik1(pred_control)
+    pred_control_g = art.math.normalize_tensor(pred_control[..., 69:], avoid_nan=True)
+    target_control = normalize_ik1(target_control_tail[..., -1, :])
+    target_control_g = art.math.normalize_tensor(target_control[..., 69:], avoid_nan=True)
     control_pRJ = torch.nn.functional.smooth_l1_loss(pred_tail[..., :69], target_control_tail[..., :69])
     control_gR2 = (1.0 - (pred_tail_g * target_tail_g).sum(dim=-1).clamp(-1.0, 1.0)).mean()
+    if pred_tail.shape[-2] >= 2:
+        losses_control_pRJ_dot = torch.nn.functional.smooth_l1_loss(
+            pred_tail[..., 1:, :69] - pred_tail[..., :-1, :69],
+            target_control_tail[..., 1:, :69] - target_control_tail[..., :-1, :69],
+        )
+        losses_control_gR2_dot = torch.nn.functional.smooth_l1_loss(
+            pred_tail_g[..., 1:, :] - pred_tail_g[..., :-1, :],
+            target_tail_g[..., 1:, :] - target_tail_g[..., :-1, :],
+        )
+    else:
+        losses_control_pRJ_dot = pred_tail.new_zeros(())
+        losses_control_gR2_dot = pred_tail.new_zeros(())
+    if pred_tail.shape[-2] >= 3:
+        losses_control_pRJ_ddot = torch.nn.functional.smooth_l1_loss(
+            finite_diff(pred_tail[..., :69], 2),
+            finite_diff(target_control_tail[..., :69], 2),
+        )
+        losses_control_gR2_ddot = torch.nn.functional.smooth_l1_loss(
+            finite_diff(pred_tail_g, 2),
+            finite_diff(target_tail_g, 2),
+        )
+    else:
+        losses_control_pRJ_ddot = pred_tail.new_zeros(())
+        losses_control_gR2_ddot = pred_tail.new_zeros(())
     losses = {
         'control': torch.nn.functional.smooth_l1_loss(
             torch.cat((pred_tail[..., :69], pred_tail_g), dim=-1),
@@ -249,7 +300,15 @@ def newik1_loss(output, target, target_control_tail, weights):
         ),
         'control_pRJ': control_pRJ,
         'control_gR2': control_gR2,
+        'control_pRJ_dot': losses_control_pRJ_dot,
+        'control_gR2_dot': losses_control_gR2_dot,
+        'control_pRJ_ddot': losses_control_pRJ_ddot,
+        'control_gR2_ddot': losses_control_gR2_ddot,
+        'gt_control_pRJ': torch.nn.functional.smooth_l1_loss(pred_control[..., :69], target_control[..., :69]),
+        'gt_control_gR2': torch.nn.functional.smooth_l1_loss(pred_control_g, target_control_g),
+        'gt_control_leaf_pRJ': torch.nn.functional.smooth_l1_loss(leaf_pRJ(pred_control), leaf_pRJ(target_control)),
         'pRJ': torch.nn.functional.smooth_l1_loss(pred[..., :69], target[..., :69]),
+        'leaf_pRJ': torch.nn.functional.smooth_l1_loss(leaf_pRJ(pred), leaf_pRJ(target)),
         'gR2': (1.0 - (pred_g * target_g).sum(dim=-1).clamp(-1.0, 1.0)).mean(),
         'bone_length': torch.nn.functional.smooth_l1_loss(pRJ_bone_lengths(pred), pRJ_bone_lengths(target)),
         'control_point_prior': output['control_point_prior'],

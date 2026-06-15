@@ -1,0 +1,103 @@
+state_file: data/experiments/orchestrator_states/globalpose_newpl_offset_ik1_v11_20260609.json
+allow_same_user_gpu_share: false
+allow_foreign_gpu_share: false
+tasks:
+  - id: newpl_offset_v6_control_only
+    name: NewPL-offset v6 control-only AMASS->DIP train/eval
+    type: train
+    command: >
+      ROOT=data/experiments/newpl_offset_v6_control_only_20260609
+      AMASS_BATCH=256 DIP_BATCH=32
+      AMASS_IMU_PROXY_WEIGHT=0.0 DIP_IMU_PROXY_WEIGHT=0.0
+      bash scripts/run_newpl_offset_v6_control_only_20260609.sh
+    dependencies: []
+    gpu_required: true
+    estimated_gpu_mem_gb: 14
+    priority: 1
+    working_dir: .
+    env:
+      CUDA_VISIBLE_DEVICES: auto
+    outputs:
+      - data/experiments/newpl_offset_v6_control_only_20260609/summary.json
+    log_path: data/experiments/newpl_offset_v6_control_only_20260609/orchestrator.log
+    summary_parser: parse_generic_json
+    project_status_section: NewPL-offset v6 and NewIK1 v11 control-only training
+    allow_parallel: true
+    max_runtime_minutes: 1440
+    notes: Control-only NewPL offset-aware branch; derivative and second-derivative loss weights disabled.
+
+  - id: newpl_offset_v6_acc_aux
+    name: NewPL-offset v6 IMU acceleration auxiliary ablation
+    type: train
+    command: >
+      ROOT=data/experiments/newpl_offset_v6_acc_aux_20260609
+      AMASS_BATCH=256 DIP_BATCH=32
+      AMASS_IMU_PROXY_WEIGHT=0.02 DIP_IMU_PROXY_WEIGHT=0.005
+      bash scripts/run_newpl_offset_v6_control_only_20260609.sh
+    dependencies: []
+    gpu_required: true
+    estimated_gpu_mem_gb: 14
+    priority: 1
+    working_dir: .
+    env:
+      CUDA_VISIBLE_DEVICES: auto
+    outputs:
+      - data/experiments/newpl_offset_v6_acc_aux_20260609/summary.json
+    log_path: data/experiments/newpl_offset_v6_acc_aux_20260609/orchestrator.log
+    summary_parser: parse_generic_json
+    project_status_section: NewPL-offset v6 and NewIK1 v11 control-only training
+    allow_parallel: true
+    max_runtime_minutes: 1440
+    notes: Optional-but-required validation branch for IMU acceleration plus offset consistency.
+
+  - id: newik1_v11_canonical_control
+    name: NewIK1 v11 canonical-control AMASS->DIP train/eval
+    type: train
+    command: >
+      ROOT=data/experiments/newik1_v11_canonical_control_20260609
+      AMASS_BATCH=128 DIP_BATCH=32
+      bash scripts/run_newik1_v11_canonical_control_20260609.sh
+    dependencies: []
+    gpu_required: true
+    estimated_gpu_mem_gb: 14
+    priority: 1
+    working_dir: .
+    env:
+      CUDA_VISIBLE_DEVICES: auto
+    outputs:
+      - data/experiments/newik1_v11_canonical_control_20260609/summary.json
+    log_path: data/experiments/newik1_v11_canonical_control_20260609/orchestrator.log
+    summary_parser: parse_generic_json
+    project_status_section: NewPL-offset v6 and NewIK1 v11 control-only training
+    allow_parallel: true
+    max_runtime_minutes: 1440
+    notes: Uses canonical_control NewPL AMASS/DIP checkpoints for PL-streaming cache generation.
+
+  - id: summarize_and_write_docs
+    name: Summarize goal and write project docs
+    type: doc
+    command: >
+      python scripts/summarize_newpl_offset_ik1_v11_goal.py
+      --newpl-main-summary data/experiments/newpl_offset_v6_control_only_20260609/summary.json
+      --newpl-acc-summary data/experiments/newpl_offset_v6_acc_aux_20260609/summary.json
+      --ik1-summary data/experiments/newik1_v11_canonical_control_20260609/summary.json
+      --output-json data/experiments/newpl_offset_ik1_v11_goal_20260609/summary.json
+      --output-md data/experiments/newpl_offset_ik1_v11_goal_20260609/summary.md
+      --write-docs
+    dependencies:
+      - newpl_offset_v6_control_only
+      - newpl_offset_v6_acc_aux
+      - newik1_v11_canonical_control
+    gpu_required: false
+    estimated_gpu_mem_gb: 0
+    priority: 2
+    working_dir: .
+    env: {}
+    outputs:
+      - data/experiments/newpl_offset_ik1_v11_goal_20260609/summary.json
+    log_path: data/experiments/newpl_offset_ik1_v11_goal_20260609/orchestrator.log
+    summary_parser: parse_generic_json
+    project_status_section: NewPL-offset v6 and NewIK1 v11 control-only training
+    allow_parallel: true
+    max_runtime_minutes: 15
+    notes: Writes EXPERIMENT_LOG.md, RECENT_REPLACEMENT_VERSIONS.md, and PROJECT_STATUS.md after metrics exist.

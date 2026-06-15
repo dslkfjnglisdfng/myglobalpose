@@ -172,8 +172,10 @@ def build_targets(record, net):
 
 
 @torch.no_grad()
-def run_official_stack(record, mode):
+def run_official_stack(record, mode, zero_acc=False):
     a_seq, w_seq, R_seq = selected_imu_fields(record, mode)
+    if zero_acc:
+        a_seq = torch.zeros_like(a_seq)
     net = GPNet().eval().to(DEVICE)
     net.rnn_initialize(record['pose_gt'][0])
     body_model = net.body_model
@@ -273,6 +275,38 @@ def input_stats(record):
 
 
 @torch.no_grad()
+def acceleration_ablation_input_stats(record):
+    official = {key: record[key].float() for key in ('aM', 'wM', 'RMB')}
+    zero_acc = torch.zeros_like(official['aM'])
+    return {
+        'normal_official': {
+            'aM': mean_std_min_max(official['aM']),
+            'wM': mean_std_min_max(official['wM']),
+            'RMB_quality': rotation_quality(official['RMB']),
+            'all_finite': bool(all(torch.isfinite(value).all() for value in official.values())),
+        },
+        'zero_acc_official': {
+            'aM': mean_std_min_max(zero_acc),
+            'wM': mean_std_min_max(official['wM']),
+            'RMB_quality': rotation_quality(official['RMB']),
+            'all_finite': bool(
+                torch.isfinite(zero_acc).all()
+                and torch.isfinite(official['wM']).all()
+                and torch.isfinite(official['RMB']).all()
+            ),
+        },
+        'zero_acc_minus_normal': {
+            'a_norm': mean_std_min_max((zero_acc - official['aM']).norm(dim=-1)),
+            'w_norm': mean_std_min_max(torch.zeros_like(official['wM']).norm(dim=-1)),
+            'R_geodesic_deg': metric_stats(torch.zeros(official['RMB'].shape[:-2])),
+            'a_allclose': bool(torch.allclose(zero_acc, official['aM'])),
+            'w_allclose': True,
+            'R_allclose': True,
+        },
+    }
+
+
+@torch.no_grad()
 def evaluate_outputs(outputs, targets):
     pl = outputs['pl_out']
     pl_target = targets['pl_target']
@@ -313,25 +347,33 @@ def evaluate_outputs(outputs, targets):
     return metrics
 
 
+METRIC_TABLE_SPECS = [
+    ('PL output', 'leaf pRB cm', 'pl_leaf_cm.mean'),
+    ('PL output', 'gR1 gravity deg', 'pl_gR1_angle_deg.mean'),
+    ('RRB after PL', 'RRB_after_pl vs input deg', 'RRB_after_pl_vs_input_angle_deg.mean'),
+    ('IK1 output', 'pRJ cm', 'ik1_pRJ_cm.mean'),
+    ('IK1 output', 'gR2 gravity deg', 'ik1_gR2_angle_deg.mean'),
+    ('RRB after IK1', 'RRB_after_ik1 vs input deg', 'RRB_after_ik1_vs_input_angle_deg.mean'),
+    ('IK2 output', 'reduced rotation deg', 'ik2_reduced_rotation_deg.mean'),
+    ('IK2 postprocess', 'body reduced rotation deg', 'post_ik2_body_rotation_deg.mean'),
+    ('Root output', 'root orientation deg', 'root_orientation_deg.mean'),
+    ('FK joints', 'root-relative joint cm', 'fk_joint_root_relative_cm.mean'),
+    ('VR output', 'velocity l2', 'vr_velocity_l2.mean'),
+    ('VR output', 'contact probability abs', 'vr_contact_prob_abs.mean'),
+    ('VR output', 'raw 9D l2', 'vr_raw_l2.mean'),
+]
+
+
+def is_gt_error_metric(module, metric):
+    return module not in ('Input IMU', 'RRB after PL', 'RRB after IK1') and metric != 'VR input l2'
+
+
 def flatten_metric_rows(sequence_rows, aggregate):
     names = [
         ('Input IMU', 'processed-official acceleration norm', 'input_processed_minus_official.a_norm.mean'),
         ('Input IMU', 'processed-official gyro norm', 'input_processed_minus_official.w_norm.mean'),
         ('Input IMU', 'processed-official RMB geodesic deg', 'input_processed_minus_official.R_geodesic_deg.mean'),
-        ('PL output', 'leaf pRB cm', 'pl_leaf_cm.mean'),
-        ('PL output', 'gR1 gravity deg', 'pl_gR1_angle_deg.mean'),
-        ('RRB after PL', 'RRB_after_pl vs input deg', 'RRB_after_pl_vs_input_angle_deg.mean'),
-        ('IK1 output', 'pRJ cm', 'ik1_pRJ_cm.mean'),
-        ('IK1 output', 'gR2 gravity deg', 'ik1_gR2_angle_deg.mean'),
-        ('RRB after IK1', 'RRB_after_ik1 vs input deg', 'RRB_after_ik1_vs_input_angle_deg.mean'),
-        ('IK2 output', 'reduced rotation deg', 'ik2_reduced_rotation_deg.mean'),
-        ('IK2 postprocess', 'body reduced rotation deg', 'post_ik2_body_rotation_deg.mean'),
-        ('Root output', 'root orientation deg', 'root_orientation_deg.mean'),
-        ('FK joints', 'root-relative joint cm', 'fk_joint_root_relative_cm.mean'),
-        ('VR output', 'velocity l2', 'vr_velocity_l2.mean'),
-        ('VR output', 'contact probability abs', 'vr_contact_prob_abs.mean'),
-        ('VR output', 'raw 9D l2', 'vr_raw_l2.mean'),
-    ]
+    ] + METRIC_TABLE_SPECS
     rows = []
     for module, metric, path in names:
         if path.startswith('input_processed_minus_official'):
@@ -366,18 +408,64 @@ def flatten_metric_rows(sequence_rows, aggregate):
             'processed_imu_error': proc,
             'delta_processed_minus_official': delta,
             'better_input': better,
-            'is_gt_error': module not in ('Input IMU', 'RRB after PL', 'RRB after IK1') and metric != 'VR input l2',
+            'is_gt_error': is_gt_error_metric(module, metric),
         })
     return rows
 
 
-def aggregate_sequence_metrics(sequence_rows):
+def flatten_acceleration_ablation_rows(sequence_rows, aggregate):
+    names = [
+        ('Input IMU', 'zero-normal acceleration norm', 'input_zero_acc_minus_normal.a_norm.mean'),
+        ('Input IMU', 'zero-normal gyro norm', 'input_zero_acc_minus_normal.w_norm.mean'),
+        ('Input IMU', 'zero-normal RMB geodesic deg', 'input_zero_acc_minus_normal.R_geodesic_deg.mean'),
+    ] + METRIC_TABLE_SPECS
+    rows = []
+    for module, metric, path in names:
+        if path.startswith('input_zero_acc_minus_normal'):
+            value = aggregate['input_stats']['zero_acc_minus_normal'][path.split('.')[1]][path.split('.')[2]]
+            rows.append({
+                'module_output': module,
+                'metric': metric,
+                'normal_official_error': 0.0,
+                'zero_acc_official_error': value,
+                'delta_zero_minus_normal': value,
+                'better_input': 'diagnostic_only',
+                'is_gt_error': False,
+            })
+            continue
+        metric_key = path.split('.')[0]
+        stat_key = path.split('.')[1]
+        normal = aggregate['normal_official']['metrics'][metric_key][stat_key]
+        zero = aggregate['zero_acc_official']['metrics'][metric_key][stat_key]
+        if normal is None or zero is None:
+            better = 'n/a'
+            delta = None
+        else:
+            delta = zero - normal
+            if math.isclose(delta, 0.0, abs_tol=1e-12):
+                better = 'tie'
+            else:
+                better = 'zero_acc_official' if delta < 0 else 'normal_official'
+        rows.append({
+            'module_output': module,
+            'metric': metric,
+            'normal_official_error': normal,
+            'zero_acc_official_error': zero,
+            'delta_zero_minus_normal': delta,
+            'better_input': better,
+            'is_gt_error': is_gt_error_metric(module, metric),
+        })
+    return rows
+
+
+def aggregate_sequence_metrics(sequence_rows, metric_modes=('official', 'processed'), input_delta_key='processed_minus_official'):
     metric_keys = sorted(
-        key for key, value in sequence_rows[0]['official']['metrics'].items()
+        key for key, value in sequence_rows[0][metric_modes[0]]['metrics'].items()
         if isinstance(value, dict)
     )
-    out = {'official': {'metrics': {}}, 'processed': {'metrics': {}}, 'input_stats': {'processed_minus_official': {}}}
-    for mode in ('official', 'processed'):
+    out = {mode: {'metrics': {}} for mode in metric_modes}
+    out['input_stats'] = {input_delta_key: {}}
+    for mode in metric_modes:
         for key in metric_keys:
             out[mode]['metrics'][key] = {}
             for stat in ('mean', 'median', 'std', 'min', 'max'):
@@ -386,55 +474,73 @@ def aggregate_sequence_metrics(sequence_rows):
                 out[mode]['metrics'][key][stat] = float(torch.tensor(vals).mean()) if vals else None
             out[mode]['metrics'][key]['count'] = int(sum(row[mode]['metrics'][key].get('count', 0) for row in sequence_rows))
     for key in ('a_norm', 'w_norm', 'R_geodesic_deg'):
-        out['input_stats']['processed_minus_official'][key] = {}
+        out['input_stats'][input_delta_key][key] = {}
         for stat in ('mean', 'median', 'std', 'min', 'max'):
-            vals = [row['input_stats']['processed_minus_official'][key].get(stat) for row in sequence_rows]
+            vals = [row['input_stats'][input_delta_key][key].get(stat) for row in sequence_rows]
             vals = [value for value in vals if value is not None]
-            out['input_stats']['processed_minus_official'][key][stat] = float(torch.tensor(vals).mean()) if vals else None
-        out['input_stats']['processed_minus_official'][key]['count'] = int(sum(row['input_stats']['processed_minus_official'][key].get('count', 0) for row in sequence_rows))
-    out['input_stats']['processed_minus_official']['a_allclose_all_sequences'] = all(row['input_stats']['processed_minus_official']['a_allclose'] for row in sequence_rows)
-    out['input_stats']['processed_minus_official']['w_allclose_all_sequences'] = all(row['input_stats']['processed_minus_official']['w_allclose'] for row in sequence_rows)
-    out['input_stats']['processed_minus_official']['R_allclose_all_sequences'] = all(row['input_stats']['processed_minus_official']['R_allclose'] for row in sequence_rows)
+            out['input_stats'][input_delta_key][key][stat] = float(torch.tensor(vals).mean()) if vals else None
+        out['input_stats'][input_delta_key][key]['count'] = int(sum(row['input_stats'][input_delta_key][key].get('count', 0) for row in sequence_rows))
+    out['input_stats'][input_delta_key]['a_allclose_all_sequences'] = all(row['input_stats'][input_delta_key]['a_allclose'] for row in sequence_rows)
+    out['input_stats'][input_delta_key]['w_allclose_all_sequences'] = all(row['input_stats'][input_delta_key]['w_allclose'] for row in sequence_rows)
+    out['input_stats'][input_delta_key]['R_allclose_all_sequences'] = all(row['input_stats'][input_delta_key]['R_allclose'] for row in sequence_rows)
     return out
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Forward-only official GPNet per-module GT audit for official vs processed IMU.')
+    parser = argparse.ArgumentParser(description='Forward-only official GPNet per-module GT audit.')
     parser.add_argument('--cache', type=Path, default=DEFAULT_S4_CACHE)
     parser.add_argument('--processed-cache', type=Path, default=DEFAULT_PROCESSED_CACHE)
     parser.add_argument('--output-json', type=Path, default=DEFAULT_OUTPUT_JSON)
+    parser.add_argument('--comparison', choices=('processed_imu', 'acceleration_ablation'), default='processed_imu')
+    parser.add_argument('--dataset-label', default='TotalCapture S4 validation')
     parser.add_argument('--max-sequences', type=int, default=0)
     parser.add_argument('--max-frames', type=int, default=0)
     args = parser.parse_args()
 
     result = {
-        'experiment': 'EXP-OfficialGPNet-ProcessedIMU-PerModule-GT-Audit',
+        'experiment': (
+            'EXP-OfficialGPNet-AccelerationZero-PerModule-GT-Audit'
+            if args.comparison == 'acceleration_ablation'
+            else 'EXP-OfficialGPNet-ProcessedIMU-PerModule-GT-Audit'
+        ),
+        'comparison': args.comparison,
+        'ablation': 'zero_acc_cascade' if args.comparison == 'acceleration_ablation' else None,
         'cache': str(args.cache),
-        'processed_cache': str(args.processed_cache) if args.processed_cache else None,
+        'processed_cache': str(args.processed_cache) if args.processed_cache and args.comparison == 'processed_imu' else None,
         'output_json': str(args.output_json),
-        'split': 'TotalCapture S4 validation',
+        'split': args.dataset_label,
+        'dataset_label': args.dataset_label,
+        'max_sequences': args.max_sequences,
+        'max_frames': args.max_frames,
         'status': 'started',
         'notes': [
             'Forward-only audit; no training.',
             'Official weights are loaded by GPNet from data/weights.pt and are not modified.',
-            'Official and processed inputs use separate GPNet instances per sequence to avoid hidden-state mixing.',
+            'Compared inputs use separate GPNet instances per sequence to avoid hidden-state mixing.',
             'RRB-after metrics are diagnostic geometry deltas, not direct GT errors.',
             'VR contact comparison applies sigmoid to predicted contact logits before comparing to stationary_prob.',
         ],
         'input_contract': {
             'official': {'a': 'aM [T,6,3]', 'w': 'wM [T,6,3]', 'R': 'RMB [T,6,3,3]'},
             'processed': {'a': 'l4_aM [T,6,3]', 'w': 'l4_wM [T,6,3]', 'R': 'l4_RMB [T,6,3,3]'},
+            'zero_acc_official': {'a': 'zeros_like(aM) [T,6,3]', 'w': 'wM [T,6,3]', 'R': 'RMB [T,6,3,3]'},
         },
     }
     args.output_json.parent.mkdir(parents=True, exist_ok=True)
     try:
         records, manifest = load_records(args.cache, args.max_sequences)
-        processed_by_name, processed_manifest = load_processed_imu_by_name(args.processed_cache)
+        if args.comparison == 'processed_imu':
+            processed_by_name, processed_manifest = load_processed_imu_by_name(args.processed_cache)
+        else:
+            processed_by_name, processed_manifest = {}, None
         sequence_rows = []
         processed_sources = {}
         for record in records:
-            record, processed_source = attach_processed_fields(record, processed_by_name)
-            processed_sources[processed_source] = processed_sources.get(processed_source, 0) + 1
+            if args.comparison == 'processed_imu':
+                record, processed_source = attach_processed_fields(record, processed_by_name)
+                processed_sources[processed_source] = processed_sources.get(processed_source, 0) + 1
+            else:
+                processed_source = None
             if args.max_frames and record['pose_gt'].shape[0] > args.max_frames:
                 record = dict(record)
                 seq_len = record['pose_gt'].shape[0]
@@ -444,27 +550,63 @@ def main():
             probe = GPNet().eval().to(DEVICE)
             targets = build_targets(record, probe)
             del probe
-            off_outputs = run_official_stack(record, 'official')
-            proc_outputs = run_official_stack(record, 'processed')
-            row = {
-                'name': record['name'],
-                'num_frames': int(record['pose_gt'].shape[0]),
-                'input_stats': input_stats(record),
-                'processed_imu_source': processed_source,
-                'official': {'metrics': evaluate_outputs(off_outputs, targets)},
-                'processed': {'metrics': evaluate_outputs(proc_outputs, targets)},
-            }
+            normal_outputs = run_official_stack(record, 'official')
+            if args.comparison == 'processed_imu':
+                compared_outputs = run_official_stack(record, 'processed')
+                row = {
+                    'name': record['name'],
+                    'num_frames': int(record['pose_gt'].shape[0]),
+                    'input_stats': input_stats(record),
+                    'processed_imu_source': processed_source,
+                    'official': {'metrics': evaluate_outputs(normal_outputs, targets)},
+                    'processed': {'metrics': evaluate_outputs(compared_outputs, targets)},
+                }
+            else:
+                zero_outputs = run_official_stack(record, 'official', zero_acc=True)
+                row = {
+                    'name': record['name'],
+                    'num_frames': int(record['pose_gt'].shape[0]),
+                    'input_stats': acceleration_ablation_input_stats(record),
+                    'normal_official': {'metrics': evaluate_outputs(normal_outputs, targets)},
+                    'zero_acc_official': {'metrics': evaluate_outputs(zero_outputs, targets)},
+                }
             sequence_rows.append(row)
-            print(json.dumps({
-                'audited': record['name'],
-                'frames': row['num_frames'],
-                'official_pl_leaf_cm': row['official']['metrics']['pl_leaf_cm']['mean'],
-                'processed_pl_leaf_cm': row['processed']['metrics']['pl_leaf_cm']['mean'],
-                'official_vr_velocity_l2': row['official']['metrics']['vr_velocity_l2']['mean'],
-                'processed_vr_velocity_l2': row['processed']['metrics']['vr_velocity_l2']['mean'],
-            }), flush=True)
-        aggregate = aggregate_sequence_metrics(sequence_rows)
-        table_rows = flatten_metric_rows(sequence_rows, aggregate)
+            if args.comparison == 'processed_imu':
+                print(json.dumps({
+                    'audited': record['name'],
+                    'frames': row['num_frames'],
+                    'official_pl_leaf_cm': row['official']['metrics']['pl_leaf_cm']['mean'],
+                    'processed_pl_leaf_cm': row['processed']['metrics']['pl_leaf_cm']['mean'],
+                    'official_vr_velocity_l2': row['official']['metrics']['vr_velocity_l2']['mean'],
+                    'processed_vr_velocity_l2': row['processed']['metrics']['vr_velocity_l2']['mean'],
+                }), flush=True)
+            else:
+                print(json.dumps({
+                    'audited': record['name'],
+                    'frames': row['num_frames'],
+                    'normal_pl_leaf_cm': row['normal_official']['metrics']['pl_leaf_cm']['mean'],
+                    'zero_acc_pl_leaf_cm': row['zero_acc_official']['metrics']['pl_leaf_cm']['mean'],
+                    'normal_vr_velocity_l2': row['normal_official']['metrics']['vr_velocity_l2']['mean'],
+                    'zero_acc_vr_velocity_l2': row['zero_acc_official']['metrics']['vr_velocity_l2']['mean'],
+                }), flush=True)
+        if args.comparison == 'processed_imu':
+            aggregate = aggregate_sequence_metrics(sequence_rows)
+            table_rows = flatten_metric_rows(sequence_rows, aggregate)
+            all_finite = all(
+                row['official']['metrics']['finite_outputs'] and row['processed']['metrics']['finite_outputs']
+                for row in sequence_rows
+            )
+        else:
+            aggregate = aggregate_sequence_metrics(
+                sequence_rows,
+                metric_modes=('normal_official', 'zero_acc_official'),
+                input_delta_key='zero_acc_minus_normal',
+            )
+            table_rows = flatten_acceleration_ablation_rows(sequence_rows, aggregate)
+            all_finite = all(
+                row['normal_official']['metrics']['finite_outputs'] and row['zero_acc_official']['metrics']['finite_outputs']
+                for row in sequence_rows
+            )
         result.update({
             'status': 'ok',
             'manifest': manifest,
@@ -481,10 +623,7 @@ def main():
             'carticulate_physics_modified': False,
             'training_run': False,
             's5_run': False,
-            'all_finite': all(
-                row['official']['metrics']['finite_outputs'] and row['processed']['metrics']['finite_outputs']
-                for row in sequence_rows
-            ),
+            'all_finite': all_finite,
         })
     except Exception as exc:
         import traceback

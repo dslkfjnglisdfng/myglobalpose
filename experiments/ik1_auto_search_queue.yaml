@@ -1,0 +1,575 @@
+name: ik1_auto_search
+state_file: data/experiments/orchestrator_states/ik1_auto_search_queue.json
+allow_same_user_gpu_share: false
+baseline:
+  pl_upstream: newpl_v4_init36
+  pl_checkpoint: data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+  imu_input_mode: processed
+  ik1_baseline: official IK1
+  s4_score: 38.625657482802865
+  selection_rule: S4/S5 full-pipeline 11 metrics first; real streaming IK1 vs GT diagnostic;
+    AMASS/cache diagnostic only.
+seed_checkpoints:
+  baseline_official_ik1: official
+  newik1_v4_official_input: found
+  newik1_v6_stage_a: found
+  newik1_v7_best: found
+  newik1_v8_B4_last: found
+  newik1_v9_C8_last: found
+round: 0
+tasks:
+- id: round0_full_s4_baseline_official_ik1
+  experiment_id: round0_full_s4_baseline_official_ik1
+  name: Round0 S4 full-pipeline baseline_official_ik1
+  type: eval
+  server: node01
+  gpu: 0
+  status: pending
+  parent_checkpoint: official IK1
+  pl_upstream: newpl_v4_init36
+  route: round0_full_pipeline_completion
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=0;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" pl_curve_eval.py --val-cache
+    data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/full_pipeline/s4/baseline_official_ik1/result.json
+    --checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=0;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" pl_curve_eval.py --val-cache
+    data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/full_pipeline/s4/baseline_official_ik1/result.json
+    --checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --imu-input-mode processed
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 1
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '0'
+  outputs:
+  - data/experiments/ik1_auto_search/round0/full_pipeline/s4/baseline_official_ik1/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round0/full_s4_baseline_official_ik1.log
+  checkpoint_path: ''
+  json_path: data/experiments/ik1_auto_search/round0/full_pipeline/s4/baseline_official_ik1/result.json
+  summary_parser: parse_s4_metrics
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round0_real_s5_baseline_official_ik1
+  experiment_id: round0_real_s5_baseline_official_ik1
+  name: Round0 S5 real streaming IK1 audit baseline_official_ik1
+  type: audit
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: official IK1
+  pl_upstream: newpl_v4_init36
+  route: round0_real_streaming_ik1_vs_gt
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_real_streaming_audit.py
+    --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/real_streaming/s5/baseline_official_ik1/result.json
+    --split-label S5 --version-name baseline_official_ik1 --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --imu-input-mode processed --ik1-backend original
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 2
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round0/real_streaming/s5/baseline_official_ik1/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round0/real_s5_baseline_official_ik1.log
+  checkpoint_path: ''
+  json_path: data/experiments/ik1_auto_search/round0/real_streaming/s5/baseline_official_ik1/result.json
+  summary_parser: parse_generic_json
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round0_real_s4_newik1_v4_official_input
+  experiment_id: round0_real_s4_newik1_v4_official_input
+  name: Round0 S4 real streaming IK1 audit newik1_v4_official_input
+  type: audit
+  server: node01
+  gpu: 0
+  status: pending
+  parent_checkpoint: data/experiments/newik1_official_input_20260604/pl1_streaming_tc_finetune/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: round0_real_streaming_ik1_vs_gt
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=0;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_real_streaming_audit.py
+    --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/real_streaming/s4/newik1_v4_official_input/result.json
+    --split-label S4 --version-name newik1_v4_official_input --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --imu-input-mode processed --ik1-checkpoint data/experiments/newik1_official_input_20260604/pl1_streaming_tc_finetune/best_loss.pt
+    --ik1-backend official_input_v1
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 3
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '0'
+  outputs:
+  - data/experiments/ik1_auto_search/round0/real_streaming/s4/newik1_v4_official_input/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round0/real_s4_newik1_v4_official_input.log
+  checkpoint_path: data/experiments/newik1_official_input_20260604/pl1_streaming_tc_finetune/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round0/real_streaming/s4/newik1_v4_official_input/result.json
+  summary_parser: parse_generic_json
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round0_real_s5_newik1_v4_official_input
+  experiment_id: round0_real_s5_newik1_v4_official_input
+  name: Round0 S5 real streaming IK1 audit newik1_v4_official_input
+  type: audit
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/newik1_official_input_20260604/pl1_streaming_tc_finetune/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: round0_real_streaming_ik1_vs_gt
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_real_streaming_audit.py
+    --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/real_streaming/s5/newik1_v4_official_input/result.json
+    --split-label S5 --version-name newik1_v4_official_input --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --imu-input-mode processed --ik1-checkpoint data/experiments/newik1_official_input_20260604/pl1_streaming_tc_finetune/best_loss.pt
+    --ik1-backend official_input_v1
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 4
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round0/real_streaming/s5/newik1_v4_official_input/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round0/real_s5_newik1_v4_official_input.log
+  checkpoint_path: data/experiments/newik1_official_input_20260604/pl1_streaming_tc_finetune/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round0/real_streaming/s5/newik1_v4_official_input/result.json
+  summary_parser: parse_generic_json
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round0_full_s4_newik1_v6_stage_a
+  experiment_id: round0_full_s4_newik1_v6_stage_a
+  name: Round0 S4 full-pipeline newik1_v6_stage_a
+  type: eval
+  server: node01
+  gpu: 0
+  status: pending
+  parent_checkpoint: data/experiments/newik1_v6_official_input_init36_cascade_rerun/stage_a_continue/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: round0_full_pipeline_completion
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=0;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py
+    --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/full_pipeline/s4/newik1_v6_stage_a/result.json
+    --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --ik1-checkpoint data/experiments/newik1_v6_official_input_init36_cascade_rerun/stage_a_continue/best_loss.pt
+    --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=0;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py
+    --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/full_pipeline/s4/newik1_v6_stage_a/result.json
+    --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --ik1-checkpoint data/experiments/newik1_v6_official_input_init36_cascade_rerun/stage_a_continue/best_loss.pt
+    --imu-input-mode processed
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 5
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '0'
+  outputs:
+  - data/experiments/ik1_auto_search/round0/full_pipeline/s4/newik1_v6_stage_a/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round0/full_s4_newik1_v6_stage_a.log
+  checkpoint_path: data/experiments/newik1_v6_official_input_init36_cascade_rerun/stage_a_continue/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round0/full_pipeline/s4/newik1_v6_stage_a/result.json
+  summary_parser: parse_s4_metrics
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round0_real_s5_newik1_v6_stage_a
+  experiment_id: round0_real_s5_newik1_v6_stage_a
+  name: Round0 S5 real streaming IK1 audit newik1_v6_stage_a
+  type: audit
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/newik1_v6_official_input_init36_cascade_rerun/stage_a_continue/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: round0_real_streaming_ik1_vs_gt
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_real_streaming_audit.py
+    --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/real_streaming/s5/newik1_v6_stage_a/result.json
+    --split-label S5 --version-name newik1_v6_stage_a --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --imu-input-mode processed --ik1-checkpoint data/experiments/newik1_v6_official_input_init36_cascade_rerun/stage_a_continue/best_loss.pt
+    --ik1-backend official_input_v1
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 6
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round0/real_streaming/s5/newik1_v6_stage_a/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round0/real_s5_newik1_v6_stage_a.log
+  checkpoint_path: data/experiments/newik1_v6_official_input_init36_cascade_rerun/stage_a_continue/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round0/real_streaming/s5/newik1_v6_stage_a/result.json
+  summary_parser: parse_generic_json
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round0_full_s4_newik1_v7_best
+  experiment_id: round0_full_s4_newik1_v7_best
+  name: Round0 S4 full-pipeline newik1_v7_best
+  type: eval
+  server: node01
+  gpu: 0
+  status: pending
+  parent_checkpoint: data/experiments/newik1_v7_last_pl_control_lightloss_amass/stage_a_lightloss_amass/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: round0_full_pipeline_completion
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=0;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_control_eval.py
+    --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/full_pipeline/s4/newik1_v7_best/result.json
+    --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --ik1-checkpoint data/experiments/newik1_v7_last_pl_control_lightloss_amass/stage_a_lightloss_amass/best_loss.pt
+    --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=0;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_control_eval.py
+    --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/full_pipeline/s4/newik1_v7_best/result.json
+    --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --ik1-checkpoint data/experiments/newik1_v7_last_pl_control_lightloss_amass/stage_a_lightloss_amass/best_loss.pt
+    --imu-input-mode processed
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 7
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '0'
+  outputs:
+  - data/experiments/ik1_auto_search/round0/full_pipeline/s4/newik1_v7_best/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round0/full_s4_newik1_v7_best.log
+  checkpoint_path: data/experiments/newik1_v7_last_pl_control_lightloss_amass/stage_a_lightloss_amass/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round0/full_pipeline/s4/newik1_v7_best/result.json
+  summary_parser: parse_s4_metrics
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round0_real_s4_newik1_v7_best
+  experiment_id: round0_real_s4_newik1_v7_best
+  name: Round0 S4 real streaming IK1 audit newik1_v7_best
+  type: audit
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/newik1_v7_last_pl_control_lightloss_amass/stage_a_lightloss_amass/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: round0_real_streaming_ik1_vs_gt
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_real_streaming_audit.py
+    --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/real_streaming/s4/newik1_v7_best/result.json
+    --split-label S4 --version-name newik1_v7_best --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --imu-input-mode processed --ik1-checkpoint data/experiments/newik1_v7_last_pl_control_lightloss_amass/stage_a_lightloss_amass/best_loss.pt
+    --ik1-backend auto_control_point
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 8
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round0/real_streaming/s4/newik1_v7_best/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round0/real_s4_newik1_v7_best.log
+  checkpoint_path: data/experiments/newik1_v7_last_pl_control_lightloss_amass/stage_a_lightloss_amass/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round0/real_streaming/s4/newik1_v7_best/result.json
+  summary_parser: parse_generic_json
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round0_real_s5_newik1_v7_best
+  experiment_id: round0_real_s5_newik1_v7_best
+  name: Round0 S5 real streaming IK1 audit newik1_v7_best
+  type: audit
+  server: node01
+  gpu: 0
+  status: pending
+  parent_checkpoint: data/experiments/newik1_v7_last_pl_control_lightloss_amass/stage_a_lightloss_amass/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: round0_real_streaming_ik1_vs_gt
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=0;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_real_streaming_audit.py
+    --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/real_streaming/s5/newik1_v7_best/result.json
+    --split-label S5 --version-name newik1_v7_best --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --imu-input-mode processed --ik1-checkpoint data/experiments/newik1_v7_last_pl_control_lightloss_amass/stage_a_lightloss_amass/best_loss.pt
+    --ik1-backend auto_control_point
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 9
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '0'
+  outputs:
+  - data/experiments/ik1_auto_search/round0/real_streaming/s5/newik1_v7_best/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round0/real_s5_newik1_v7_best.log
+  checkpoint_path: data/experiments/newik1_v7_last_pl_control_lightloss_amass/stage_a_lightloss_amass/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round0/real_streaming/s5/newik1_v7_best/result.json
+  summary_parser: parse_generic_json
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round0_full_s4_newik1_v8_B4_last
+  experiment_id: round0_full_s4_newik1_v8_B4_last
+  name: Round0 S4 full-pipeline newik1_v8_B4_last
+  type: eval
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt
+  pl_upstream: newpl_v4_init36
+  route: round0_full_pipeline_completion
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_control_eval.py
+    --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/full_pipeline/s4/newik1_v8_B4_last/result.json
+    --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --ik1-checkpoint data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt
+    --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_control_eval.py
+    --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/full_pipeline/s4/newik1_v8_B4_last/result.json
+    --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --ik1-checkpoint data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt
+    --imu-input-mode processed
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 10
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round0/full_pipeline/s4/newik1_v8_B4_last/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round0/full_s4_newik1_v8_B4_last.log
+  checkpoint_path: data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt
+  json_path: data/experiments/ik1_auto_search/round0/full_pipeline/s4/newik1_v8_B4_last/result.json
+  summary_parser: parse_s4_metrics
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round0_real_s4_newik1_v8_B4_last
+  experiment_id: round0_real_s4_newik1_v8_B4_last
+  name: Round0 S4 real streaming IK1 audit newik1_v8_B4_last
+  type: audit
+  server: node01
+  gpu: 0
+  status: pending
+  parent_checkpoint: data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt
+  pl_upstream: newpl_v4_init36
+  route: round0_real_streaming_ik1_vs_gt
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=0;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_real_streaming_audit.py
+    --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/real_streaming/s4/newik1_v8_B4_last/result.json
+    --split-label S4 --version-name newik1_v8_B4_last --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --imu-input-mode processed --ik1-checkpoint data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt
+    --ik1-backend auto_control_point
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 11
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '0'
+  outputs:
+  - data/experiments/ik1_auto_search/round0/real_streaming/s4/newik1_v8_B4_last/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round0/real_s4_newik1_v8_B4_last.log
+  checkpoint_path: data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt
+  json_path: data/experiments/ik1_auto_search/round0/real_streaming/s4/newik1_v8_B4_last/result.json
+  summary_parser: parse_generic_json
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round0_real_s5_newik1_v8_B4_last
+  experiment_id: round0_real_s5_newik1_v8_B4_last
+  name: Round0 S5 real streaming IK1 audit newik1_v8_B4_last
+  type: audit
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt
+  pl_upstream: newpl_v4_init36
+  route: round0_real_streaming_ik1_vs_gt
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_real_streaming_audit.py
+    --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/real_streaming/s5/newik1_v8_B4_last/result.json
+    --split-label S5 --version-name newik1_v8_B4_last --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --imu-input-mode processed --ik1-checkpoint data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt
+    --ik1-backend auto_control_point
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 12
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round0/real_streaming/s5/newik1_v8_B4_last/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round0/real_s5_newik1_v8_B4_last.log
+  checkpoint_path: data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt
+  json_path: data/experiments/ik1_auto_search/round0/real_streaming/s5/newik1_v8_B4_last/result.json
+  summary_parser: parse_generic_json
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round0_full_s4_newik1_v9_C8_last
+  experiment_id: round0_full_s4_newik1_v9_C8_last
+  name: Round0 S4 full-pipeline newik1_v9_C8_last
+  type: eval
+  server: node01
+  gpu: 0
+  status: pending
+  parent_checkpoint: data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/train/last.pt
+  pl_upstream: newpl_v4_init36
+  route: round0_full_pipeline_completion
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=0;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_control_eval.py
+    --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/full_pipeline/s4/newik1_v9_C8_last/result.json
+    --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/train/last.pt
+    --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=0;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_control_eval.py
+    --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/full_pipeline/s4/newik1_v9_C8_last/result.json
+    --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/train/last.pt
+    --imu-input-mode processed
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 13
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '0'
+  outputs:
+  - data/experiments/ik1_auto_search/round0/full_pipeline/s4/newik1_v9_C8_last/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round0/full_s4_newik1_v9_C8_last.log
+  checkpoint_path: data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/train/last.pt
+  json_path: data/experiments/ik1_auto_search/round0/full_pipeline/s4/newik1_v9_C8_last/result.json
+  summary_parser: parse_s4_metrics
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round0_real_s5_newik1_v9_C8_last
+  experiment_id: round0_real_s5_newik1_v9_C8_last
+  name: Round0 S5 real streaming IK1 audit newik1_v9_C8_last
+  type: audit
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/train/last.pt
+  pl_upstream: newpl_v4_init36
+  route: round0_real_streaming_ik1_vs_gt
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1;
+    export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}";
+    "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_real_streaming_audit.py
+    --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json
+    --output-json data/experiments/ik1_auto_search/round0/real_streaming/s5/newik1_v9_C8_last/result.json
+    --split-label S5 --version-name newik1_v9_C8_last --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+    --imu-input-mode processed --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/train/last.pt
+    --ik1-backend auto_control_point
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 14
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round0/real_streaming/s5/newik1_v9_C8_last/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round0/real_s5_newik1_v9_C8_last.log
+  checkpoint_path: data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/train/last.pt
+  json_path: data/experiments/ik1_auto_search/round0/real_streaming/s5/newik1_v9_C8_last/result.json
+  summary_parser: parse_generic_json
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+planned_round1:
+- v10_residual_pRJ_only_alpha025_from_v6a
+- v10_residual_pRJ_only_alpha05_from_v6a
+- v10_stage_a_low_lr_distill_official
+- v10_ik2_input_distill_from_v6a

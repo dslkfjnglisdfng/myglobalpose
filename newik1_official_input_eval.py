@@ -24,12 +24,15 @@ def build_official_ik1(checkpoint_path):
 
 
 @torch.no_grad()
-def run_sequence(record, pl_curve, ik1_model=None, imu_input_mode='processed'):
+def run_sequence(record, pl_curve, ik1_model=None, ik1_config=None, imu_input_mode='processed'):
+    ik1_config = ik1_config or {}
     net = GPNet(
         pl_backend='curve_v1',
         pl_curve_module=pl_curve,
         ik1_backend='official_input_v1' if ik1_model is not None else 'original',
         ik1_official_module=ik1_model,
+        ik1_official_output_mode=ik1_config.get('output_mode', 'full'),
+        ik1_official_residual_alpha=float(ik1_config.get('residual_alpha', 1.0)),
     ).eval().to(DEVICE)
     net.rnn_initialize(record['pose_gt'][0], offset_r=record.get('offset_r'))
     pose = torch.zeros_like(record['pose_gt'])
@@ -50,12 +53,12 @@ def run_sequence(record, pl_curve, ik1_model=None, imu_input_mode='processed'):
 
 
 @torch.no_grad()
-def evaluate(records, pl_curve, ik1_model=None, max_eval_sequences=0, imu_input_mode='processed'):
+def evaluate(records, pl_curve, ik1_model=None, ik1_config=None, max_eval_sequences=0, imu_input_mode='processed'):
     evaluator = MotionEvaluator()
     rows = []
     selected = records[:max_eval_sequences] if max_eval_sequences else records
     for record in selected:
-        output = run_sequence(record, pl_curve=pl_curve, ik1_model=ik1_model, imu_input_mode=imu_input_mode)
+        output = run_sequence(record, pl_curve=pl_curve, ik1_model=ik1_model, ik1_config=ik1_config, imu_input_mode=imu_input_mode)
         baseline = run_sequence(record, pl_curve=pl_curve, ik1_model=None, imu_input_mode=imu_input_mode)
         baseline_metric = evaluator(
             baseline['pose'].to(DEVICE),
@@ -130,6 +133,7 @@ def main():
             records,
             pl_curve=pl_curve,
             ik1_model=ik1_model,
+            ik1_config=ik1_config,
             max_eval_sequences=args.max_eval_sequences,
             imu_input_mode=args.imu_input_mode,
         )

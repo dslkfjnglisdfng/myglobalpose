@@ -8,7 +8,7 @@ import articulate as art
 from l4_tail_update_qstate import UniformCubicBSpline
 from l4_train_diverse_short import DEVICE, load_records
 from net import GPNet
-from pl_curve import fit_uniform_cubic_spline_controls, normalize_gravity, pl_target_from_pose
+from pl_curve import control_fit_contract, fit_uniform_cubic_spline_controls, normalize_gravity, pl_target_from_pose
 from pl_curve_train import load_pl_curve_records
 
 
@@ -102,7 +102,7 @@ def audit(records, max_sequences=0):
         "rows": rows,
         "method": {
             "target": "concat(target_pRB, normalize(target_gR1))",
-            "control_fit": "solve tridiagonal UniformCubicBSpline(C_GT) = target",
+            "control_fit": control_fit_contract(),
             "decode": "UniformCubicBSpline(C_GT), then normalize decoded gR1 for metrics",
         },
     }

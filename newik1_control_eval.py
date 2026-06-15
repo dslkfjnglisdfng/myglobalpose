@@ -17,26 +17,36 @@ def build_newik1_control(checkpoint_path):
     if checkpoint.get('model_type') != 'newik1_control_point_v1':
         raise RuntimeError(f"Unsupported NewIK1 checkpoint model_type={checkpoint.get('model_type')}")
     config = checkpoint.get('config', {})
+    input_size = int(config.get('input_size', 120))
     model = NewIK1ControlPointModule(
+        input_size=input_size,
         hidden_size=int(config.get('hidden_size', 512)),
         tail_update=int(config.get('tail_length', 4)),
         residual_scale=float(config.get('residual_scale', 0.005)),
         dropout=float(config.get('dropout', 0.4)),
+        output_mode=config.get('output_mode', 'full'),
     ).to(DEVICE)
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
+    config = dict(config)
+    config.setdefault('ik1_backend', 'control_point_last_v1' if input_size == 63 else 'control_point_v1')
     return model, config
 
 
 @torch.no_grad()
-def run_sequence(record, pl_curve, ik1_curve=None, imu_input_mode='processed'):
+def run_sequence(record, pl_curve, ik1_curve=None, ik1_backend='control_point_v1', imu_input_mode='processed'):
     net = GPNet(
         pl_backend='curve_v1',
         pl_curve_module=pl_curve,
-        ik1_backend='control_point_v1' if ik1_curve is not None else 'original',
+        ik1_backend=ik1_backend if ik1_curve is not None else 'original',
         ik1_curve_module=ik1_curve,
     ).eval().to(DEVICE)
-    net.rnn_initialize(record['pose_gt'][0])
+    if 'offset_r' not in record:
+        raise KeyError('Evaluation cache must contain sequence-level offset_r with shape [6, 3] for PL init_size=36.')
+    offset_r = record['offset_r'].float()
+    if offset_r.shape != (6, 3):
+        raise ValueError(f'Expected offset_r shape [6, 3], got {tuple(offset_r.shape)}.')
+    net.rnn_initialize(record['pose_gt'][0], offset_r=offset_r)
     pose = torch.zeros_like(record['pose_gt'])
     tran = torch.zeros_like(record['tran_gt'])
     a_seq, w_seq, R_seq = selected_imu_fields(record, imu_input_mode)
@@ -67,12 +77,12 @@ def run_sequence(record, pl_curve, ik1_curve=None, imu_input_mode='processed'):
 
 
 @torch.no_grad()
-def evaluate(records, pl_curve, ik1_curve=None, max_eval_sequences=0, imu_input_mode='processed'):
+def evaluate(records, pl_curve, ik1_curve=None, ik1_backend='control_point_v1', max_eval_sequences=0, imu_input_mode='processed'):
     evaluator = MotionEvaluator()
     rows = []
     selected = records[:max_eval_sequences] if max_eval_sequences else records
     for record in selected:
-        output = run_sequence(record, pl_curve=pl_curve, ik1_curve=ik1_curve, imu_input_mode=imu_input_mode)
+        output = run_sequence(record, pl_curve=pl_curve, ik1_curve=ik1_curve, ik1_backend=ik1_backend, imu_input_mode=imu_input_mode)
         baseline = run_sequence(record, pl_curve=pl_curve, ik1_curve=None, imu_input_mode=imu_input_mode)
         baseline_metric = evaluator(
             baseline['pose'].to(DEVICE),
@@ -141,12 +151,15 @@ def main():
                         record[key] = value[:args.max_smoke_frames]
         pl_curve, pl_config = build_pl_curve(args.pl_checkpoint)
         ik1_curve, ik1_config = (None, None)
+        ik1_backend = 'original'
         if args.ik1_checkpoint:
             ik1_curve, ik1_config = build_newik1_control(args.ik1_checkpoint)
+            ik1_backend = ik1_config.get('ik1_backend', 'control_point_v1')
         rows = evaluate(
             records,
             pl_curve=pl_curve,
             ik1_curve=ik1_curve,
+            ik1_backend=ik1_backend,
             max_eval_sequences=args.max_eval_sequences,
             imu_input_mode=args.imu_input_mode,
         )

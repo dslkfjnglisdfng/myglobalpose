@@ -1,0 +1,848 @@
+{
+  "name": "newik1_v9_adaptive_loss_search_phase1",
+  "state_file": "data/experiments/orchestrator_states/newik1_v9_adaptive_loss_search_phase1.json",
+  "allow_same_user_gpu_share": true,
+  "notes": "Phase 1 adaptive loss sweep from v8_B4 last. Use any GPU with enough free memory; do not wait for a specific GPU. Module-GT uses NewPL streaming TC val, not teacher-forced.",
+  "tasks": [
+    {
+      "id": "v9_C1_pRJ_x3_lowdyn_train",
+      "name": "v9_C1_pRJ_x3_lowdyn_train",
+      "type": "train",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_train.py --train-cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_train/newik1_control_cache_manifest.json --val-cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --output-dir data/experiments/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/train --experiment-name v9_C1_pRJ_x3_lowdyn --epochs 5 --lr 1e-6 --min-lr 2e-7 --warmup-epochs 1 --dropout 0.02 --weight-decay 5e-5 --early-stop-patience 3 --early-stop-min-delta 1e-5 --batch-size 8 --window 61 --init-checkpoint data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt --bone-length-weight 0.0 --control-gR2-weight 0.1 --control-gR2-ddot-weight 0.0001 --control-gR2-dot-weight 0.003 --control-pRJ-weight 0.1 --control-pRJ-ddot-weight 0.0001 --control-pRJ-dot-weight 0.003 --control-point-prior-weight 0.0 --gR2-weight 1.0 --gR2-ddot-weight 0.001 --gR2-dot-weight 0.03 --gt-control-gR2-weight 0.0 --gt-control-pRJ-weight 0.0 --pRJ-weight 3.0 --pRJ-ddot-weight 0.0003 --pRJ-dot-weight 0.01 --tail-update-prior-weight 0.0",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/train/best_loss.pt",
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/train/last.pt",
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/train/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/train.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C1_pRJ_x3_lowdyn_module_gt_best_loss",
+      "name": "v9_C1_pRJ_x3_lowdyn_module_gt_best_loss",
+      "type": "audit",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_local_diagnostic.py --cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/train/best_loss.pt --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/module_gt/best_loss/result.json",
+      "dependencies": [
+        "v9_C1_pRJ_x3_lowdyn_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/module_gt/best_loss/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/module_gt_best_loss.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C1_pRJ_x3_lowdyn_s4_best_loss",
+      "name": "v9_C1_pRJ_x3_lowdyn_s4_best_loss",
+      "type": "eval",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/train/best_loss.pt --imu-input-mode processed --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/s4/best_loss/result.json",
+      "dependencies": [
+        "v9_C1_pRJ_x3_lowdyn_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/s4/best_loss/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/s4_best_loss.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C1_pRJ_x3_lowdyn_module_gt_last",
+      "name": "v9_C1_pRJ_x3_lowdyn_module_gt_last",
+      "type": "audit",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_local_diagnostic.py --cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/train/last.pt --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/module_gt/last/result.json",
+      "dependencies": [
+        "v9_C1_pRJ_x3_lowdyn_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/module_gt/last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/module_gt_last.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C1_pRJ_x3_lowdyn_s4_last",
+      "name": "v9_C1_pRJ_x3_lowdyn_s4_last",
+      "type": "eval",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/train/last.pt --imu-input-mode processed --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/s4/last/result.json",
+      "dependencies": [
+        "v9_C1_pRJ_x3_lowdyn_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/s4/last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C1_pRJ_x3_lowdyn/s4_last.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C2_pRJ_x2_gR2_x2_train",
+      "name": "v9_C2_pRJ_x2_gR2_x2_train",
+      "type": "train",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_train.py --train-cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_train/newik1_control_cache_manifest.json --val-cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --output-dir data/experiments/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/train --experiment-name v9_C2_pRJ_x2_gR2_x2 --epochs 5 --lr 1e-6 --min-lr 2e-7 --warmup-epochs 1 --dropout 0.02 --weight-decay 5e-5 --early-stop-patience 3 --early-stop-min-delta 1e-5 --batch-size 8 --window 61 --init-checkpoint data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt --bone-length-weight 0.0 --control-gR2-weight 0.1 --control-gR2-ddot-weight 0.0001 --control-gR2-dot-weight 0.003 --control-pRJ-weight 0.1 --control-pRJ-ddot-weight 0.0001 --control-pRJ-dot-weight 0.003 --control-point-prior-weight 0.0 --gR2-weight 2.0 --gR2-ddot-weight 0.001 --gR2-dot-weight 0.03 --gt-control-gR2-weight 0.0 --gt-control-pRJ-weight 0.0 --pRJ-weight 2.0 --pRJ-ddot-weight 0.0003 --pRJ-dot-weight 0.01 --tail-update-prior-weight 0.0",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/train/best_loss.pt",
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/train/last.pt",
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/train/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/train.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C2_pRJ_x2_gR2_x2_module_gt_best_loss",
+      "name": "v9_C2_pRJ_x2_gR2_x2_module_gt_best_loss",
+      "type": "audit",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_local_diagnostic.py --cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/train/best_loss.pt --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/module_gt/best_loss/result.json",
+      "dependencies": [
+        "v9_C2_pRJ_x2_gR2_x2_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/module_gt/best_loss/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/module_gt_best_loss.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C2_pRJ_x2_gR2_x2_s4_best_loss",
+      "name": "v9_C2_pRJ_x2_gR2_x2_s4_best_loss",
+      "type": "eval",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/train/best_loss.pt --imu-input-mode processed --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/s4/best_loss/result.json",
+      "dependencies": [
+        "v9_C2_pRJ_x2_gR2_x2_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/s4/best_loss/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/s4_best_loss.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C2_pRJ_x2_gR2_x2_module_gt_last",
+      "name": "v9_C2_pRJ_x2_gR2_x2_module_gt_last",
+      "type": "audit",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_local_diagnostic.py --cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/train/last.pt --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/module_gt/last/result.json",
+      "dependencies": [
+        "v9_C2_pRJ_x2_gR2_x2_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/module_gt/last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/module_gt_last.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C2_pRJ_x2_gR2_x2_s4_last",
+      "name": "v9_C2_pRJ_x2_gR2_x2_s4_last",
+      "type": "eval",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/train/last.pt --imu-input-mode processed --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/s4/last/result.json",
+      "dependencies": [
+        "v9_C2_pRJ_x2_gR2_x2_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/s4/last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C2_pRJ_x2_gR2_x2/s4_last.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C3_gR2_x3_train",
+      "name": "v9_C3_gR2_x3_train",
+      "type": "train",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_train.py --train-cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_train/newik1_control_cache_manifest.json --val-cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --output-dir data/experiments/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/train --experiment-name v9_C3_gR2_x3 --epochs 5 --lr 1e-6 --min-lr 2e-7 --warmup-epochs 1 --dropout 0.02 --weight-decay 5e-5 --early-stop-patience 3 --early-stop-min-delta 1e-5 --batch-size 8 --window 61 --init-checkpoint data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt --bone-length-weight 0.0 --control-gR2-weight 0.1 --control-gR2-ddot-weight 0.0001 --control-gR2-dot-weight 0.003 --control-pRJ-weight 0.1 --control-pRJ-ddot-weight 0.0001 --control-pRJ-dot-weight 0.003 --control-point-prior-weight 0.0 --gR2-weight 3.0 --gR2-ddot-weight 0.001 --gR2-dot-weight 0.03 --gt-control-gR2-weight 0.0 --gt-control-pRJ-weight 0.0 --pRJ-weight 2.0 --pRJ-ddot-weight 0.0003 --pRJ-dot-weight 0.01 --tail-update-prior-weight 0.0",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/train/best_loss.pt",
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/train/last.pt",
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/train/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/train.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C3_gR2_x3_module_gt_best_loss",
+      "name": "v9_C3_gR2_x3_module_gt_best_loss",
+      "type": "audit",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_local_diagnostic.py --cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/train/best_loss.pt --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/module_gt/best_loss/result.json",
+      "dependencies": [
+        "v9_C3_gR2_x3_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/module_gt/best_loss/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/module_gt_best_loss.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C3_gR2_x3_s4_best_loss",
+      "name": "v9_C3_gR2_x3_s4_best_loss",
+      "type": "eval",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/train/best_loss.pt --imu-input-mode processed --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/s4/best_loss/result.json",
+      "dependencies": [
+        "v9_C3_gR2_x3_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/s4/best_loss/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/s4_best_loss.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C3_gR2_x3_module_gt_last",
+      "name": "v9_C3_gR2_x3_module_gt_last",
+      "type": "audit",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_local_diagnostic.py --cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/train/last.pt --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/module_gt/last/result.json",
+      "dependencies": [
+        "v9_C3_gR2_x3_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/module_gt/last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/module_gt_last.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C3_gR2_x3_s4_last",
+      "name": "v9_C3_gR2_x3_s4_last",
+      "type": "eval",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/train/last.pt --imu-input-mode processed --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/s4/last/result.json",
+      "dependencies": [
+        "v9_C3_gR2_x3_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/s4/last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C3_gR2_x3/s4_last.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C4_dyn_lower_train",
+      "name": "v9_C4_dyn_lower_train",
+      "type": "train",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_train.py --train-cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_train/newik1_control_cache_manifest.json --val-cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --output-dir data/experiments/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/train --experiment-name v9_C4_dyn_lower --epochs 5 --lr 1e-6 --min-lr 2e-7 --warmup-epochs 1 --dropout 0.02 --weight-decay 5e-5 --early-stop-patience 3 --early-stop-min-delta 1e-5 --batch-size 8 --window 61 --init-checkpoint data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt --bone-length-weight 0.0 --control-gR2-weight 0.1 --control-gR2-ddot-weight 0.0001 --control-gR2-dot-weight 0.003 --control-pRJ-weight 0.1 --control-pRJ-ddot-weight 0.0001 --control-pRJ-dot-weight 0.003 --control-point-prior-weight 0.0 --gR2-weight 1.0 --gR2-ddot-weight 0.001 --gR2-dot-weight 0.03 --gt-control-gR2-weight 0.0 --gt-control-pRJ-weight 0.0 --pRJ-weight 2.0 --pRJ-ddot-weight 0.0001 --pRJ-dot-weight 0.003 --tail-update-prior-weight 0.0",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/train/best_loss.pt",
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/train/last.pt",
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/train/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/train.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C4_dyn_lower_module_gt_best_loss",
+      "name": "v9_C4_dyn_lower_module_gt_best_loss",
+      "type": "audit",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_local_diagnostic.py --cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/train/best_loss.pt --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/module_gt/best_loss/result.json",
+      "dependencies": [
+        "v9_C4_dyn_lower_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/module_gt/best_loss/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/module_gt_best_loss.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C4_dyn_lower_s4_best_loss",
+      "name": "v9_C4_dyn_lower_s4_best_loss",
+      "type": "eval",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/train/best_loss.pt --imu-input-mode processed --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/s4/best_loss/result.json",
+      "dependencies": [
+        "v9_C4_dyn_lower_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/s4/best_loss/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/s4_best_loss.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C4_dyn_lower_module_gt_last",
+      "name": "v9_C4_dyn_lower_module_gt_last",
+      "type": "audit",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_local_diagnostic.py --cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/train/last.pt --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/module_gt/last/result.json",
+      "dependencies": [
+        "v9_C4_dyn_lower_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/module_gt/last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/module_gt_last.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C4_dyn_lower_s4_last",
+      "name": "v9_C4_dyn_lower_s4_last",
+      "type": "eval",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/train/last.pt --imu-input-mode processed --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/s4/last/result.json",
+      "dependencies": [
+        "v9_C4_dyn_lower_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/s4/last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C4_dyn_lower/s4_last.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C5_dyn_higher_train",
+      "name": "v9_C5_dyn_higher_train",
+      "type": "train",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_train.py --train-cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_train/newik1_control_cache_manifest.json --val-cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --output-dir data/experiments/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/train --experiment-name v9_C5_dyn_higher --epochs 5 --lr 1e-6 --min-lr 2e-7 --warmup-epochs 1 --dropout 0.02 --weight-decay 5e-5 --early-stop-patience 3 --early-stop-min-delta 1e-5 --batch-size 8 --window 61 --init-checkpoint data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt --bone-length-weight 0.0 --control-gR2-weight 0.1 --control-gR2-ddot-weight 0.0001 --control-gR2-dot-weight 0.003 --control-pRJ-weight 0.1 --control-pRJ-ddot-weight 0.0001 --control-pRJ-dot-weight 0.003 --control-point-prior-weight 0.0 --gR2-weight 1.0 --gR2-ddot-weight 0.001 --gR2-dot-weight 0.03 --gt-control-gR2-weight 0.0 --gt-control-pRJ-weight 0.0 --pRJ-weight 2.0 --pRJ-ddot-weight 0.001 --pRJ-dot-weight 0.03 --tail-update-prior-weight 0.0",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/train/best_loss.pt",
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/train/last.pt",
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/train/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/train.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C5_dyn_higher_module_gt_best_loss",
+      "name": "v9_C5_dyn_higher_module_gt_best_loss",
+      "type": "audit",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_local_diagnostic.py --cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/train/best_loss.pt --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/module_gt/best_loss/result.json",
+      "dependencies": [
+        "v9_C5_dyn_higher_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/module_gt/best_loss/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/module_gt_best_loss.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C5_dyn_higher_s4_best_loss",
+      "name": "v9_C5_dyn_higher_s4_best_loss",
+      "type": "eval",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/train/best_loss.pt --imu-input-mode processed --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/s4/best_loss/result.json",
+      "dependencies": [
+        "v9_C5_dyn_higher_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/s4/best_loss/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/s4_best_loss.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C5_dyn_higher_module_gt_last",
+      "name": "v9_C5_dyn_higher_module_gt_last",
+      "type": "audit",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_local_diagnostic.py --cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/train/last.pt --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/module_gt/last/result.json",
+      "dependencies": [
+        "v9_C5_dyn_higher_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/module_gt/last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/module_gt_last.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C5_dyn_higher_s4_last",
+      "name": "v9_C5_dyn_higher_s4_last",
+      "type": "eval",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/train/last.pt --imu-input-mode processed --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/s4/last/result.json",
+      "dependencies": [
+        "v9_C5_dyn_higher_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/s4/last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C5_dyn_higher/s4_last.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C6_control_x2_train",
+      "name": "v9_C6_control_x2_train",
+      "type": "train",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_train.py --train-cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_train/newik1_control_cache_manifest.json --val-cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --output-dir data/experiments/newik1_v9_adaptive_loss_search/v9_C6_control_x2/train --experiment-name v9_C6_control_x2 --epochs 5 --lr 1e-6 --min-lr 2e-7 --warmup-epochs 1 --dropout 0.02 --weight-decay 5e-5 --early-stop-patience 3 --early-stop-min-delta 1e-5 --batch-size 8 --window 61 --init-checkpoint data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt --bone-length-weight 0.0 --control-gR2-weight 0.2 --control-gR2-ddot-weight 0.0001 --control-gR2-dot-weight 0.003 --control-pRJ-weight 0.2 --control-pRJ-ddot-weight 0.0001 --control-pRJ-dot-weight 0.003 --control-point-prior-weight 0.0 --gR2-weight 1.0 --gR2-ddot-weight 0.001 --gR2-dot-weight 0.03 --gt-control-gR2-weight 0.0 --gt-control-pRJ-weight 0.0 --pRJ-weight 2.0 --pRJ-ddot-weight 0.0003 --pRJ-dot-weight 0.01 --tail-update-prior-weight 0.0",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C6_control_x2/train/best_loss.pt",
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C6_control_x2/train/last.pt",
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C6_control_x2/train/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C6_control_x2/train.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C6_control_x2_module_gt_best_loss",
+      "name": "v9_C6_control_x2_module_gt_best_loss",
+      "type": "audit",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_local_diagnostic.py --cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C6_control_x2/train/best_loss.pt --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C6_control_x2/module_gt/best_loss/result.json",
+      "dependencies": [
+        "v9_C6_control_x2_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C6_control_x2/module_gt/best_loss/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C6_control_x2/module_gt_best_loss.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C6_control_x2_s4_best_loss",
+      "name": "v9_C6_control_x2_s4_best_loss",
+      "type": "eval",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C6_control_x2/train/best_loss.pt --imu-input-mode processed --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C6_control_x2/s4/best_loss/result.json",
+      "dependencies": [
+        "v9_C6_control_x2_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C6_control_x2/s4/best_loss/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C6_control_x2/s4_best_loss.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C6_control_x2_module_gt_last",
+      "name": "v9_C6_control_x2_module_gt_last",
+      "type": "audit",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_local_diagnostic.py --cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C6_control_x2/train/last.pt --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C6_control_x2/module_gt/last/result.json",
+      "dependencies": [
+        "v9_C6_control_x2_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C6_control_x2/module_gt/last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C6_control_x2/module_gt_last.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C6_control_x2_s4_last",
+      "name": "v9_C6_control_x2_s4_last",
+      "type": "eval",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C6_control_x2/train/last.pt --imu-input-mode processed --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C6_control_x2/s4/last/result.json",
+      "dependencies": [
+        "v9_C6_control_x2_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C6_control_x2/s4/last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C6_control_x2/s4_last.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C7_control_dyn_x2_train",
+      "name": "v9_C7_control_dyn_x2_train",
+      "type": "train",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_train.py --train-cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_train/newik1_control_cache_manifest.json --val-cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --output-dir data/experiments/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/train --experiment-name v9_C7_control_dyn_x2 --epochs 5 --lr 1e-6 --min-lr 2e-7 --warmup-epochs 1 --dropout 0.02 --weight-decay 5e-5 --early-stop-patience 3 --early-stop-min-delta 1e-5 --batch-size 8 --window 61 --init-checkpoint data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt --bone-length-weight 0.0 --control-gR2-weight 0.1 --control-gR2-ddot-weight 0.0002 --control-gR2-dot-weight 0.006 --control-pRJ-weight 0.1 --control-pRJ-ddot-weight 0.0002 --control-pRJ-dot-weight 0.006 --control-point-prior-weight 0.0 --gR2-weight 1.0 --gR2-ddot-weight 0.001 --gR2-dot-weight 0.03 --gt-control-gR2-weight 0.0 --gt-control-pRJ-weight 0.0 --pRJ-weight 2.0 --pRJ-ddot-weight 0.0003 --pRJ-dot-weight 0.01 --tail-update-prior-weight 0.0",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/train/best_loss.pt",
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/train/last.pt",
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/train/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/train.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C7_control_dyn_x2_module_gt_best_loss",
+      "name": "v9_C7_control_dyn_x2_module_gt_best_loss",
+      "type": "audit",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_local_diagnostic.py --cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/train/best_loss.pt --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/module_gt/best_loss/result.json",
+      "dependencies": [
+        "v9_C7_control_dyn_x2_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/module_gt/best_loss/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/module_gt_best_loss.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C7_control_dyn_x2_s4_best_loss",
+      "name": "v9_C7_control_dyn_x2_s4_best_loss",
+      "type": "eval",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/train/best_loss.pt --imu-input-mode processed --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/s4/best_loss/result.json",
+      "dependencies": [
+        "v9_C7_control_dyn_x2_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/s4/best_loss/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/s4_best_loss.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C7_control_dyn_x2_module_gt_last",
+      "name": "v9_C7_control_dyn_x2_module_gt_last",
+      "type": "audit",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_local_diagnostic.py --cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/train/last.pt --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/module_gt/last/result.json",
+      "dependencies": [
+        "v9_C7_control_dyn_x2_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/module_gt/last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/module_gt_last.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C7_control_dyn_x2_s4_last",
+      "name": "v9_C7_control_dyn_x2_s4_last",
+      "type": "eval",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/train/last.pt --imu-input-mode processed --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/s4/last/result.json",
+      "dependencies": [
+        "v9_C7_control_dyn_x2_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/s4/last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C7_control_dyn_x2/s4_last.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C8_no_control_dyn_train",
+      "name": "v9_C8_no_control_dyn_train",
+      "type": "train",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_train.py --train-cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_train/newik1_control_cache_manifest.json --val-cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --output-dir data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/train --experiment-name v9_C8_no_control_dyn --epochs 5 --lr 1e-6 --min-lr 2e-7 --warmup-epochs 1 --dropout 0.02 --weight-decay 5e-5 --early-stop-patience 3 --early-stop-min-delta 1e-5 --batch-size 8 --window 61 --init-checkpoint data/experiments/newik1_v8_parallel_adaptive_loss_search/v8_B4_pRJ_x2_lowdyn/train/last.pt --bone-length-weight 0.0 --control-gR2-weight 0.1 --control-gR2-ddot-weight 0.0 --control-gR2-dot-weight 0.0 --control-pRJ-weight 0.1 --control-pRJ-ddot-weight 0.0 --control-pRJ-dot-weight 0.0 --control-point-prior-weight 0.0 --gR2-weight 1.0 --gR2-ddot-weight 0.001 --gR2-dot-weight 0.03 --gt-control-gR2-weight 0.0 --gt-control-pRJ-weight 0.0 --pRJ-weight 2.0 --pRJ-ddot-weight 0.0003 --pRJ-dot-weight 0.01 --tail-update-prior-weight 0.0",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/train/best_loss.pt",
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/train/last.pt",
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/train/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/train.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C8_no_control_dyn_module_gt_best_loss",
+      "name": "v9_C8_no_control_dyn_module_gt_best_loss",
+      "type": "audit",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_local_diagnostic.py --cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/train/best_loss.pt --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/module_gt/best_loss/result.json",
+      "dependencies": [
+        "v9_C8_no_control_dyn_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/module_gt/best_loss/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/module_gt_best_loss.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C8_no_control_dyn_s4_best_loss",
+      "name": "v9_C8_no_control_dyn_s4_best_loss",
+      "type": "eval",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/train/best_loss.pt --imu-input-mode processed --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/s4/best_loss/result.json",
+      "dependencies": [
+        "v9_C8_no_control_dyn_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/s4/best_loss/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/s4_best_loss.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C8_no_control_dyn_module_gt_last",
+      "name": "v9_C8_no_control_dyn_module_gt_last",
+      "type": "audit",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_local_diagnostic.py --cache data/experiments/newik1_last_pl_control_20260605_v2/caches/pl_streaming_tc_val/newik1_control_cache_manifest.json --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/train/last.pt --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/module_gt/last/result.json",
+      "dependencies": [
+        "v9_C8_no_control_dyn_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/module_gt/last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/module_gt_last.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    },
+    {
+      "id": "v9_C8_no_control_dyn_s4_last",
+      "name": "v9_C8_no_control_dyn_s4_last",
+      "type": "eval",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" newik1_control_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/train/last.pt --imu-input-mode processed --output-json data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/s4/last/result.json",
+      "dependencies": [
+        "v9_C8_no_control_dyn_train"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 6,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {},
+      "outputs": [
+        "data/experiments/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/s4/last/result.json"
+      ],
+      "log_path": "logs/orchestrator/newik1_v9_adaptive_loss_search/v9_C8_no_control_dyn/s4_last.log",
+      "summary_parser": "parse_s4_metrics",
+      "project_status_section": "EXP-newik1_v9_adaptive_loss_search",
+      "allow_parallel": true
+    }
+  ]
+}

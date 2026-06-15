@@ -27,6 +27,7 @@ def default_weights():
         'gR2_ddot': 0.001,
         'ik1_distill_pRJ': 0.2,
         'ik1_distill_gR2': 0.0,
+        'ik2_input_distill': 0.0,
     }
 
 
@@ -58,12 +59,15 @@ def load_records(cache_path, max_sequences=0):
     for cache_file in files:
         data = torch.load(cache_file, map_location='cpu')
         for seq_idx, name in enumerate(data['name']):
-            records.append({
+            record = {
                 'name': name,
                 'ik1_input': data['ik1_input'][seq_idx].float(),
                 'ik1_target': data['ik1_target'][seq_idx].float(),
                 'ik1_base': data['ik1_base'][seq_idx].float(),
-            })
+            }
+            if 'RRB_after_pl' in data:
+                record['RRB_after_pl'] = data['RRB_after_pl'][seq_idx].float()
+            records.append(record)
             if max_sequences and len(records) >= max_sequences:
                 return records, manifest
     return records, manifest
@@ -80,7 +84,10 @@ def average(rows):
 
 def make_batch(records, starts, length):
     out = {'name': '|'.join(f"{record['name']}[{int(start)}:{int(start) + length}]" for record, start in zip(records, starts))}
-    for key in ('ik1_input', 'ik1_target', 'ik1_base'):
+    keys = ['ik1_input', 'ik1_target', 'ik1_base']
+    if all('RRB_after_pl' in record for record in records):
+        keys.append('RRB_after_pl')
+    for key in keys:
         vals = []
         for record, start in zip(records, starts):
             seq_len = record['ik1_input'].shape[0]
@@ -90,17 +97,58 @@ def make_batch(records, starts, length):
     return out
 
 
-def forward_sequence(model, features):
+def apply_output_mode(pred, base, output_mode='full', residual_alpha=1.0):
+    pred = normalize_ik1(pred)
+    base = normalize_ik1(base.to(pred.device, pred.dtype))
+    if output_mode == 'full':
+        return pred
+    if output_mode == 'pRJ_only':
+        return normalize_ik1(torch.cat((pred[..., :69], base[..., 69:]), dim=-1))
+    if output_mode == 'residual':
+        return normalize_ik1(base + float(residual_alpha) * (pred - base))
+    if output_mode == 'residual_pRJ_only':
+        pRJ = base[..., :69] + float(residual_alpha) * (pred[..., :69] - base[..., :69])
+        return normalize_ik1(torch.cat((pRJ, base[..., 69:]), dim=-1))
+    raise ValueError(f'Unsupported output_mode={output_mode!r}.')
+
+
+def forward_sequence(model, features, base=None, output_mode='full', residual_alpha=1.0):
     squeeze_batch = features.dim() == 2
     if squeeze_batch:
         features = features.unsqueeze(1)
+        if base is not None and base.dim() == 2:
+            base = base.unsqueeze(1)
     x, _ = model.rnn(features, None)
     pred = model.linear2(x)
-    pred = normalize_ik1(pred)
+    if base is not None:
+        pred = apply_output_mode(pred, base, output_mode=output_mode, residual_alpha=residual_alpha)
+    else:
+        pred = normalize_ik1(pred)
     return pred[:, 0] if squeeze_batch else pred
 
 
-def official_ik1_loss(pred, target, base, weights):
+def ik2_input_feature(ik1, base_feature, RRB_after_pl=None):
+    ik1 = normalize_ik1(ik1)
+    leading = ik1.shape[:-1]
+    gR2 = art.math.normalize_tensor(ik1[..., 69:], avoid_nan=True)
+    pRJ = ik1[..., :69]
+    base_feature = base_feature.to(ik1.device, ik1.dtype)
+    if base_feature.shape[:-1] != leading:
+        raise RuntimeError(f'base_feature leading shape {base_feature.shape[:-1]} does not match ik1 {leading}.')
+    gR1 = base_feature[..., 45:48]
+    if RRB_after_pl is None:
+        RRB_after_pl = base_feature[..., :45].reshape(leading + (5, 3, 3))
+    else:
+        RRB_after_pl = RRB_after_pl.to(ik1.device, ik1.dtype).reshape(leading + (5, 3, 3))
+    rot = art.math.from_to_rotation_matrix(
+        gR1.reshape(-1, 3),
+        gR2.reshape(-1, 3),
+    ).reshape(leading + (3, 3))
+    RRB_after_ik1 = rot.unsqueeze(-3).matmul(RRB_after_pl)
+    return torch.cat((RRB_after_ik1.flatten(-3), gR2, pRJ), dim=-1)
+
+
+def official_ik1_loss(pred, target, base, weights, base_feature=None, RRB_after_pl=None):
     pred = normalize_ik1(pred)
     target = normalize_ik1(target.to(pred.device, pred.dtype))
     base = normalize_ik1(base.to(pred.device, pred.dtype))
@@ -114,6 +162,13 @@ def official_ik1_loss(pred, target, base, weights):
         'ik1_distill_pRJ': torch.nn.functional.smooth_l1_loss(pred[..., :69], base[..., :69]),
         'ik1_distill_gR2': (1.0 - (pred_g * base_g).sum(dim=-1).clamp(-1.0, 1.0)).mean(),
     }
+    if base_feature is not None:
+        losses['ik2_input_distill'] = torch.nn.functional.smooth_l1_loss(
+            ik2_input_feature(pred, base_feature.to(pred.device, pred.dtype), RRB_after_pl=RRB_after_pl),
+            ik2_input_feature(base, base_feature.to(pred.device, pred.dtype), RRB_after_pl=RRB_after_pl),
+        )
+    else:
+        losses['ik2_input_distill'] = pred.new_zeros(())
     if pred.shape[0] >= 2:
         losses['pRJ_dot'] = torch.nn.functional.smooth_l1_loss(
             pred[1:, ..., :69] - pred[:-1, ..., :69],
@@ -135,12 +190,15 @@ def official_ik1_loss(pred, target, base, weights):
     return total, losses
 
 
-def run_sequence(model, record, weights):
+def run_sequence(model, record, weights, output_mode='full', residual_alpha=1.0):
     features = record['ik1_input'].to(DEVICE)
     target = record['ik1_target'].to(DEVICE)
     base = record['ik1_base'].to(DEVICE)
-    pred = forward_sequence(model, features)
-    loss, losses = official_ik1_loss(pred, target, base, weights)
+    rrb_after_pl = record.get('RRB_after_pl')
+    if rrb_after_pl is not None:
+        rrb_after_pl = rrb_after_pl.to(DEVICE)
+    pred = forward_sequence(model, features, base=base, output_mode=output_mode, residual_alpha=residual_alpha)
+    loss, losses = official_ik1_loss(pred, target, base, weights, base_feature=features, RRB_after_pl=rrb_after_pl)
     components = {key: value.detach() for key, value in losses.items()}
     components.update({
         'loss': loss.detach(),
@@ -150,12 +208,12 @@ def run_sequence(model, record, weights):
 
 
 @torch.no_grad()
-def eval_loss(model, records, weights, max_sequences=0):
+def eval_loss(model, records, weights, max_sequences=0, output_mode='full', residual_alpha=1.0):
     model.eval()
     rows = []
     selected = records[:max_sequences] if max_sequences else records
     for record in selected:
-        loss, components = run_sequence(model, record, weights)
+        loss, components = run_sequence(model, record, weights, output_mode=output_mode, residual_alpha=residual_alpha)
         row = {'name': record['name'], 'loss': float(loss)}
         row.update({key: float(value) for key, value in components.items()})
         rows.append(row)
@@ -186,6 +244,8 @@ def main():
     parser.add_argument('--lr', type=float, default=1e-5)
     parser.add_argument('--dropout', type=float, default=0.4)
     parser.add_argument('--grad-clip', type=float, default=1.0)
+    parser.add_argument('--output-mode', choices=('full', 'pRJ_only', 'residual', 'residual_pRJ_only'), default='full')
+    parser.add_argument('--residual-alpha', type=float, default=1.0)
     parser.add_argument('--official-weights', default='data/weights.pt')
     parser.add_argument('--init-checkpoint', default='')
     parser.add_argument('--max-train-sequences', type=int, default=0)
@@ -238,7 +298,7 @@ def main():
                 starts = [random.randint(0, max(0, rec['ik1_input'].shape[0] - args.window)) for rec in recs]
                 batch = make_batch(recs, starts, args.window)
                 optimizer.zero_grad(set_to_none=True)
-                loss, comps = run_sequence(model, batch, weights)
+                loss, comps = run_sequence(model, batch, weights, output_mode=args.output_mode, residual_alpha=args.residual_alpha)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
                 optimizer.step()
@@ -249,14 +309,14 @@ def main():
             random.shuffle(order)
             for idx in order:
                 optimizer.zero_grad(set_to_none=True)
-                loss, comps = run_sequence(model, train_records[idx], weights)
+                loss, comps = run_sequence(model, train_records[idx], weights, output_mode=args.output_mode, residual_alpha=args.residual_alpha)
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
                 optimizer.step()
                 step += 1
                 rows.append({key: float(value) for key, value in comps.items()})
         train_loss = average(rows)
-        val = eval_loss(model, val_records, weights)
+        val = eval_loss(model, val_records, weights, output_mode=args.output_mode, residual_alpha=args.residual_alpha)
         val_scalar = float(val['loss'].get('loss', float('inf')))
         if val_scalar < best_loss:
             best_loss = val_scalar

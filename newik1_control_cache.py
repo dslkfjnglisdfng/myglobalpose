@@ -9,7 +9,7 @@ from l4_q75_utils import q75_to_pose_tran
 from l4_train_diverse_short import DEVICE, load_cache_files
 from net import GPNet
 from newik1_control_point import fit_ik1_controls, ik1_target_from_pose, normalize_ik1, padded_control_tail
-from pl_curve import PLCurveModule, fit_uniform_cubic_spline_controls, normalize_gravity, pl_init_feature_from_pose, pl_input_feature, pl_target_from_pose, split_pl_feature
+from pl_curve import PLCurveModule, control_fit_contract, fit_uniform_cubic_spline_controls, normalize_gravity, pl_init_feature_from_pose, pl_input_feature, pl_target_from_pose, split_pl_feature
 
 
 def selected_imu_fields(data, seq_idx, mode):
@@ -47,14 +47,25 @@ def build_gt_pl_controls(pl_target, tail_len):
 
 
 @torch.no_grad()
-def teacher_forced_sequence(gpnet, pl_input, pl_target, ik1_target, tail_len, init_pose):
+def pack_ik1_feature(RRB_after_pl, pl_control_tail, gR1, feature_mode):
+    if feature_mode == 'control_tail':
+        return torch.cat((RRB_after_pl.flatten(1), pl_control_tail.flatten(1), gR1), dim=-1)
+    if feature_mode == 'last_control':
+        last = pl_control_tail[:, -1]
+        last_gR1 = normalize_gravity(last)[:, 15:]
+        return torch.cat((RRB_after_pl.flatten(1), last_gR1, last[:, :15]), dim=-1)
+    raise ValueError(f'Unsupported feature_mode={feature_mode}')
+
+
+@torch.no_grad()
+def teacher_forced_sequence(gpnet, pl_input, pl_target, ik1_target, tail_len, init_pose, feature_mode):
     gpnet.rnn_initialize(init_pose)
     RRB0, gR0 = split_pl_feature(pl_input.to(DEVICE))
     pRB = pl_target.to(DEVICE)[:, :15]
     gR1 = normalize_gravity(pl_target.to(DEVICE))[:, 15:]
     RRB_after_pl = art.math.from_to_rotation_matrix(gR0, gR1).unsqueeze(1).matmul(RRB0)
     pl_control_tail = build_gt_pl_controls(pl_target, tail_len).to(DEVICE)
-    feature = torch.cat((RRB_after_pl.flatten(1), pl_control_tail.flatten(1), gR1), dim=-1)
+    feature = pack_ik1_feature(RRB_after_pl, pl_control_tail, gR1, feature_mode)
     base = []
     for idx in range(pl_input.shape[0]):
         out, _ = gpnet._run_ik1_stage(RRB_after_pl[idx], gR1[idx], pRB[idx])
@@ -63,7 +74,7 @@ def teacher_forced_sequence(gpnet, pl_input, pl_target, ik1_target, tail_len, in
 
 
 @torch.no_grad()
-def pl1_streaming_sequence(gpnet, pl_curve, pl_input, pl_target, tail_len, init_pose, pl_init_feature=None):
+def pl1_streaming_sequence(gpnet, pl_curve, pl_input, pl_target, tail_len, init_pose, feature_mode, pl_init_feature=None):
     gpnet.rnn_initialize(init_pose)
     if getattr(pl_curve, 'init_size', 18) == 18:
         pl_curve.reset_stream(init_output=normalize_gravity(pl_target[0].to(DEVICE)))
@@ -90,7 +101,7 @@ def pl1_streaming_sequence(gpnet, pl_curve, pl_input, pl_target, tail_len, init_
         if tail.shape[1] < tail_len:
             pad = tail[:, :1].expand(-1, tail_len - tail.shape[1], -1)
             tail = torch.cat((pad, tail), dim=1)
-        feature = torch.cat((RRB_after_pl.ravel(), tail[0].reshape(-1), gR1), dim=-1)
+        feature = pack_ik1_feature(RRB_after_pl.view(1, 5, 3, 3), tail, gR1.view(1, 3), feature_mode)[0]
         base_ik1, _ = gpnet._run_ik1_stage(RRB_after_pl, gR1, pRB)
         features.append(feature.detach().cpu())
         bases.append(normalize_ik1(base_ik1.detach().cpu()))
@@ -108,7 +119,7 @@ def pl1_streaming_sequence(gpnet, pl_curve, pl_input, pl_target, tail_len, init_
     }
 
 
-def build_cache(input_cache, output_dir, mode, imu_input_mode, pl_checkpoint, shard_size, tail_len, max_sequences=0):
+def build_cache(input_cache, output_dir, mode, imu_input_mode, pl_checkpoint, shard_size, tail_len, feature_mode, max_sequences=0):
     output_dir.mkdir(parents=True, exist_ok=True)
     files, source_manifest = load_cache_files(input_cache)
     gpnet = GPNet().eval().to(DEVICE)
@@ -163,7 +174,7 @@ def build_cache(input_cache, output_dir, mode, imu_input_mode, pl_checkpoint, sh
             ik1_tail = torch.stack([padded_control_tail(ik1_controls, idx, tail_len) for idx in range(ik1_controls.shape[0])])
             pl_tail_gt = build_gt_pl_controls(pl_target, tail_len).cpu()
             if mode == 'teacher_forced':
-                ik1_input, ik1_base = teacher_forced_sequence(gpnet, pl_input, pl_target, ik1_target, tail_len, pose_gt[0].to(DEVICE))
+                ik1_input, ik1_base = teacher_forced_sequence(gpnet, pl_input, pl_target, ik1_target, tail_len, pose_gt[0].to(DEVICE), feature_mode)
                 pl_pRB_dec, pl_gR1_dec = pl_target[:, :15], pl_target[:, 15:]
                 RRB_after_pl = ik1_input[:, :45].reshape(ik1_input.shape[0], 5, 3, 3)
             elif mode == 'pl1_streaming':
@@ -172,10 +183,9 @@ def build_cache(input_cache, output_dir, mode, imu_input_mode, pl_checkpoint, sh
                     if 'pl_init_feature' in data:
                         pl_init = data['pl_init_feature'][seq_idx].float()
                     else:
-                        if 'offset_r' not in data:
-                            raise KeyError(f'{cache_file} has no offset_r field required for PL init feature.')
-                        pl_init = pl_init_feature_from_pose(data['offset_r'][seq_idx].float(), pose_gt[0].float(), body_model_pl)
-                out = pl1_streaming_sequence(gpnet, pl_curve, pl_input, pl_target, tail_len, pose_gt[0].to(DEVICE), pl_init_feature=pl_init)
+                        offset_r = data['offset_r'][seq_idx].float() if 'offset_r' in data else torch.zeros(6, 3)
+                        pl_init = pl_init_feature_from_pose(offset_r, pose_gt[0].float(), body_model_pl)
+                out = pl1_streaming_sequence(gpnet, pl_curve, pl_input, pl_target, tail_len, pose_gt[0].to(DEVICE), feature_mode, pl_init_feature=pl_init)
                 ik1_input, ik1_base = out['ik1_input'], out['ik1_base']
                 pl_pRB_dec, pl_gR1_dec = out['pl_pRB_dec'], out['pl_gR1_dec']
                 RRB_after_pl = out['RRB_after_pl']
@@ -206,9 +216,14 @@ def build_cache(input_cache, output_dir, mode, imu_input_mode, pl_checkpoint, sh
         if max_sequences and total_sequences >= max_sequences:
             break
     flush()
+    input_size = 63 if feature_mode == 'last_control' else 45 + tail_len * 18 + 3
+    ik1_backend = 'control_point_last_v1' if feature_mode == 'last_control' else 'control_point_v1'
     manifest = {
         'type': 'newik1_control_cache_v1',
         'mode': mode,
+        'feature_mode': feature_mode,
+        'input_size': input_size,
+        'ik1_backend': ik1_backend,
         'source_cache': str(input_cache),
         'source_manifest': source_manifest,
         'imu_input_mode': imu_input_mode,
@@ -223,10 +238,10 @@ def build_cache(input_cache, output_dir, mode, imu_input_mode, pl_checkpoint, sh
         'target_definition': {
             'pRJ_GT': 'SMPL male FK with root pose set to identity; joints[:,1:] flattened to 69D, meters, root-relative body frame.',
             'gR2_GT': '-pose_gt[:,0,:,1], normalized.',
-            'control_fit': 'fit_uniform_cubic_spline_controls(concat(pRJ_GT, normalize(gR2_GT))).',
+            'control_fit': control_fit_contract(),
         },
         'fields': {
-            'ik1_input': '[T,120] RRB_after_pl[45] + PL control tail[4,18] + gR1[3]',
+            'ik1_input': '[T,input_size] control_tail: RRB_after_pl[45] + PL control tail[tail_len,18] + gR1[3]; last_control: RRB_after_pl[45] + last PL control gR1[3] + last PL control pRB[15]',
             'ik1_target': '[T,72] pRJ_GT[69]+gR2_GT[3]',
             'ik1_target_control_tail': '[T,4,72] fitted IK1 GT control tail',
             'ik1_base': '[T,72] frozen official IK1 output under this input contract',
@@ -246,11 +261,12 @@ def main():
     parser.add_argument('--pl-checkpoint', type=Path)
     parser.add_argument('--shard-size', type=int, default=50)
     parser.add_argument('--tail-len', type=int, default=4)
+    parser.add_argument('--feature-mode', choices=('control_tail', 'last_control'), default='control_tail')
     parser.add_argument('--max-sequences', type=int, default=0)
     args = parser.parse_args()
     manifest = build_cache(
         args.input_cache, args.output_dir, args.mode, args.imu_input_mode,
-        args.pl_checkpoint, args.shard_size, args.tail_len, args.max_sequences,
+        args.pl_checkpoint, args.shard_size, args.tail_len, args.feature_mode, args.max_sequences,
     )
     print(json.dumps({
         'status': 'ok',

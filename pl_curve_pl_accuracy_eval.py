@@ -6,7 +6,7 @@ import torch
 
 import articulate as art
 from l4_train_diverse_short import DEVICE, load_cache_files
-from pl_curve import PLCurveModule, normalize_gravity
+from pl_curve import _r6d_to_rot6x, build_pl_curve_model, normalize_gravity, pl_bone6d_base_from_feature
 
 
 LEAF_NAMES = ('L_LowArm', 'R_LowArm', 'L_LowLeg', 'R_LowLeg', 'Head')
@@ -15,13 +15,10 @@ LEAF_NAMES = ('L_LowArm', 'R_LowArm', 'L_LowLeg', 'R_LowLeg', 'Head')
 def build_pl_curve(checkpoint_path):
     checkpoint = torch.load(checkpoint_path, map_location=DEVICE)
     config = checkpoint.get('config', {})
-    model = PLCurveModule(
-        init_size=int(config.get('init_size', 18)),
-        hidden_size=int(config.get('hidden_size', 512)),
-        tail_update=int(config.get('tail_length', 4)),
-        residual_scale=float(config.get('residual_scale', 0.005)),
-        dropout=float(config.get('dropout', 0.4)),
-    ).to(DEVICE)
+    if 'model_variant' not in config and checkpoint.get('model_variant'):
+        config = dict(config)
+        config['model_variant'] = checkpoint.get('model_variant')
+    model = build_pl_curve_model(config).to(DEVICE)
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
     return model, config
@@ -52,17 +49,31 @@ def leaf_error_cm(pred, target):
     return (pred - target).norm(dim=-1) * 100.0
 
 
+def bone_angle_deg(pred6d, target6d):
+    pred_rot = _r6d_to_rot6x(pred6d, 5)
+    target_rot = _r6d_to_rot6x(target6d.to(pred6d.device, pred6d.dtype), 5)
+    rel = pred_rot.transpose(-1, -2).matmul(target_rot)
+    trace = rel[..., 0, 0] + rel[..., 1, 1] + rel[..., 2, 2]
+    cos = ((trace - 1.0) * 0.5).clamp(-1.0 + 1e-6, 1.0 - 1e-6)
+    return torch.rad2deg(torch.acos(cos))
+
+
 @torch.no_grad()
 def evaluate_sequence(model, record):
     pl_input = record['pl_input'].float().to(DEVICE)
     target = normalize_gravity(record['pl_target'].float()).to(DEVICE)
     original = normalize_gravity(record['pl_base'].float()).to(DEVICE)
-    init_feature = record.get('pl_init_feature')
-    if init_feature is not None:
-        init_feature = init_feature.float().to(DEVICE)
-    elif model.init_size != 18:
-        raise RuntimeError(f'PL init dim {model.init_size} requires pl_init_feature for {record["name"]}.')
-    new = model.forward_sequence(pl_input, original, init_output=target[0] if init_feature is None else None, init_feature=init_feature)['pl']
+    init_feature = None
+    if model.init_size == 18:
+        init_output = target[0]
+    else:
+        raw_init_feature = record.get('pl_init_feature')
+        if raw_init_feature is None:
+            raise RuntimeError(f'PL init dim {model.init_size} requires pl_init_feature for {record["name"]}.')
+        init_feature = raw_init_feature.float().to(DEVICE)
+        init_output = None
+    output = model.forward_sequence(pl_input, original, init_output=init_output, init_feature=init_feature)
+    new = output['pl']
     new = normalize_gravity(new)
 
     original_gravity = gravity_angle_deg(original[..., 15:], target[..., 15:])
@@ -70,7 +81,7 @@ def evaluate_sequence(model, record):
     original_leaf = leaf_error_cm(original, target)
     new_leaf = leaf_error_cm(new, target)
 
-    return {
+    row = {
         'name': record['name'],
         'num_frames': int(pl_input.shape[0]),
         'shapes': {
@@ -90,13 +101,24 @@ def evaluate_sequence(model, record):
         'original_leaf_error_cm': original_leaf.cpu(),
         'new_leaf_error_cm': new_leaf.cpu(),
     }
+    if 'bone6d_target' in record and 'bone6d' in output:
+        target_bone = record['bone6d_target'].float().to(DEVICE)
+        base_bone = pl_bone6d_base_from_feature(pl_input)
+        pred_bone = output['bone6d']
+        row.update({
+            'base_bone_angle_deg': bone_angle_deg(base_bone, target_bone).cpu(),
+            'new_bone_angle_deg': bone_angle_deg(pred_bone, target_bone).cpu(),
+        })
+        row['shapes']['bone6d_target'] = list(target_bone.shape)
+        row['shapes']['bone6d'] = list(pred_bone.shape)
+    return row
 
 
 def load_pl_curve_records(cache_path, max_sequences=0):
     files, manifest = load_cache_files(cache_path)
-    if manifest is None or manifest.get('type') not in ('pl_curve_cache_v1', 'pl_curve_cache_v2'):
-        raise RuntimeError(f'Expected pl_curve_cache_v1/v2 manifest, got {manifest.get("type") if manifest else None}.')
-    has_init = manifest.get('type') == 'pl_curve_cache_v2'
+    if manifest is None or manifest.get('type') not in ('pl_curve_cache_v1', 'pl_curve_cache_v2', 'pl_curve_cache_v3', 'pl_curve_cache_v4'):
+        raise RuntimeError(f'Expected pl_curve_cache_v1/v2/v3/v4 manifest, got {manifest.get("type") if manifest else None}.')
+    has_init = manifest.get('type') in ('pl_curve_cache_v2', 'pl_curve_cache_v3', 'pl_curve_cache_v4')
     records = []
     for cache_file in files:
         data = torch.load(cache_file, map_location='cpu')
@@ -109,6 +131,8 @@ def load_pl_curve_records(cache_path, max_sequences=0):
             }
             if has_init:
                 record['pl_init_feature'] = data['pl_init_feature'][seq_idx]
+            if 'bone6d_target' in data:
+                record['bone6d_target'] = data['bone6d_target'][seq_idx]
             records.append(record)
             if max_sequences and len(records) >= max_sequences:
                 return records, manifest
@@ -127,7 +151,7 @@ def aggregate_rows(rows):
             'new_cm': summarize(new_leaf[:, leaf_idx]),
             'delta_new_minus_original_cm': summarize(new_leaf[:, leaf_idx] - original_leaf[:, leaf_idx]),
         }
-    return {
+    aggregate = {
         'num_sequences': len(rows),
         'num_frames': int(sum(row['num_frames'] for row in rows)),
         'all_finite': all(row['finite'] for row in rows),
@@ -143,6 +167,23 @@ def aggregate_rows(rows):
             'by_leaf': leaf_by_name,
         },
     }
+    if rows and 'new_bone_angle_deg' in rows[0]:
+        base_bone = torch.cat([row['base_bone_angle_deg'] for row in rows], dim=0)
+        new_bone = torch.cat([row['new_bone_angle_deg'] for row in rows], dim=0)
+        bone_by_name = {}
+        for leaf_idx, leaf_name in enumerate(LEAF_NAMES):
+            bone_by_name[leaf_name] = {
+                'base_deg': summarize(base_bone[:, leaf_idx]),
+                'new_deg': summarize(new_bone[:, leaf_idx]),
+                'delta_new_minus_base_deg': summarize(new_bone[:, leaf_idx] - base_bone[:, leaf_idx]),
+            }
+        aggregate['bone_orientation_angle_deg'] = {
+            'base': summarize(base_bone),
+            'new': summarize(new_bone),
+            'delta_new_minus_base': summarize(new_bone - base_bone),
+            'by_leaf': bone_by_name,
+        }
+    return aggregate
 
 
 def compact_row(row):
@@ -150,7 +191,7 @@ def compact_row(row):
     new_gravity = row['new_gravity_angle_deg']
     original_leaf = row['original_leaf_error_cm']
     new_leaf = row['new_leaf_error_cm']
-    return {
+    compact = {
         'name': row['name'],
         'num_frames': row['num_frames'],
         'shapes': row['shapes'],
@@ -166,6 +207,15 @@ def compact_row(row):
             'delta_new_minus_original': summarize(new_leaf - original_leaf),
         },
     }
+    if 'new_bone_angle_deg' in row:
+        base_bone = row['base_bone_angle_deg']
+        new_bone = row['new_bone_angle_deg']
+        compact['bone_orientation_angle_deg'] = {
+            'base': summarize(base_bone),
+            'new': summarize(new_bone),
+            'delta_new_minus_base': summarize(new_bone - base_bone),
+        }
+    return compact
 
 
 def main():

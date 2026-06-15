@@ -10,7 +10,7 @@ from l4_tail_update_qstate import UniformCubicBSpline
 from l4_train_diverse_short import DEVICE, load_cache_files
 from net import GPNet
 from newik1_control_point import ik1_target_from_pose, normalize_ik1
-from pl_curve import fit_uniform_cubic_spline_controls, normalize_gravity, pl_target_from_pose
+from pl_curve import control_fit_contract, fit_uniform_cubic_spline_controls, normalize_gravity, pl_target_from_pose
 
 
 DT = 1.0 / 60.0
@@ -256,7 +256,7 @@ def main():
         'spline': {
             'type': 'uniform cubic B-spline with repeated boundary controls',
             'tail_len': 4,
-            'control_fit': 'fit_uniform_cubic_spline_controls solves q[i]=(C[i-1]+4*C[i]+C[i+1])/6 for GT samples.',
+            'control_fit': control_fit_contract(),
             'decode_formula': 'q=(left+4*C+right)/6 at frame knots',
             'derivative': 'analytic',
             'dot_formula': 'qdot=(right-left)/(2*dt) at frame knots',

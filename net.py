@@ -79,6 +79,8 @@ class GPNet(torch.nn.Module):
         ik1_backend='original',
         ik1_curve_module=None,
         ik1_official_module=None,
+        ik1_official_output_mode='full',
+        ik1_official_residual_alpha=1.0,
         l4_qdot_velocity_blend=0.5,
         l4_qstate_alpha=0.1,
         l4_qstate_max_delta=0.1,
@@ -132,18 +134,22 @@ class GPNet(torch.nn.Module):
         self.ik1_backend = ik1_backend
         self.ik1_curve = ik1_curve_module
         self.ik1_official = ik1_official_module
+        self.ik1_official_output_mode = ik1_official_output_mode
+        self.ik1_official_residual_alpha = float(ik1_official_residual_alpha)
         self.last_pl_curve_debug = {}
         self.last_ik1_curve_debug = {}
         if self.pl_backend not in ('original', 'curve_v1'):
             raise ValueError(f'Unsupported pl_backend: {self.pl_backend}')
         if self.pl_backend == 'curve_v1' and self.pl_curve is None:
             raise ValueError('pl_backend=curve_v1 requires pl_curve_module.')
-        if self.ik1_backend not in ('original', 'curve_v1', 'control_point_v1', 'official_input_v1'):
+        if self.ik1_backend not in ('original', 'curve_v1', 'control_point_v1', 'control_point_last_v1', 'official_input_v1'):
             raise ValueError(f'Unsupported ik1_backend: {self.ik1_backend}')
-        if self.ik1_backend in ('curve_v1', 'control_point_v1') and self.ik1_curve is None:
+        if self.ik1_backend in ('curve_v1', 'control_point_v1', 'control_point_last_v1') and self.ik1_curve is None:
             raise ValueError(f'ik1_backend={self.ik1_backend} requires ik1_curve_module.')
         if self.ik1_backend == 'official_input_v1' and self.ik1_official is None:
             raise ValueError('ik1_backend=official_input_v1 requires ik1_official_module.')
+        if self.ik1_official_output_mode not in ('full', 'pRJ_only', 'residual', 'residual_pRJ_only'):
+            raise ValueError(f'Unsupported ik1_official_output_mode: {self.ik1_official_output_mode}')
         self.pip_physics_backend = None
         self.last_pip_physics_debug = {}
         if self.physics_backend == 'pip_physics_v1':
@@ -204,6 +210,7 @@ class GPNet(torch.nn.Module):
         self.pl1hc = [_.contiguous() for _ in self.plnet.init_net(x1).view(1, 2, self.plnet.num_layers, self.plnet.hidden_size).permute(1, 2, 0, 3)]
         self.vr1hc = [_.contiguous() for _ in self.vrnet.init_net(x2).view(1, 2, self.vrnet.num_layers, self.vrnet.hidden_size).permute(1, 2, 0, 3)]
         self.ik1hc = None
+        self.ik1_official_hc = None
         self.ik2hc = None
         self.last_cjoint = torch.tensor([0, h + self.floor_y, 0]) + j[0, self.j_contact]
         self.is_init = False
@@ -217,6 +224,8 @@ class GPNet(torch.nn.Module):
         if self.l4_prephysics is not None:
             self.l4_prephysics.reset()
         if self.pl_curve is not None:
+            self.pl_offset_r = None
+            self._last_pl_curve_wRB = None
             if getattr(self.pl_curve, 'init_size', 18) == 18:
                 self.pl_curve.reset_stream(init_output=x1)
             elif self.pl_curve.init_size == 36:
@@ -225,6 +234,7 @@ class GPNet(torch.nn.Module):
                 offset = offset_r.detach().cpu().reshape(-1)
                 if offset.shape[-1] != 18:
                     raise ValueError(f'Expected offset_r flatten dim 18, got {offset.shape[-1]}.')
+                self.pl_offset_r = offset.view(6, 3)
                 pl_init = torch.cat((offset, pRL, gR)).to(x1.device, x1.dtype)
                 self.pl_curve.reset_stream(init_feature=pl_init)
             else:
@@ -232,11 +242,34 @@ class GPNet(torch.nn.Module):
         if self.ik1_curve is not None:
             self.ik1_curve.reset_stream()
 
-    def _run_pl_stage(self, x_pl_in):
+    def _pl_curve_frame_feature(self, a, w, R, x_pl_legacy):
+        if self.pl_backend != 'curve_v1' or self.pl_curve is None:
+            return x_pl_legacy
+        if getattr(self.pl_curve, 'input_size', 84) == 84:
+            return x_pl_legacy
+        if self.pl_offset_r is None:
+            raise ValueError('Offset-aware PL curve requires offset_r in rnn_initialize.')
+        from pl_curve import PL_OFFSET_AWARE_INPUT_SIZE, pl_offset_aware_frame_feature
+
+        if self.pl_curve.input_size != PL_OFFSET_AWARE_INPUT_SIZE:
+            raise ValueError(f'Unsupported PL curve input_size={self.pl_curve.input_size}.')
+        feature, wRB = pl_offset_aware_frame_feature(
+            a,
+            w,
+            R,
+            self.pl_offset_r.to(device=a.device, dtype=a.dtype),
+            prev_wRB=self._last_pl_curve_wRB,
+            dt=self.dt,
+        )
+        self._last_pl_curve_wRB = wRB.detach()
+        return feature
+
+    def _run_pl_stage(self, x_pl_in, x_curve_in=None):
         x, self.pl1hc = self.plnet.rnn(x_pl_in.view(1, 1, -1), self.pl1hc)
         base = self.plnet.linear2(x.squeeze())
         if self.pl_backend == 'curve_v1':
-            curve = self.pl_curve.step(x_pl_in.to(base.device), base)
+            curve_feature = x_pl_in if x_curve_in is None else x_curve_in
+            curve = self.pl_curve.step(curve_feature.to(base.device), base)
             pl_out = curve['pl_t'][0]
             self.last_pl_curve_debug = dict(self.pl_curve.last_debug)
         else:
@@ -257,21 +290,52 @@ class GPNet(torch.nn.Module):
 
     def _run_ik1_stage(self, RRB_after_pl, gR1, pRB):
         x_ik1_official = torch.cat((RRB_after_pl.ravel(), gR1, pRB))
-        ik1_net = self.ik1_official if self.ik1_backend == 'official_input_v1' else self.iknet.net1
-        x, self.ik1hc = ik1_net.rnn(x_ik1_official.view(1, 1, -1), self.ik1hc)
-        base = ik1_net.linear2(x.squeeze())
-        if self.ik1_backend == 'curve_v1':
+        x, self.ik1hc = self.iknet.net1.rnn(x_ik1_official.view(1, 1, -1), self.ik1hc)
+        official_base = self.iknet.net1.linear2(x.squeeze())
+        if self.ik1_backend == 'official_input_v1':
+            x_new, self.ik1_official_hc = self.ik1_official.rnn(x_ik1_official.view(1, 1, -1), self.ik1_official_hc)
+            candidate = self.ik1_official.linear2(x_new.squeeze())
+            base = official_base
+            if self.ik1_official_output_mode == 'full':
+                ik1_out = candidate
+            elif self.ik1_official_output_mode == 'pRJ_only':
+                ik1_out = torch.cat((candidate[:69], official_base[69:]), dim=-1)
+            elif self.ik1_official_output_mode == 'residual':
+                ik1_out = official_base + self.ik1_official_residual_alpha * (candidate - official_base)
+            elif self.ik1_official_output_mode == 'residual_pRJ_only':
+                pRJ = official_base[:69] + self.ik1_official_residual_alpha * (candidate[:69] - official_base[:69])
+                ik1_out = torch.cat((pRJ, official_base[69:]), dim=-1)
+            else:
+                raise RuntimeError(f'Unsupported ik1_official_output_mode={self.ik1_official_output_mode}')
+            self.last_ik1_curve_debug = {
+                'ik1_t': ik1_out.detach(),
+                'base_t': official_base.detach(),
+                'candidate_t': candidate.detach(),
+                'output_mode': self.ik1_official_output_mode,
+                'residual_alpha': self.ik1_official_residual_alpha,
+            }
+        elif self.ik1_backend == 'curve_v1':
+            base = official_base
             feature = torch.cat((RRB_after_pl.ravel(), gR1, self._pl_control_tail(pRB, gR1))).to(base.device)
             curve = self.ik1_curve.step(feature, base, pRB.to(base.device))
             ik1_out = curve['ik1_t'][0]
             self.last_ik1_curve_debug = dict(self.ik1_curve.last_debug)
         elif self.ik1_backend == 'control_point_v1':
+            base = official_base
             feature = torch.cat((RRB_after_pl.ravel(), self._pl_control_tail(pRB, gR1), gR1)).to(base.device)
             curve = self.ik1_curve.step(feature, base)
             ik1_out = curve['ik1_t'][0]
             self.last_ik1_curve_debug = dict(self.ik1_curve.last_debug)
+        elif self.ik1_backend == 'control_point_last_v1':
+            base = official_base
+            pl_control_last = self._pl_control_tail(pRB, gR1).view(4, 18)[-1]
+            feature = torch.cat((RRB_after_pl.ravel(), art.math.normalize_tensor(pl_control_last[15:]), pl_control_last[:15])).to(base.device)
+            curve = self.ik1_curve.step(feature, base)
+            ik1_out = curve['ik1_t'][0]
+            self.last_ik1_curve_debug = dict(self.ik1_curve.last_debug)
         else:
-            ik1_out = base
+            base = official_base
+            ik1_out = official_base
             self.last_ik1_curve_debug = {}
         gR2 = art.math.normalize_tensor(ik1_out[69:])
         return ik1_out, gR2
@@ -318,7 +382,8 @@ class GPNet(torch.nn.Module):
 
         # PL-s1
         x = torch.cat((aRB.ravel(), wRB.ravel(), RRB.ravel(), gR0))
-        x, gR1 = self._run_pl_stage(x)
+        x_curve = self._pl_curve_frame_feature(a, w, R, x)
+        x, gR1 = self._run_pl_stage(x, x_curve)
         RRB = art.math.from_to_rotation_matrix(gR0, gR1).matmul(RRB)
 
         # IK-s1
@@ -384,7 +449,8 @@ class GPNet(torch.nn.Module):
 
         # PL-s1
         x_pl_in = torch.cat((aRB0.ravel(), wRB0.ravel(), RRB0.ravel(), gR0))
-        x_pl, gR1 = self._run_pl_stage(x_pl_in)
+        x_curve = self._pl_curve_frame_feature(a, w, R, x_pl_in)
+        x_pl, gR1 = self._run_pl_stage(x_pl_in, x_curve)
         pRB = x_pl[:15]
         RRB_after_pl = art.math.from_to_rotation_matrix(gR0, gR1).matmul(RRB0)
 
@@ -576,7 +642,8 @@ class GPNet(torch.nn.Module):
 
         # PL-s1
         x = torch.cat((aRB.ravel(), wRB.ravel(), RRB.ravel(), gR0))
-        x, gR1 = self._run_pl_stage(x)             # pRB, gR
+        x_curve = self._pl_curve_frame_feature(a, w, R, x)
+        x, gR1 = self._run_pl_stage(x, x_curve)             # pRB, gR
         RRB = art.math.from_to_rotation_matrix(gR0, gR1).matmul(RRB)
 
         # IK-s1

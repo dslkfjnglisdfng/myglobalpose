@@ -1,0 +1,651 @@
+name: ik1_auto_search_round3_downstream_aware_from_v11
+state_file: data/experiments/orchestrator_states/ik1_auto_search_round3_queue.json
+allow_same_user_gpu_share: false
+baseline:
+  pl_upstream: newpl_v4_init36
+  pl_checkpoint: data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+  imu_input_mode: processed
+  s4_score: 38.625657482802865
+  s5_score: 43.81127653867006
+  selection_rule: S4/S5 full-pipeline 11 metrics only; reject S4-only improvements that regress S5.
+round: 3
+parent_seed: v11_alpha035_ik2w2_from_v10
+parent_checkpoint: data/experiments/ik1_auto_search/round2_downstream_aware_from_v10/v11_alpha035_ik2w2_from_v10/train/best_loss.pt
+notes: 'Narrow search around Round2 best: alpha 0.30/0.40, IK2 weight 2.5, S5-stability conservative recipe; gR2 preserved/official distill only.'
+tasks:
+- id: round3_train_v12_alpha030_ik2w2_from_v11
+  experiment_id: round3_train_v12_alpha030_ik2w2_from_v11
+  name: Round3 train v12_alpha030_ik2w2_from_v11
+  type: train
+  server: node01
+  gpu: 0
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round2_downstream_aware_from_v10/v11_alpha035_ik2w2_from_v10/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: downstream_aware_alpha030
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=0; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_train.py --train-cache data/experiments/newik1_v6_official_input_init36_cascade_rerun/caches/teacher_forced_amass/newik1_official_input_cache_manifest.json --val-cache data/experiments/newik1_v6_official_input_init36_cascade_rerun/caches/teacher_forced_tc_val/newik1_official_input_cache_manifest.json --output-dir data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train --experiment-name v12_alpha030_ik2w2_from_v11 --epochs 3 --lr 1.5e-6 --dropout 0.10 --batch-size 16 --window 61 --init-checkpoint data/experiments/ik1_auto_search/round2_downstream_aware_from_v10/v11_alpha035_ik2w2_from_v10/train/best_loss.pt --output-mode residual_pRJ_only --residual-alpha 0.3 --pRJ-weight 1.0 --gR2-weight 0.0 --gR2-dot-weight
+    0.0 --gR2-ddot-weight 0.0 --pRJ-dot-weight 0.03 --pRJ-ddot-weight 0.001 --ik1-distill-pRJ-weight 0.8 --ik1-distill-gR2-weight 1.0 --ik2-input-distill-weight 2.0
+  command_train: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=0; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_train.py --train-cache data/experiments/newik1_v6_official_input_init36_cascade_rerun/caches/teacher_forced_amass/newik1_official_input_cache_manifest.json --val-cache data/experiments/newik1_v6_official_input_init36_cascade_rerun/caches/teacher_forced_tc_val/newik1_official_input_cache_manifest.json --output-dir data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train --experiment-name v12_alpha030_ik2w2_from_v11 --epochs 3 --lr 1.5e-6 --dropout 0.10 --batch-size 16 --window 61 --init-checkpoint data/experiments/ik1_auto_search/round2_downstream_aware_from_v10/v11_alpha035_ik2w2_from_v10/train/best_loss.pt --output-mode residual_pRJ_only --residual-alpha 0.3 --pRJ-weight 1.0 --gR2-weight 0.0
+    --gR2-dot-weight 0.0 --gR2-ddot-weight 0.0 --pRJ-dot-weight 0.03 --pRJ-ddot-weight 0.001 --ik1-distill-pRJ-weight 0.8 --ik1-distill-gR2-weight 1.0 --ik2-input-distill-weight 2.0
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 1
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '0'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/best_loss.pt
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/last.pt
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/train_result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train.log
+  checkpoint_path: data/experiments/ik1_auto_search/round2_downstream_aware_from_v10/v11_alpha035_ik2w2_from_v10/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/best_loss.pt
+  summary_parser: parse_train_log
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+  notes: '{"epochs": 3, "gpu": 0, "id": "v12_alpha030_ik2w2_from_v11", "lr": "1.5e-6", "output_mode": "residual_pRJ_only", "residual_alpha": 0.3, "route": "downstream_aware_alpha030", "weights": {"gR2": 0.0, "gR2_ddot": 0.0, "gR2_dot": 0.0, "ik1_distill_gR2": 1.0, "ik1_distill_pRJ": 0.8, "ik2_input_distill": 2.0, "pRJ": 1.0, "pRJ_ddot": 0.001, "pRJ_dot": 0.03}}'
+- id: round3_s4_v12_alpha030_ik2w2_from_v11
+  experiment_id: round3_s4_v12_alpha030_ik2w2_from_v11
+  name: Round3 S4 full-pipeline v12_alpha030_ik2w2_from_v11
+  type: eval
+  server: node01
+  gpu: 0
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: downstream_aware_alpha030
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=0; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/s4/best_loss/result.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/best_loss.pt --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=0; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/s4/best_loss/result.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/best_loss.pt --imu-input-mode processed
+  command_eval_s5: ''
+  dependencies:
+  - round3_train_v12_alpha030_ik2w2_from_v11
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 2
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '0'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/s4/best_loss/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/s4_best_loss.log
+  checkpoint_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/s4/best_loss/result.json
+  summary_parser: parse_s4_metrics
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round3_s5_v12_alpha030_ik2w2_from_v11
+  experiment_id: round3_s5_v12_alpha030_ik2w2_from_v11
+  name: Round3 S5 full-pipeline v12_alpha030_ik2w2_from_v11
+  type: eval
+  server: node01
+  gpu: 0
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: downstream_aware_alpha030
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=0; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/s5/best_loss/result.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/best_loss.pt --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=0; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/s5/best_loss/result.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/best_loss.pt --imu-input-mode processed
+  dependencies:
+  - round3_train_v12_alpha030_ik2w2_from_v11
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 3
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '0'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/s5/best_loss/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/s5_best_loss.log
+  checkpoint_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/s5/best_loss/result.json
+  summary_parser: parse_s4_metrics
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round3_real_s4_v12_alpha030_ik2w2_from_v11
+  experiment_id: round3_real_s4_v12_alpha030_ik2w2_from_v11
+  name: Round3 S4 real streaming IK1 audit v12_alpha030_ik2w2_from_v11
+  type: audit
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: downstream_aware_alpha030
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_real_streaming_audit.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/real_streaming/s4/best_loss/result.json --split-label S4 --version-name v12_alpha030_ik2w2_from_v11 --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/best_loss.pt --ik1-backend official_input_v1 --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies:
+  - round3_train_v12_alpha030_ik2w2_from_v11
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 4
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/real_streaming/s4/best_loss/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/real_s4_best_loss.log
+  checkpoint_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/real_streaming/s4/best_loss/result.json
+  summary_parser: parse_generic_json
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round3_real_s5_v12_alpha030_ik2w2_from_v11
+  experiment_id: round3_real_s5_v12_alpha030_ik2w2_from_v11
+  name: Round3 S5 real streaming IK1 audit v12_alpha030_ik2w2_from_v11
+  type: audit
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: downstream_aware_alpha030
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_real_streaming_audit.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/real_streaming/s5/best_loss/result.json --split-label S5 --version-name v12_alpha030_ik2w2_from_v11 --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/best_loss.pt --ik1-backend official_input_v1 --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies:
+  - round3_train_v12_alpha030_ik2w2_from_v11
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 5
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/real_streaming/s5/best_loss/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/real_s5_best_loss.log
+  checkpoint_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha030_ik2w2_from_v11/real_streaming/s5/best_loss/result.json
+  summary_parser: parse_generic_json
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round3_train_v12_alpha040_ik2w2_from_v11
+  experiment_id: round3_train_v12_alpha040_ik2w2_from_v11
+  name: Round3 train v12_alpha040_ik2w2_from_v11
+  type: train
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round2_downstream_aware_from_v10/v11_alpha035_ik2w2_from_v10/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: downstream_aware_alpha040
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_train.py --train-cache data/experiments/newik1_v6_official_input_init36_cascade_rerun/caches/teacher_forced_amass/newik1_official_input_cache_manifest.json --val-cache data/experiments/newik1_v6_official_input_init36_cascade_rerun/caches/teacher_forced_tc_val/newik1_official_input_cache_manifest.json --output-dir data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train --experiment-name v12_alpha040_ik2w2_from_v11 --epochs 3 --lr 1.5e-6 --dropout 0.10 --batch-size 16 --window 61 --init-checkpoint data/experiments/ik1_auto_search/round2_downstream_aware_from_v10/v11_alpha035_ik2w2_from_v10/train/best_loss.pt --output-mode residual_pRJ_only --residual-alpha 0.4 --pRJ-weight 1.0 --gR2-weight 0.0 --gR2-dot-weight
+    0.0 --gR2-ddot-weight 0.0 --pRJ-dot-weight 0.03 --pRJ-ddot-weight 0.001 --ik1-distill-pRJ-weight 0.8 --ik1-distill-gR2-weight 1.0 --ik2-input-distill-weight 2.0
+  command_train: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_train.py --train-cache data/experiments/newik1_v6_official_input_init36_cascade_rerun/caches/teacher_forced_amass/newik1_official_input_cache_manifest.json --val-cache data/experiments/newik1_v6_official_input_init36_cascade_rerun/caches/teacher_forced_tc_val/newik1_official_input_cache_manifest.json --output-dir data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train --experiment-name v12_alpha040_ik2w2_from_v11 --epochs 3 --lr 1.5e-6 --dropout 0.10 --batch-size 16 --window 61 --init-checkpoint data/experiments/ik1_auto_search/round2_downstream_aware_from_v10/v11_alpha035_ik2w2_from_v10/train/best_loss.pt --output-mode residual_pRJ_only --residual-alpha 0.4 --pRJ-weight 1.0 --gR2-weight 0.0
+    --gR2-dot-weight 0.0 --gR2-ddot-weight 0.0 --pRJ-dot-weight 0.03 --pRJ-ddot-weight 0.001 --ik1-distill-pRJ-weight 0.8 --ik1-distill-gR2-weight 1.0 --ik2-input-distill-weight 2.0
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 11
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/best_loss.pt
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/last.pt
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/train_result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train.log
+  checkpoint_path: data/experiments/ik1_auto_search/round2_downstream_aware_from_v10/v11_alpha035_ik2w2_from_v10/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/best_loss.pt
+  summary_parser: parse_train_log
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+  notes: '{"epochs": 3, "gpu": 1, "id": "v12_alpha040_ik2w2_from_v11", "lr": "1.5e-6", "output_mode": "residual_pRJ_only", "residual_alpha": 0.4, "route": "downstream_aware_alpha040", "weights": {"gR2": 0.0, "gR2_ddot": 0.0, "gR2_dot": 0.0, "ik1_distill_gR2": 1.0, "ik1_distill_pRJ": 0.8, "ik2_input_distill": 2.0, "pRJ": 1.0, "pRJ_ddot": 0.001, "pRJ_dot": 0.03}}'
+- id: round3_s4_v12_alpha040_ik2w2_from_v11
+  experiment_id: round3_s4_v12_alpha040_ik2w2_from_v11
+  name: Round3 S4 full-pipeline v12_alpha040_ik2w2_from_v11
+  type: eval
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: downstream_aware_alpha040
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/s4/best_loss/result.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/best_loss.pt --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/s4/best_loss/result.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/best_loss.pt --imu-input-mode processed
+  command_eval_s5: ''
+  dependencies:
+  - round3_train_v12_alpha040_ik2w2_from_v11
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 12
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/s4/best_loss/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/s4_best_loss.log
+  checkpoint_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/s4/best_loss/result.json
+  summary_parser: parse_s4_metrics
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round3_s5_v12_alpha040_ik2w2_from_v11
+  experiment_id: round3_s5_v12_alpha040_ik2w2_from_v11
+  name: Round3 S5 full-pipeline v12_alpha040_ik2w2_from_v11
+  type: eval
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: downstream_aware_alpha040
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/s5/best_loss/result.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/best_loss.pt --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/s5/best_loss/result.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/best_loss.pt --imu-input-mode processed
+  dependencies:
+  - round3_train_v12_alpha040_ik2w2_from_v11
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 13
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/s5/best_loss/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/s5_best_loss.log
+  checkpoint_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/s5/best_loss/result.json
+  summary_parser: parse_s4_metrics
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round3_real_s4_v12_alpha040_ik2w2_from_v11
+  experiment_id: round3_real_s4_v12_alpha040_ik2w2_from_v11
+  name: Round3 S4 real streaming IK1 audit v12_alpha040_ik2w2_from_v11
+  type: audit
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: downstream_aware_alpha040
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_real_streaming_audit.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/real_streaming/s4/best_loss/result.json --split-label S4 --version-name v12_alpha040_ik2w2_from_v11 --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/best_loss.pt --ik1-backend official_input_v1 --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies:
+  - round3_train_v12_alpha040_ik2w2_from_v11
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 14
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/real_streaming/s4/best_loss/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/real_s4_best_loss.log
+  checkpoint_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/real_streaming/s4/best_loss/result.json
+  summary_parser: parse_generic_json
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round3_real_s5_v12_alpha040_ik2w2_from_v11
+  experiment_id: round3_real_s5_v12_alpha040_ik2w2_from_v11
+  name: Round3 S5 real streaming IK1 audit v12_alpha040_ik2w2_from_v11
+  type: audit
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: downstream_aware_alpha040
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_real_streaming_audit.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/real_streaming/s5/best_loss/result.json --split-label S5 --version-name v12_alpha040_ik2w2_from_v11 --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/best_loss.pt --ik1-backend official_input_v1 --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies:
+  - round3_train_v12_alpha040_ik2w2_from_v11
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 15
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/real_streaming/s5/best_loss/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/real_s5_best_loss.log
+  checkpoint_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha040_ik2w2_from_v11/real_streaming/s5/best_loss/result.json
+  summary_parser: parse_generic_json
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round3_train_v12_alpha035_ik2w25_from_v11
+  experiment_id: round3_train_v12_alpha035_ik2w25_from_v11
+  name: Round3 train v12_alpha035_ik2w25_from_v11
+  type: train
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round2_downstream_aware_from_v10/v11_alpha035_ik2w2_from_v10/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: downstream_aware_ik2w25
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_train.py --train-cache data/experiments/newik1_v6_official_input_init36_cascade_rerun/caches/teacher_forced_amass/newik1_official_input_cache_manifest.json --val-cache data/experiments/newik1_v6_official_input_init36_cascade_rerun/caches/teacher_forced_tc_val/newik1_official_input_cache_manifest.json --output-dir data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train --experiment-name v12_alpha035_ik2w25_from_v11 --epochs 3 --lr 1.5e-6 --dropout 0.10 --batch-size 16 --window 61 --init-checkpoint data/experiments/ik1_auto_search/round2_downstream_aware_from_v10/v11_alpha035_ik2w2_from_v10/train/best_loss.pt --output-mode residual_pRJ_only --residual-alpha 0.35 --pRJ-weight 1.0 --gR2-weight 0.0 --gR2-dot-weight
+    0.0 --gR2-ddot-weight 0.0 --pRJ-dot-weight 0.03 --pRJ-ddot-weight 0.001 --ik1-distill-pRJ-weight 0.8 --ik1-distill-gR2-weight 1.0 --ik2-input-distill-weight 2.5
+  command_train: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_train.py --train-cache data/experiments/newik1_v6_official_input_init36_cascade_rerun/caches/teacher_forced_amass/newik1_official_input_cache_manifest.json --val-cache data/experiments/newik1_v6_official_input_init36_cascade_rerun/caches/teacher_forced_tc_val/newik1_official_input_cache_manifest.json --output-dir data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train --experiment-name v12_alpha035_ik2w25_from_v11 --epochs 3 --lr 1.5e-6 --dropout 0.10 --batch-size 16 --window 61 --init-checkpoint data/experiments/ik1_auto_search/round2_downstream_aware_from_v10/v11_alpha035_ik2w2_from_v10/train/best_loss.pt --output-mode residual_pRJ_only --residual-alpha 0.35 --pRJ-weight 1.0 --gR2-weight
+    0.0 --gR2-dot-weight 0.0 --gR2-ddot-weight 0.0 --pRJ-dot-weight 0.03 --pRJ-ddot-weight 0.001 --ik1-distill-pRJ-weight 0.8 --ik1-distill-gR2-weight 1.0 --ik2-input-distill-weight 2.5
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 21
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/best_loss.pt
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/last.pt
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/train_result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train.log
+  checkpoint_path: data/experiments/ik1_auto_search/round2_downstream_aware_from_v10/v11_alpha035_ik2w2_from_v10/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/best_loss.pt
+  summary_parser: parse_train_log
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+  notes: '{"epochs": 3, "gpu": 0, "id": "v12_alpha035_ik2w25_from_v11", "lr": "1.5e-6", "output_mode": "residual_pRJ_only", "residual_alpha": 0.35, "route": "downstream_aware_ik2w25", "weights": {"gR2": 0.0, "gR2_ddot": 0.0, "gR2_dot": 0.0, "ik1_distill_gR2": 1.0, "ik1_distill_pRJ": 0.8, "ik2_input_distill": 2.5, "pRJ": 1.0, "pRJ_ddot": 0.001, "pRJ_dot": 0.03}}'
+- id: round3_s4_v12_alpha035_ik2w25_from_v11
+  experiment_id: round3_s4_v12_alpha035_ik2w25_from_v11
+  name: Round3 S4 full-pipeline v12_alpha035_ik2w25_from_v11
+  type: eval
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: downstream_aware_ik2w25
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/s4/best_loss/result.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/best_loss.pt --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/s4/best_loss/result.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/best_loss.pt --imu-input-mode processed
+  command_eval_s5: ''
+  dependencies:
+  - round3_train_v12_alpha035_ik2w25_from_v11
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 22
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/s4/best_loss/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/s4_best_loss.log
+  checkpoint_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/s4/best_loss/result.json
+  summary_parser: parse_s4_metrics
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round3_s5_v12_alpha035_ik2w25_from_v11
+  experiment_id: round3_s5_v12_alpha035_ik2w25_from_v11
+  name: Round3 S5 full-pipeline v12_alpha035_ik2w25_from_v11
+  type: eval
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: downstream_aware_ik2w25
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/s5/best_loss/result.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/best_loss.pt --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/s5/best_loss/result.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/best_loss.pt --imu-input-mode processed
+  dependencies:
+  - round3_train_v12_alpha035_ik2w25_from_v11
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 23
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/s5/best_loss/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/s5_best_loss.log
+  checkpoint_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/s5/best_loss/result.json
+  summary_parser: parse_s4_metrics
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round3_real_s4_v12_alpha035_ik2w25_from_v11
+  experiment_id: round3_real_s4_v12_alpha035_ik2w25_from_v11
+  name: Round3 S4 real streaming IK1 audit v12_alpha035_ik2w25_from_v11
+  type: audit
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: downstream_aware_ik2w25
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_real_streaming_audit.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/real_streaming/s4/best_loss/result.json --split-label S4 --version-name v12_alpha035_ik2w25_from_v11 --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/best_loss.pt --ik1-backend official_input_v1 --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies:
+  - round3_train_v12_alpha035_ik2w25_from_v11
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 24
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/real_streaming/s4/best_loss/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/real_s4_best_loss.log
+  checkpoint_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/real_streaming/s4/best_loss/result.json
+  summary_parser: parse_generic_json
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round3_real_s5_v12_alpha035_ik2w25_from_v11
+  experiment_id: round3_real_s5_v12_alpha035_ik2w25_from_v11
+  name: Round3 S5 real streaming IK1 audit v12_alpha035_ik2w25_from_v11
+  type: audit
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: downstream_aware_ik2w25
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_real_streaming_audit.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/real_streaming/s5/best_loss/result.json --split-label S5 --version-name v12_alpha035_ik2w25_from_v11 --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/best_loss.pt --ik1-backend official_input_v1 --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies:
+  - round3_train_v12_alpha035_ik2w25_from_v11
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 25
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/real_streaming/s5/best_loss/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/real_s5_best_loss.log
+  checkpoint_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_ik2w25_from_v11/real_streaming/s5/best_loss/result.json
+  summary_parser: parse_generic_json
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round3_train_v12_alpha035_s5stable_from_v11
+  experiment_id: round3_train_v12_alpha035_s5stable_from_v11
+  name: Round3 train v12_alpha035_s5stable_from_v11
+  type: train
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round2_downstream_aware_from_v10/v11_alpha035_ik2w2_from_v10/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: s5_stability_conservative
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_train.py --train-cache data/experiments/newik1_v6_official_input_init36_cascade_rerun/caches/teacher_forced_amass/newik1_official_input_cache_manifest.json --val-cache data/experiments/newik1_v6_official_input_init36_cascade_rerun/caches/teacher_forced_tc_val/newik1_official_input_cache_manifest.json --output-dir data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train --experiment-name v12_alpha035_s5stable_from_v11 --epochs 3 --lr 1e-6 --dropout 0.10 --batch-size 16 --window 61 --init-checkpoint data/experiments/ik1_auto_search/round2_downstream_aware_from_v10/v11_alpha035_ik2w2_from_v10/train/best_loss.pt --output-mode residual_pRJ_only --residual-alpha 0.35 --pRJ-weight 0.8 --gR2-weight 0.0
+    --gR2-dot-weight 0.0 --gR2-ddot-weight 0.0 --pRJ-dot-weight 0.04 --pRJ-ddot-weight 0.0015 --ik1-distill-pRJ-weight 1.0 --ik1-distill-gR2-weight 1.0 --ik2-input-distill-weight 2.5
+  command_train: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_train.py --train-cache data/experiments/newik1_v6_official_input_init36_cascade_rerun/caches/teacher_forced_amass/newik1_official_input_cache_manifest.json --val-cache data/experiments/newik1_v6_official_input_init36_cascade_rerun/caches/teacher_forced_tc_val/newik1_official_input_cache_manifest.json --output-dir data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train --experiment-name v12_alpha035_s5stable_from_v11 --epochs 3 --lr 1e-6 --dropout 0.10 --batch-size 16 --window 61 --init-checkpoint data/experiments/ik1_auto_search/round2_downstream_aware_from_v10/v11_alpha035_ik2w2_from_v10/train/best_loss.pt --output-mode residual_pRJ_only --residual-alpha 0.35 --pRJ-weight 0.8 --gR2-weight
+    0.0 --gR2-dot-weight 0.0 --gR2-ddot-weight 0.0 --pRJ-dot-weight 0.04 --pRJ-ddot-weight 0.0015 --ik1-distill-pRJ-weight 1.0 --ik1-distill-gR2-weight 1.0 --ik2-input-distill-weight 2.5
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies: []
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 31
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/best_loss.pt
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/last.pt
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/train_result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train.log
+  checkpoint_path: data/experiments/ik1_auto_search/round2_downstream_aware_from_v10/v11_alpha035_ik2w2_from_v10/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/best_loss.pt
+  summary_parser: parse_train_log
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+  notes: '{"epochs": 3, "gpu": 1, "id": "v12_alpha035_s5stable_from_v11", "lr": "1e-6", "output_mode": "residual_pRJ_only", "residual_alpha": 0.35, "route": "s5_stability_conservative", "weights": {"gR2": 0.0, "gR2_ddot": 0.0, "gR2_dot": 0.0, "ik1_distill_gR2": 1.0, "ik1_distill_pRJ": 1.0, "ik2_input_distill": 2.5, "pRJ": 0.8, "pRJ_ddot": 0.0015, "pRJ_dot": 0.04}}'
+- id: round3_s4_v12_alpha035_s5stable_from_v11
+  experiment_id: round3_s4_v12_alpha035_s5stable_from_v11
+  name: Round3 S4 full-pipeline v12_alpha035_s5stable_from_v11
+  type: eval
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: s5_stability_conservative
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/s4/best_loss/result.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/best_loss.pt --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/s4/best_loss/result.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/best_loss.pt --imu-input-mode processed
+  command_eval_s5: ''
+  dependencies:
+  - round3_train_v12_alpha035_s5stable_from_v11
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 32
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/s4/best_loss/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/s4_best_loss.log
+  checkpoint_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/s4/best_loss/result.json
+  summary_parser: parse_s4_metrics
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round3_s5_v12_alpha035_s5stable_from_v11
+  experiment_id: round3_s5_v12_alpha035_s5stable_from_v11
+  name: Round3 S5 full-pipeline v12_alpha035_s5stable_from_v11
+  type: eval
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: s5_stability_conservative
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/s5/best_loss/result.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/best_loss.pt --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_official_input_eval.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/s5/best_loss/result.json --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/best_loss.pt --imu-input-mode processed
+  dependencies:
+  - round3_train_v12_alpha035_s5stable_from_v11
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 33
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/s5/best_loss/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/s5_best_loss.log
+  checkpoint_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/s5/best_loss/result.json
+  summary_parser: parse_s4_metrics
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round3_real_s4_v12_alpha035_s5stable_from_v11
+  experiment_id: round3_real_s4_v12_alpha035_s5stable_from_v11
+  name: Round3 S4 real streaming IK1 audit v12_alpha035_s5stable_from_v11
+  type: audit
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: s5_stability_conservative
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_real_streaming_audit.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/real_streaming/s4/best_loss/result.json --split-label S4 --version-name v12_alpha035_s5stable_from_v11 --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/best_loss.pt --ik1-backend official_input_v1 --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies:
+  - round3_train_v12_alpha035_s5stable_from_v11
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 34
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/real_streaming/s4/best_loss/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/real_s4_best_loss.log
+  checkpoint_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/real_streaming/s4/best_loss/result.json
+  summary_parser: parse_generic_json
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true
+- id: round3_real_s5_v12_alpha035_s5stable_from_v11
+  experiment_id: round3_real_s5_v12_alpha035_s5stable_from_v11
+  name: Round3 S5 real streaming IK1 audit v12_alpha035_s5stable_from_v11
+  type: audit
+  server: node01
+  gpu: 1
+  status: pending
+  parent_checkpoint: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/best_loss.pt
+  pl_upstream: newpl_v4_init36
+  route: s5_stability_conservative
+  command: ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export CUDA_VISIBLE_DEVICES=1; export PATH="$ENV/bin:$PATH"; export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"; "/home/lingfeng/.conda/envs/globalpose-gpu/bin/python" newik1_real_streaming_audit.py --val-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/test_Roffset_A/baseline_cache_manifest.json --output-json data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/real_streaming/s5/best_loss/result.json --split-label S5 --version-name v12_alpha035_s5stable_from_v11 --pl-checkpoint data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt --ik1-checkpoint data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/best_loss.pt --ik1-backend official_input_v1 --imu-input-mode processed
+  command_train: ''
+  command_eval_s4: ''
+  command_eval_s5: ''
+  dependencies:
+  - round3_train_v12_alpha035_s5stable_from_v11
+  gpu_required: true
+  estimated_gpu_mem_gb: 10
+  priority: 35
+  working_dir: .
+  env:
+    CUDA_VISIBLE_DEVICES: '1'
+  outputs:
+  - data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/real_streaming/s5/best_loss/result.json
+  log_path: logs/orchestrator/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/real_s5_best_loss.log
+  checkpoint_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/train/best_loss.pt
+  json_path: data/experiments/ik1_auto_search/round3_downstream_aware_from_v11/v12_alpha035_s5stable_from_v11/real_streaming/s5/best_loss/result.json
+  summary_parser: parse_generic_json
+  project_status_section: EXP-ik1-auto-search
+  allow_parallel: true
+  skip_if_outputs_exist: true

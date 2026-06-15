@@ -1,0 +1,140 @@
+{
+  "name": "imu_offset_net_20260607",
+  "state_file": "data/experiments/orchestrator_states/imu_offset_net_20260607.json",
+  "allow_same_user_gpu_share": false,
+  "notes": "IMUOffsetNet protocol: Stage A synthetic supervised offset GT; Stage B DIP official aM/wM/RMB consistency fine-tune with no trans/offset GT; Stage C TotalCapture processed-IMU diagnostic. Real DIP/TC offset GT is unavailable.",
+  "tasks": [
+    {
+      "id": "stageA_v1_synthetic",
+      "name": "Stage A synthetic supervised offset_v1_mlp_frame",
+      "type": "train",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" imu_offset_train.py --version offset_v1_mlp_frame --output-dir data/experiments/imu_offset_net_20260607/stageA_v1 --max-shards 2 --max-sequences 96 --max-frames 900 --window 120 --windows-per-sequence 2 --val-windows-per-sequence 1 --epochs 5 --hidden-size 256 --acc-device cpu",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 8,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/imu_offset_net_20260607/stageA_v1/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/imu_offset_net_20260607/stageA_v1.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "IMUOffsetNet",
+      "allow_parallel": true
+    },
+    {
+      "id": "stageA_v2_synthetic",
+      "name": "Stage A synthetic supervised offset_v2_temporal_rnn",
+      "type": "train",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" imu_offset_train.py --version offset_v2_temporal_rnn --output-dir data/experiments/imu_offset_net_20260607/stageA_v2 --max-shards 2 --max-sequences 96 --max-frames 900 --window 120 --windows-per-sequence 2 --val-windows-per-sequence 1 --epochs 5 --hidden-size 256 --acc-device cpu",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 8,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/imu_offset_net_20260607/stageA_v2/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/imu_offset_net_20260607/stageA_v2.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "IMUOffsetNet",
+      "allow_parallel": true
+    },
+    {
+      "id": "stageA_v3_synthetic",
+      "name": "Stage A synthetic supervised offset_v3_residual_prior",
+      "type": "train",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" imu_offset_train.py --version offset_v3_residual_prior --output-dir data/experiments/imu_offset_net_20260607/stageA_v3 --max-shards 2 --max-sequences 96 --max-frames 900 --window 120 --windows-per-sequence 2 --val-windows-per-sequence 1 --epochs 5 --hidden-size 256 --prior-weight 0.01 --smooth-weight 0.001 --acc-device cpu",
+      "dependencies": [],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 8,
+      "priority": 1,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/imu_offset_net_20260607/stageA_v3/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/imu_offset_net_20260607/stageA_v3.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "IMUOffsetNet",
+      "allow_parallel": true
+    },
+    {
+      "id": "stageB_v3_dip_finetune",
+      "name": "Stage B DIP official-input consistency fine-tune from v3",
+      "type": "train",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" imu_offset_finetune_dip.py --init-checkpoint data/experiments/imu_offset_net_20260607/stageA_v3/best_loss.pt --output-dir data/experiments/imu_offset_net_20260607/stageB_v3_dip_ft --epochs 3 --lr 1e-5 --window 120 --windows-per-sequence 1 --val-windows-per-sequence 1",
+      "dependencies": [
+        "stageA_v3_synthetic"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 8,
+      "priority": 2,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/imu_offset_net_20260607/stageB_v3_dip_ft/train_result.json"
+      ],
+      "log_path": "logs/orchestrator/imu_offset_net_20260607/stageB_v3_dip_ft.log",
+      "summary_parser": "parse_train_log",
+      "project_status_section": "IMUOffsetNet",
+      "allow_parallel": true
+    },
+    {
+      "id": "stageB_v3_dip_test_infer",
+      "name": "Infer DIP test offsets with official IMU, no offset GT",
+      "type": "cache",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" imu_offset_infer.py --checkpoint data/experiments/imu_offset_net_20260607/stageB_v3_dip_ft/best_loss.pt --input-cache data/experiments/dip_official_protocol_check_20260607/dip_test_prephysics_neural_only/baseline_cache_manifest.json --output-dir data/experiments/imu_offset_net_20260607/dip_test_v3_pred_offset --imu-input-mode official --pl-source pose_prephysics --offset-gt-mode unavailable --acc-audit-mode auto --window 120 --stride 120",
+      "dependencies": [
+        "stageB_v3_dip_finetune"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 8,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/imu_offset_net_20260607/dip_test_v3_pred_offset/imu_offset_infer_result.json"
+      ],
+      "log_path": "logs/orchestrator/imu_offset_net_20260607/dip_test_v3_pred_offset.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "IMUOffsetNet",
+      "allow_parallel": true
+    },
+    {
+      "id": "stageC_v3_tc_val_infer",
+      "name": "Infer TotalCapture S4 offsets with processed IMU diagnostic",
+      "type": "cache",
+      "command": "ENV=/home/lingfeng/.conda/envs/globalpose-gpu; export PATH=\"$ENV/bin:$PATH\"; export LD_LIBRARY_PATH=\"$ENV/lib:${LD_LIBRARY_PATH:-}\"; \"$ENV/bin/python\" imu_offset_infer.py --checkpoint data/experiments/imu_offset_net_20260607/stageB_v3_dip_ft/best_loss.pt --input-cache data/dataset_work/L4Cache/totalcapture_orientation_offset_ablation/val_Roffset_A/baseline_cache_manifest.json --output-dir data/experiments/imu_offset_net_20260607/tc_val_v3_pred_offset --imu-input-mode processed --pl-source pose_prephysics --offset-gt-mode unavailable --acc-audit-mode pose_gt --window 120 --stride 120",
+      "dependencies": [
+        "stageB_v3_dip_finetune"
+      ],
+      "gpu_required": true,
+      "estimated_gpu_mem_gb": 8,
+      "priority": 3,
+      "working_dir": ".",
+      "env": {
+        "CUDA_VISIBLE_DEVICES": "auto"
+      },
+      "outputs": [
+        "data/experiments/imu_offset_net_20260607/tc_val_v3_pred_offset/imu_offset_infer_result.json"
+      ],
+      "log_path": "logs/orchestrator/imu_offset_net_20260607/tc_val_v3_pred_offset.log",
+      "summary_parser": "parse_generic_json",
+      "project_status_section": "IMUOffsetNet",
+      "allow_parallel": true
+    }
+  ]
+}
