@@ -147,7 +147,7 @@ Interpretation: processed-input gains come from corrected orientation/RMB and in
 | newpl_v5_butteracc | PL-s1 | realtime causal Butterworth acceleration gate | replace raw `aM` with causal Butterworth filtered `aM`, keep `wM/RMB` | PL output unchanged | same v5 loss and control_physical selection | input-only sweep over fc8/fc10/fc12, then forced fc12 AMASS -> DIP | no; gate fails and forced training does not recover pRB | not measured | not selected |
 | newpl_v6_next_control | PL-s1 | one-step predictive next control with preview tail4 update | official 84D input + init36 | current PL 18D unchanged; adds aux next PL/dynamics | current PL/control plus next state/control/velocity/acceleration and last/tail4 control losses | full AMASS 80 -> DIP 40; TC eval-only | no; AMASS pRB/acc improves, but DIP/TC pRB does not beat baselines | not measured | not selected |
 | newpl_v6_next_control_smoothacc_gR1 | PL-s1 | combine centered smooth acceleration with v6 next-control and gR1 checkpoint selection | smooth `aM`; raw `wM/RMB`; init36 | current PL 18D unchanged; aux next PL/dynamics unchanged | same v6 loss plus saved `best_current_gR1`, `best_next_gR1`, `best_gravity_control` | AMASS 80 -> DIP 40; TC eval-only; final DIP/TC eval fast512 | mixed; best TC/DIP gR1 among smooth baselines, but pRB is worse than v4/raw-v5 | not measured | not selected |
-| newpl_v6_next_p_pdot_pddot_strong | PL-s1 | supervise decoded next `p/pd/pdd` trajectory outputs directly | smooth `aM`; raw `wM/RMB`; init36; reuses compatible next-control cache or builds under run root | current PL 18D unchanged; aux next PL/dynamics unchanged | only normalized decoded next pRB `p/pd/pdd = 1/1/1`; all old current/control/gR1/prior terms zero in preset | AMASS 80 -> DIP 40; batch 32; TC eval-only | no; p/pd/pdd target converges but DIP/TC module metrics do not beat same-cache baselines | not measured | diagnostic only; not selected |
+| newpl_v6_next_p_pdot_pddot_strong | PL-s1 | supervise decoded next `p/pd/pdd` trajectory outputs directly | smooth `aM`; raw `wM/RMB`; init36; reuses compatible next-control cache or builds under run root | current PL 18D unchanged; aux next PL/dynamics unchanged | only normalized decoded next pRB `p/pd/pdd = 1/1/1`; all old current/control/gR1/prior terms zero in preset | AMASS 80 -> DIP 40; batch 32; current/next p-pdot-pddot eval added; TC eval-only | no; next p/pd/pdd target converges but current-frame p/pddot fails same-cache non-regression | not measured | diagnostic only; not selected |
 | imu_neighbor_pos_from_vel_ctrl_v1 | diagnostic neighbor-control | predict root-relative positions from official IMU plus frozen neighbor velocity-control features | 189D: `aM/wM/RMB_6d/r_JS` + velocity control/vel/acc | `neighbor_pos_R_control[33]`, decoded `pos_R/vel_R/acc_R` | position control, decoded position, optional root-relative vel/acc, segment length, smooth/jerk/prior | AMASS 80 -> TC 60 and AMASS 80 -> DIP 30; module eval only | no; pos_R L2 about `48 cm` vs pose_prephysics baseline `2.34-5.57 cm` | not run | rejected for IK/NewIK1 |
 | imu_joint_euler_qdot_vel_ctrl_v1 | diagnostic IMU joint-control | PL-like init network predicts IMU-mapped joint Euler/qdot/velocity controls | current code: `aM[18]+wM[18]+R_rootIMU_sensorIMU_flat[54]=90D`; historical run used world `RMB_flat[54]`; init `q[0]+qdot[0]+vel[0]=54D` | `q_RJ_euler_control[18]+qdot_RJ_euler_control[18]+vel_RJ_control[18]` | q control/q/qdot/qdot-control/qddot/velocity/acceleration/consistency/smooth/jerk/prior; 4 loss variants | historical world-RMB run: 4 variants; root-RMB rerun: `D_all_balanced` only with shared precompute/last.pt disabled for quota | no; root-RMB D is not better than world-RMB D and remains far worse than baseline | not run | rejected for IK/NewIK1 |
 | newik1_v1_control_tail | IK-s1 | control-tail IK1 | 120D control-tail feature | 72D pRJ+gR2 unchanged | baseline IK1 control losses | PL streaming TC finetune | not vs previous | no | not selected |
@@ -1374,7 +1374,9 @@ Full normalization scales:
 
 ### 5. Full Module Metrics
 
-Same-cache full eval after DIP fine-tune:
+Existing same-cache full eval after DIP fine-tune. This table is mostly
+next-frame for `next p/pd/pdd`; it is not sufficient to claim current-frame
+p/pdot/pddot accuracy.
 
 | Dataset / Stage | Version | current pRB L2 cm | current gR1 deg | next p L2 cm | next pd L2 cm/s | next pdd L2 cm/s2 |
 |---|---|---:|---:|---:|---:|---:|
@@ -1390,6 +1392,51 @@ Same-cache full eval after DIP fine-tune:
 | TC after DIP FT | prior newpl_v6_raw_dip_on_smoothinput | `7.484898` | `12.954138` | `7.578813` | `57.576946` | `711.415844` |
 | TC after DIP FT | strong best_p_pdot_pddot | `7.508233` | `13.168667` | `7.589151` | `55.491009` | `806.639374` |
 | TC after DIP FT | strong last | `7.508233` | `13.168667` | `7.589482` | `55.475717` | `807.941780` |
+
+### 5.1 Current-frame p/pdot/pddot Eval
+
+This added eval answers the intended current-frame question directly.
+
+```text
+current output:
+  output["pl"] = pRB_t[15] + gR1_t[3]
+next output:
+  output["next_pl"] = predicted pRB_{t+1}[15] + gR1_{t+1}[3]
+next derivatives:
+  output["next_pldot"], output["next_plddot"] are decoded from predicted next control via spline.
+current selection warning:
+  best_p_pdot_pddot_strong.pt was selected by validation normalized next p/pdot/pddot composite.
+  It does not by itself prove current-frame p/pdot/pddot accuracy.
+```
+
+Masks and units:
+
+| Metric | Prediction | GT | Mask | Unit |
+|---|---|---|---|---|
+| current p | `output["pl"][..., :15]` | `pl_target[..., :15]` | all current frames | L1/L2 cm |
+| current pdot | central FD of `output["pl"][..., :15]` | `gt_pldot[..., :15]` | exclude first/last frames | L1/L2 cm/s |
+| current pddot | central FD acceleration of `output["pl"][..., :15]` | `gt_plddot[..., :15]` | exclude first/last frames | L1/L2 cm/s^2 |
+| next p/pdot/pddot | `output["next_pl"]`, `output["next_pldot"]`, `output["next_plddot"]` | `pl_target_next`, `gt_pldot_next`, `gt_plddot_next` | `valid_next_mask` | cm, cm/s, cm/s^2 |
+
+Current-frame full eval:
+
+| Dataset | Version | current p L2 cm | current pdot L2 cm/s | current pddot L2 cm/s2 | current gR1 deg |
+|---|---|---:|---:|---:|---:|
+| DIP test | official PL smoothacc | `6.462137` | `31.449577` | `1807.055833` | `15.216293` |
+| DIP test | newpl_v4_init36_smoothacc | `6.451342` | `31.421659` | `1792.007486` | `14.991070` |
+| DIP test | newpl_v5_raw_dip_on_smoothinput | `6.459074` | `31.431964` | `1791.990877` | `14.753305` |
+| DIP test | prior newpl_v6_raw_dip_on_smoothinput | `6.483322` | `31.425229` | `1791.925604` | `14.786131` |
+| DIP test | strong best_p_pdot_pddot | `6.465181` | `31.419971` | `1792.008308` | `15.215611` |
+| DIP test | strong last | `6.465181` | `31.419971` | `1792.008308` | `15.215611` |
+| TC test | official PL smoothacc | `7.254956` | `30.784883` | `1882.019322` | `13.745581` |
+| TC test | newpl_v4_init36_smoothacc | `6.879507` | `29.582701` | `1617.953217` | `13.626233` |
+| TC test | newpl_v5_raw_dip_on_smoothinput | `7.014368` | `29.609305` | `1617.023291` | `13.670421` |
+| TC test | prior newpl_v6_raw_dip_on_smoothinput | `7.230463` | `29.585913` | `1616.539405` | `13.462959` |
+| TC test | strong best_p_pdot_pddot | `7.253737` | `29.581992` | `1618.041598` | `13.743610` |
+| TC test | strong last | `7.253737` | `29.581992` | `1618.041598` | `13.743610` |
+
+Alignment sweep result: all full DIP and TotalCapture current p/pdot/pddot
+best shifts are `0`; no time-shift warning is triggered in the full eval.
 
 ### 6. Official S4 11 Metrics
 
@@ -1418,21 +1465,32 @@ full checkpoints:
   data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/amass_pretrain/best_p_pdot_pddot_strong.pt
   data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/dip_finetune/best_p_pdot_pddot_strong.pt
   data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/dip_finetune/last.pt
+current-frame eval:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval/eval_current_p_pdot_pddot_dip.json
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval/eval_current_p_pdot_pddot_totalcapture.json
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval/summary_current_p_pdot_pddot.md
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval/per_sequence_current_p_pdot_pddot.csv
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval/per_leaf_current_p_pdot_pddot.csv
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval/alignment_sweep.csv
 ```
 
 ### 8. Conclusion
 
 - Keep as mainline: no.
 - The intended loss contract works and training is finite, but the selected
-  checkpoint mostly learns a next-trajectory/dynamics tradeoff rather than a
-  better current PL output.
-- DIP after DIP fine-tune: current pRB is slightly worse than official PL and
-  v4; gR1 is much worse than v4/raw-v5 and roughly official-level.
-- TotalCapture after DIP fine-tune: pRB/gR1 are essentially official-level and
-  clearly worse than `newpl_v4_init36_smoothacc`; next acceleration improves
-  versus official/v4/v5 but not enough to offset worse pRB/gR1 and next velocity.
+  checkpoint mostly learns a next-frame trajectory/dynamics tradeoff rather than
+  better current-frame p/pdot/pddot.
+- DIP current-frame gate: strong best is worse than the best baseline on current
+  p (`6.465181` vs `6.451342`) and current pddot (`1792.008308` vs `1791.925604`);
+  current pdot is marginally best.
+- TotalCapture current-frame gate: strong best is worse than the best baseline
+  on current p (`7.253737` vs `6.879507`) and current pddot (`1618.041598` vs
+  `1616.539405`); current pdot is marginally best.
+- Full alignment sweep has best shift `0` for current p/pdot/pddot on both DIP
+  and TotalCapture, so the failure is not explained by a global frame offset.
 - Do not run full-pipeline 11 metrics or promote this checkpoint unless a later
-  variant preserves same-cache pRB/gR1 while keeping the useful acceleration gain.
+  variant passes current-frame p/pdot/pddot non-regression while keeping any
+  useful next-frame acceleration gain.
 
 ## 6. IK-s1 Replacement Versions
 

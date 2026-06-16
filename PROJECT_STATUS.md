@@ -39,12 +39,21 @@ training to decoded next p/pd/pdd pRB[15] supervision with train-cache RMS
 normalization and best_p_pdot_pddot_strong.pt selection.
 Full root: data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full
 Full result: AMASS best composite 0.6011257469 at epoch 70; DIP best composite
-0.9176913500 at epoch 39. Same-cache module eval does not justify promotion:
-DIP after DIP FT pRB/gR1 is 6.353314 cm / 12.901381 deg, versus official PL
-6.345701 cm / 12.902106 deg and newpl_v4 6.349541 cm / 12.722353 deg.
-TotalCapture after DIP FT pRB/gR1 is 7.508233 cm / 13.168667 deg, worse than
-newpl_v4 7.119541 cm / 13.075061 deg and essentially official-level on pRB/gR1.
-No full-pipeline 11 metrics were run; do not promote it.
+0.9176913500 at epoch 39. Important correction: this composite supervises and
+selects next-frame decoded p/pdot/pddot, not current-frame p/pdot/pddot.
+Current-frame eval was added under:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval
+DIP current p/pdot/pddot L2 for strong best:
+  6.465181 cm / 31.419971 cm/s / 1792.008308 cm/s^2
+Best same-cache baselines:
+  6.451342 cm / 31.419971 cm/s / 1791.925604 cm/s^2
+TotalCapture current p/pdot/pddot L2 for strong best:
+  7.253737 cm / 29.581992 cm/s / 1618.041598 cm/s^2
+Best same-cache baselines:
+  6.879507 cm / 29.581992 cm/s / 1616.539405 cm/s^2
+Decision: diagnostic only. It fails the current-frame non-regression gate on
+DIP p and pddot and on TotalCapture p and pddot. No full-pipeline 11 metrics
+were run; do not promote it.
 ```
 
 ## 0.1 IMU Neighbor Velocity-Control Module v1

@@ -33,7 +33,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | newpl_v5_butteracc | `EXP-20260612-newpl_v5_butteracc`; causal Butterworth aM input-only gate under `data/experiments/newpl_v5_butteracc_20260612_full/`, plus forced fc12 longtrain under `data/experiments/newpl_v5_butteracc_20260612_forced_fc12_longtrain/` |
 | newpl_v5_realtime_smooth_residual | `EXP-20260612-newpl_v5_realtime_smooth_residual`; root `data/experiments/newpl_v5_realtime_residual_20260612_full_causal_iir20/`; raw v5 rows are historical references unless same-cache re-eval is run |
 | newpl_v6_next_control_smoothacc_gR1 | `EXP-20260613-newpl_v6_next_control_smoothacc_gR1`; root `/tmp/globalpose_newpl_v6_next_control_smoothacc_gR1_20260613/full`; smooth-aM cache reuse, AMASS 80 -> DIP 40, module eval only |
-| newpl_v6_next_p_pdot_pddot_strong | `EXP-20260616-newpl_v6_next_p_pdot_pddot_strong_smoke`; root `data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full`; decoded next p/pd/pdd strong supervision, full AMASS->DIP module eval, diagnostic only |
+| newpl_v6_next_p_pdot_pddot_strong | `EXP-20260616-newpl_v6_next_p_pdot_pddot_strong`; root `data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full`; decoded next p/pd/pdd strong supervision, full AMASS->DIP current/next-frame module eval, diagnostic only |
 | derivative-aware control-point target policy | `EXP-20260608-derivative_aware_control_fit`; RBDL-only audit and cache smoke artifacts under `data/experiments/gt_control_derivative_audit_20260608/` |
 | newik1_v1_control_tail | `EXP-20260604-004`; logs/S4 JSON in artifact index |
 | newik1_v2_bonelength | `EXP-20260604-005`; logs/S4 JSON in artifact index |
@@ -13634,7 +13634,7 @@ No full-pipeline 11 metrics were run.
 ```
 
 <!-- BEGIN newpl-v6-next-p-pdot-pddot-strong--2026-06-16 -->
-## EXP-20260616-newpl_v6_next_p_pdot_pddot_strong_smoke — Decoded p/pd/pdd strong supervision
+## EXP-20260616-newpl_v6_next_p_pdot_pddot_strong — Decoded p/pd/pdd strong supervision
 
 Status: implemented, smoke-tested, and full AMASS->DIP trained/evaluated at
 module level. Full-pipeline 11 metrics were not run because same-cache module
@@ -13833,6 +13833,11 @@ Full same-cache module eval after DIP fine-tune:
 Full interpretation:
 
 ```text
+The existing p_pdot_pddot_strong experiment primarily supervises and selects
+next-frame decoded p/pdot/pddot. It is not sufficient to claim current-frame
+position/velocity/acceleration accuracy until the current-frame p/pdot/pddot
+evaluation below is added.
+
 The full run is finite and selected best_p_pdot_pddot_strong.pt as intended.
 The normalized p/pd/pdd target reduces the selected composite during training,
 but it does not produce a stronger current PL module.
@@ -13848,5 +13853,128 @@ on next velocity.
 
 Decision: diagnostic only; do not promote and do not run full-pipeline 11 metrics
 from this checkpoint.
+```
+
+Current-frame p/pdot/pddot evaluation command:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+PYTHONPATH=. /home/lingfeng/bin/longrun -- \
+  /home/lingfeng/.conda/envs/globalpose-gpu/bin/python \
+  scripts/evaluate_current_p_pdot_pddot.py \
+  --output-dir data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval \
+  --dip-cache /tmp/globalpose_newpl_v6_next_control_smoothacc_gR1_20260613/next_cache_full/next_dip_test/pl_next_control_cache_manifest.json \
+  --totalcapture-cache /tmp/globalpose_newpl_v6_next_control_smoothacc_gR1_20260613/next_cache_full/next_tc_test/pl_next_control_cache_manifest.json \
+  --version official_PL_smoothacc=official \
+  --version newpl_v4_init36_smoothacc=data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt \
+  --version newpl_v5_raw_dip_on_smoothinput=data/experiments/newpl_v5_official_protocol_20260607_tuned/dip_finetune/best_loss.pt \
+  --version prior_newpl_v6_raw_dip_on_smoothinput=data/experiments/newpl_v6_next_control_tail4_20260611/full_fastval1/dip_finetune/best_next_module_metric.pt \
+  --version strong_best_p_pdot_pddot=data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/dip_finetune/best_p_pdot_pddot_strong.pt \
+  --version strong_last=data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/dip_finetune/last.pt \
+  --strong-version strong_best_p_pdot_pddot
+```
+
+Current-frame eval semantics:
+
+```text
+current output:
+  output["pl"] = pRB_t[15] + gR1_t[3]
+
+next output:
+  output["next_pl"] = predicted pRB_{t+1}[15] + gR1_{t+1}[3]
+
+next derivatives:
+  output["next_pldot"], output["next_plddot"]
+  are decoded from predicted next control via spline.
+
+Current experiment selection:
+  selected by validation normalized next p/pdot/pddot composite.
+
+Therefore this experiment does not by itself prove current-frame p/pdot/pddot accuracy.
+```
+
+Current-frame eval masks and units:
+
+| Metric | Prediction | GT | Mask | Unit |
+|---|---|---|---|---|
+| current p | `output["pl"][..., :15]` | `pl_target[..., :15]` | all current frames | L1/L2 cm |
+| current pdot | central FD of `output["pl"][..., :15]` | `gt_pldot[..., :15]` | exclude first/last frames | L1/L2 cm/s |
+| current pddot | central FD acceleration of `output["pl"][..., :15]` | `gt_plddot[..., :15]` | exclude first/last frames | L1/L2 cm/s^2 |
+| next p/pdot/pddot | `output["next_pl"]`, `output["next_pldot"]`, `output["next_plddot"]` | `pl_target_next`, `gt_pldot_next`, `gt_plddot_next` | `valid_next_mask` | cm, cm/s, cm/s^2 |
+
+Current-frame eval artifacts:
+
+```text
+data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval/eval_current_p_pdot_pddot_dip.json
+data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval/eval_current_p_pdot_pddot_totalcapture.json
+data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval/summary_current_p_pdot_pddot.md
+data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval/per_sequence_current_p_pdot_pddot.csv
+data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval/per_leaf_current_p_pdot_pddot.csv
+data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval/alignment_sweep.csv
+```
+
+Current-frame eval frame counts:
+
+| Dataset | sequences | current_eval_frames | current_derivative_eval_frames | next_eval_frames |
+|---|---:|---:|---:|---:|
+| DIP test | `19` | `57994` | `57956` | `57975` |
+| TotalCapture test | `4` | `16124` | `16116` | `16120` |
+
+Table 1: current-frame accuracy:
+
+| Dataset | Version | current p L2 cm | current pdot L2 cm/s | current pddot L2 cm/s2 | current gR1 deg |
+|---|---|---:|---:|---:|---:|
+| DIP test | official PL smoothacc | `6.462137` | `31.449577` | `1807.055833` | `15.216293` |
+| DIP test | newpl_v4_init36_smoothacc | `6.451342` | `31.421659` | `1792.007486` | `14.991070` |
+| DIP test | newpl_v5_raw_dip_on_smoothinput | `6.459074` | `31.431964` | `1791.990877` | `14.753305` |
+| DIP test | prior newpl_v6_raw_dip_on_smoothinput | `6.483322` | `31.425229` | `1791.925604` | `14.786131` |
+| DIP test | strong best_p_pdot_pddot | `6.465181` | `31.419971` | `1792.008308` | `15.215611` |
+| DIP test | strong last | `6.465181` | `31.419971` | `1792.008308` | `15.215611` |
+| TC test | official PL smoothacc | `7.254956` | `30.784883` | `1882.019322` | `13.745581` |
+| TC test | newpl_v4_init36_smoothacc | `6.879507` | `29.582701` | `1617.953217` | `13.626233` |
+| TC test | newpl_v5_raw_dip_on_smoothinput | `7.014368` | `29.609305` | `1617.023291` | `13.670421` |
+| TC test | prior newpl_v6_raw_dip_on_smoothinput | `7.230463` | `29.585913` | `1616.539405` | `13.462959` |
+| TC test | strong best_p_pdot_pddot | `7.253737` | `29.581992` | `1618.041598` | `13.743610` |
+| TC test | strong last | `7.253737` | `29.581992` | `1618.041598` | `13.743610` |
+
+Table 2: next-frame accuracy:
+
+| Dataset | Version | next p L2 cm | next pdot L2 cm/s | next pddot L2 cm/s2 | next gR1 deg |
+|---|---|---:|---:|---:|---:|
+| DIP test | official PL smoothacc | `6.544064` | `31.442348` | `1806.703345` | `15.219841` |
+| DIP test | newpl_v4_init36_smoothacc | `6.557839` | `31.414378` | `1791.633494` | `14.994450` |
+| DIP test | newpl_v5_raw_dip_on_smoothinput | `6.568955` | `31.424697` | `1791.614994` | `14.756244` |
+| DIP test | prior newpl_v6_raw_dip_on_smoothinput | `6.558404` | `54.595606` | `1782.213776` | `14.796517` |
+| DIP test | strong best_p_pdot_pddot | `6.536575` | `53.040941` | `1813.554983` | `15.219834` |
+| DIP test | strong last | `6.536606` | `53.032184` | `1814.021152` | `15.219834` |
+| TC test | official PL smoothacc | `7.332092` | `30.799751` | `1882.179417` | `13.751889` |
+| TC test | newpl_v4_init36_smoothacc | `6.982701` | `29.597338` | `1618.117857` | `13.632039` |
+| TC test | newpl_v5_raw_dip_on_smoothinput | `7.130036` | `29.624039` | `1617.171514` | `13.674679` |
+| TC test | prior newpl_v6_raw_dip_on_smoothinput | `7.313069` | `52.591713` | `650.197336` | `13.476821` |
+| TC test | strong best_p_pdot_pddot | `7.323794` | `50.714014` | `742.650343` | `13.751886` |
+| TC test | strong last | `7.324095` | `50.699906` | `743.746064` | `13.751886` |
+
+Table 3: alignment sweep:
+
+```text
+All full DIP and TotalCapture current p, current pdot_fd, and current pddot_fd
+rows have best shift = 0 for all six versions. No nonzero-shift warning is
+triggered in the full eval. Full per-version shift values are in:
+data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval/alignment_sweep.csv
+```
+
+Current-frame p/pdot/pddot decision:
+
+```text
+Decision: diagnostic only.
+
+The strong checkpoint fails the requested current-frame non-regression gate:
+- DIP current p L2: strong 6.465181 cm vs best baseline 6.451342 cm.
+- DIP current pddot L2: strong 1792.008308 cm/s^2 vs best baseline 1791.925604 cm/s^2.
+- TotalCapture current p L2: strong 7.253737 cm vs best baseline 6.879507 cm.
+- TotalCapture current pddot L2: strong 1618.041598 cm/s^2 vs best baseline 1616.539405 cm/s^2.
+
+Current pdot is marginally best on both datasets, but that is not enough under
+the requested gate because current p and current pddot regress. Do not promote.
 ```
 <!-- END newpl-v6-next-p-pdot-pddot-strong--2026-06-16 -->
