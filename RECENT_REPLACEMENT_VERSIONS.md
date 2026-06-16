@@ -1438,6 +1438,64 @@ Current-frame full eval:
 Alignment sweep result: all full DIP and TotalCapture current p/pdot/pddot
 best shifts are `0`; no time-shift warning is triggered in the full eval.
 
+### 5.2 Velocity / Acceleration Metric Audit
+
+This audit checks whether the large velocity error is a model issue or an eval
+artifact from current/next mixing, dt/unit mismatch, masks, alignment, or
+derivative target definitions.
+
+Metric definitions:
+
+| Metric | Prediction | GT | Mask | Unit |
+|---|---|---|---|---|
+| `current_fd_velocity` | central FD of `output["pl"][..., :15]` | `gt_pldot[..., :15]` | exclude first/last frames | L2 cm/s |
+| `current_fd_acceleration` | central FD acceleration of `output["pl"][..., :15]` | `gt_plddot[..., :15]` | exclude first/last frames | L2 cm/s^2 |
+| `next_head_velocity` | `output["next_pldot"][..., :15]` | `gt_pldot_next[..., :15]` | `valid_next_mask` | L2 cm/s |
+| `next_head_acceleration` | `output["next_plddot"][..., :15]` | `gt_plddot_next[..., :15]` | `valid_next_mask` | L2 cm/s^2 |
+| `next_position_fd_velocity` | central FD of `output["next_pl"][..., :15]` | `gt_pldot_next[..., :15]` | `valid_next_mask` minus FD boundaries | L2 cm/s |
+| `next_position_fd_acceleration` | central FD acceleration of `output["next_pl"][..., :15]` | `gt_plddot_next[..., :15]` | `valid_next_mask` minus FD boundaries | L2 cm/s^2 |
+
+Mask counts:
+
+| Dataset | sequences | frames | valid_next_frames | current_derivative_valid_frames | excluded_boundary_frames |
+|---|---:|---:|---:|---:|---:|
+| DIP test | `19` | `57994` | `57975` | `57956` | `38` |
+| TotalCapture test | `4` | `16124` | `16120` | `16116` | `8` |
+
+GT and dt audit:
+
+| Dataset | decoded dot L2 | decoded ddot L2 | FD GT vel L2 at dt=1/60 | FD GT acc L2 at dt=1/60 | FD GT vel L2 at dt=1 | actual dt mismatch |
+|---|---:|---:|---:|---:|---:|---|
+| DIP test | `0.000000` | `0.000000` | `0.083706` | `0.943413` | `53.769033` | no |
+| TotalCapture test | `0.000000` | `0.000000` | `0.367573` | `4.401025` | `51.970507` | no |
+
+Velocity/acceleration split:
+
+| Dataset | Version | current FD vel | current FD acc | next-head vel | next-head acc | next-position FD vel | next-position FD acc |
+|---|---|---:|---:|---:|---:|---:|---:|
+| DIP test | official PL smoothacc | `31.449577` | `1807.055855` | `32.361504` | `1810.301938` | `32.338752` | `1808.462783` |
+| DIP test | prior newpl_v6_raw_dip_on_smoothinput | `31.425229` | `1791.925571` | `54.595607` | `1782.213774` | `32.341935` | `1808.370255` |
+| DIP test | strong best_p_pdot_pddot | `31.419971` | `1792.008316` | `53.040942` | `1813.554982` | `32.216370` | `1807.979955` |
+| TotalCapture test | official PL smoothacc | `30.784883` | `1882.019351` | `31.635313` | `1899.639228` | `31.559175` | `1895.471466` |
+| TotalCapture test | prior newpl_v6_raw_dip_on_smoothinput | `29.585914` | `1616.539413` | `52.591712` | `650.197321` | `31.573507` | `1894.099732` |
+| TotalCapture test | strong best_p_pdot_pddot | `29.581992` | `1618.041596` | `50.714015` | `742.650349` | `31.785827` | `1931.831008` |
+
+Audit classification:
+
+| Cause | Result | Evidence |
+|---|---|---|
+| A. real current-frame model issue | partial | current FD velocity/acc are comparable to same-cache baselines, but p/pddot gate still failed in the current-frame eval above |
+| B. current/next or temporal/source mismatch | yes for next-head derivatives | current FD best shift is `0`; next-head velocity best shift is nonzero, including `-2` for strong best on DIP/TC |
+| C. dt/unit mismatch | no actual mismatch | `dt=1` would be wrong, but manifest and eval dt are both `1/60` |
+| D. derivative target definition mismatch | no | decoded control dot/ddot vs cache GT are exactly `0.000000` L2 |
+| E. boundary/mask issue | no | derivative metrics exclude first/last frames and report separate current/next frame counts |
+
+Conclusion: velocity error should not be treated as a single pooled number.
+The current-frame finite-difference velocity metric is aligned and uses the
+correct dt/mask. The large velocity anomaly is mainly in `next_pldot`/next-head
+derivatives, where the best temporal alignment is nonzero. This remains
+diagnostic only and does not justify promotion or network-structure changes.
+
 ### 6. Official S4 11 Metrics
 
 | Version | Score | Notes |
@@ -1472,6 +1530,12 @@ current-frame eval:
   data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval/per_sequence_current_p_pdot_pddot.csv
   data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval/per_leaf_current_p_pdot_pddot.csv
   data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/current_p_pdot_pddot_eval/alignment_sweep.csv
+velocity metric audit:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/velocity_metric_audit/velocity_metric_audit.json
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/velocity_metric_audit/velocity_metric_audit.md
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/velocity_metric_audit/velocity_alignment_sweep.csv
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/velocity_metric_audit/velocity_per_leaf.csv
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/velocity_metric_audit/velocity_per_sequence.csv
 ```
 
 ### 8. Conclusion

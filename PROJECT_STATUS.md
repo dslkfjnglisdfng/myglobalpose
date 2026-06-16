@@ -54,6 +54,16 @@ Best same-cache baselines:
 Decision: diagnostic only. It fails the current-frame non-regression gate on
 DIP p and pddot and on TotalCapture p and pddot. No full-pipeline 11 metrics
 were run; do not promote it.
+
+Velocity/acceleration metric audit was added under:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/velocity_metric_audit
+Audit result: the large velocity error is not explained by GT decoder mismatch,
+actual dt mismatch, current-frame temporal shift, or boundary masks. GT control
+decode gives dot/ddot L2 = 0 on DIP/TC; manifest/eval dt are both 1/60; current
+finite-difference velocity/acceleration best shift is 0. The large anomaly is
+specific to next-head derivatives (`next_pldot`/`next_plddot`) with nonzero
+best shifts; classify as diagnostic B, next-head temporal/source mismatch.
+Do not train or promote a new model from this result.
 ```
 
 ## 0.1 IMU Neighbor Velocity-Control Module v1

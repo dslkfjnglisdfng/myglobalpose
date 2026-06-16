@@ -13977,4 +13977,118 @@ The strong checkpoint fails the requested current-frame non-regression gate:
 Current pdot is marginally best on both datasets, but that is not enough under
 the requested gate because current p and current pddot regress. Do not promote.
 ```
+
+Velocity / acceleration metric audit command:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+CUDA_VISIBLE_DEVICES=1 PYTHONPATH=. /home/lingfeng/bin/longrun -- \
+  /home/lingfeng/.conda/envs/globalpose-gpu/bin/python \
+  scripts/audit_newpl_velocity_metric.py \
+  --output-dir data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/velocity_metric_audit \
+  --cache DIP=/tmp/globalpose_newpl_v6_next_control_smoothacc_gR1_20260613/next_cache_full/next_dip_test/pl_next_control_cache_manifest.json \
+  --cache TotalCapture=/tmp/globalpose_newpl_v6_next_control_smoothacc_gR1_20260613/next_cache_full/next_tc_test/pl_next_control_cache_manifest.json \
+  --version official_PL_smoothacc=official \
+  --version newpl_v4_init36_smoothacc=data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt \
+  --version newpl_v5_raw_dip_on_smoothinput=data/experiments/newpl_v5_official_protocol_20260607_tuned/dip_finetune/best_loss.pt \
+  --version prior_newpl_v6_raw_dip_on_smoothinput=data/experiments/newpl_v6_next_control_tail4_20260611/full_fastval1/dip_finetune/best_next_module_metric.pt \
+  --version strong_best_p_pdot_pddot=data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/dip_finetune/best_p_pdot_pddot_strong.pt \
+  --version strong_last=data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/dip_finetune/last.pt
+```
+
+Velocity audit artifacts:
+
+```text
+data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/velocity_metric_audit/velocity_metric_audit.json
+data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/velocity_metric_audit/velocity_metric_audit.md
+data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/velocity_metric_audit/velocity_alignment_sweep.csv
+data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/velocity_metric_audit/velocity_per_leaf.csv
+data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/velocity_metric_audit/velocity_per_sequence.csv
+```
+
+Velocity audit definitions:
+
+| Metric | Prediction | GT | Mask | Unit |
+|---|---|---|---|---|
+| current FD velocity | central FD of `output["pl"][..., :15]` | `gt_pldot[..., :15]` | exclude first/last frames | cm/s |
+| current FD acceleration | central FD acceleration of `output["pl"][..., :15]` | `gt_plddot[..., :15]` | exclude first/last frames | cm/s^2 |
+| next-head velocity | `output["next_pldot"][..., :15]` | `gt_pldot_next[..., :15]` | `valid_next_mask` | cm/s |
+| next-head acceleration | `output["next_plddot"][..., :15]` | `gt_plddot_next[..., :15]` | `valid_next_mask` | cm/s^2 |
+| next-position FD velocity | central FD of `output["next_pl"][..., :15]` | `gt_pldot_next[..., :15]` | `valid_next_mask` minus FD boundaries | cm/s |
+| next-position FD acceleration | central FD acceleration of `output["next_pl"][..., :15]` | `gt_plddot_next[..., :15]` | `valid_next_mask` minus FD boundaries | cm/s^2 |
+
+Velocity audit masks:
+
+| Dataset | sequences | frames | valid_next_frames | current_derivative_valid_frames | excluded_boundary_frames |
+|---|---:|---:|---:|---:|---:|
+| DIP test | `19` | `57994` | `57975` | `57956` | `38` |
+| TotalCapture test | `4` | `16124` | `16120` | `16116` | `8` |
+
+GT self-consistency and dt/unit audit:
+
+| Dataset | decoded pl L2 | decoded dot L2 | decoded ddot L2 | FD GT vel L2 at dt=1/60 | FD GT acc L2 at dt=1/60 | FD GT vel L2 at dt=1 |
+|---|---:|---:|---:|---:|---:|---:|
+| DIP test | `0.086820` | `0.000000` | `0.000000` | `0.083706` | `0.943413` | `53.769033` |
+| TotalCapture test | `0.060392` | `0.000000` | `0.000000` | `0.367573` | `4.401025` | `51.970507` |
+
+Interpretation: the cache derivative targets are exactly consistent with the
+control decoder (`decoded_dot/ddot` L2 = 0). The correct dt is manifest `1/60`.
+The `dt=1` sweep intentionally shows how badly the metric would scale if dt
+were wrong; it is not evidence of an actual dt mismatch because eval dt and
+manifest dt are both `0.016666666666666666`.
+
+Velocity audit model metrics:
+
+| Dataset | Version | current FD vel | current FD acc | next-head vel | next-head acc | next-position FD vel | next-position FD acc |
+|---|---|---:|---:|---:|---:|---:|---:|
+| DIP test | official PL smoothacc | `31.449577` | `1807.055855` | `32.361504` | `1810.301938` | `32.338752` | `1808.462783` |
+| DIP test | prior newpl_v6_raw_dip_on_smoothinput | `31.425229` | `1791.925571` | `54.595607` | `1782.213774` | `32.341935` | `1808.370255` |
+| DIP test | strong best_p_pdot_pddot | `31.419971` | `1792.008316` | `53.040942` | `1813.554982` | `32.216370` | `1807.979955` |
+| TotalCapture test | official PL smoothacc | `30.784883` | `1882.019351` | `31.635313` | `1899.639228` | `31.559175` | `1895.471466` |
+| TotalCapture test | prior newpl_v6_raw_dip_on_smoothinput | `29.585914` | `1616.539413` | `52.591712` | `650.197321` | `31.573507` | `1894.099732` |
+| TotalCapture test | strong best_p_pdot_pddot | `29.581992` | `1618.041596` | `50.714015` | `742.650349` | `31.785827` | `1931.831008` |
+
+Alignment summary:
+
+```text
+DIP:
+  current_fd_velocity / current_fd_acceleration best shift = 0 for all versions.
+  strong best next_head_velocity best shift = -2.
+  strong best next_head_acceleration best shift = +2.
+
+TotalCapture:
+  current_fd_velocity / current_fd_acceleration best shift = 0 for all versions.
+  strong best next_head_velocity best shift = -2.
+  strong best next_head_acceleration best shift = +1.
+```
+
+Velocity audit A-E conclusion:
+
+```text
+A. Real current-frame model issue:
+   partial only. Current FD velocity/acceleration are comparable to same-cache
+   baselines, but the separate current-frame p/pddot gate still failed above.
+
+B. Current/next or temporal/source mismatch:
+   yes for next-head derivatives. The large velocity anomaly is concentrated in
+   output["next_pldot"] / output["next_plddot"], and their best shift is nonzero.
+
+C. dt/unit mismatch:
+   no actual mismatch. dt=1 would be wrong, but manifest/eval dt are 1/60.
+
+D. derivative target definition mismatch:
+   no. decoded control dot/ddot vs cache gt_pldot/gt_plddot are 0 L2.
+
+E. boundary/mask issue:
+   no. current derivative metrics exclude first/last frames and next metrics use
+   valid_next_mask with separate frame counts.
+
+Final audit conclusion:
+  Do not pool current FD velocity and next-head velocity into one claim.
+  The current-frame FD metric is aligned and uses the correct dt/mask.
+  The large velocity error that motivated the audit is mainly a next-head
+  derivative temporal/source issue, not an actual dt/unit or GT-cache mismatch.
+  This experiment remains diagnostic only; do not promote and do not change
+  network structure based only on this metric.
+```
 <!-- END newpl-v6-next-p-pdot-pddot-strong--2026-06-16 -->
