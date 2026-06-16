@@ -22,12 +22,30 @@ Current version-line map:
 |---|---|---|---|
 | `PL-s1 / historical processed` | PL replacement under processed/TC-oriented route | `newpl_v4_init36` remains best historical full S4 artifact | `RECENT_REPLACEMENT_VERSIONS.md` section `PL-s1 Replacement Versions` |
 | `PL-s1 / official-route v5 family` | AMASS -> DIP, DIP/TC module eval, no TC fine-tune | no selected replacement; v5 variants are diagnostic | `newpl_v5_official_protocol`, loss-family, smoothacc, butteracc, realtime smooth+residual |
-| `PL-s1 / predictive/root/offset variants` | NewPL-root, next-control, offset/acc-aux, learned offset | diagnostic only unless explicitly promoted later | `newpl_root_v1`, `newpl_v6_next_control`, `newpl_v6_next_control_smoothacc_gR1`, `newpl_offset_v6`, `newpl_v7/v7b` |
+| `PL-s1 / predictive/root/offset variants` | NewPL-root, next-control, offset/acc-aux, learned offset | diagnostic only unless explicitly promoted later | `newpl_root_v1`, `newpl_v6_next_control`, `newpl_v6_next_control_smoothacc_gR1`, `newpl_v6_next_p_pdot_pddot_strong`, `newpl_offset_v6`, `newpl_v7/v7b` |
 | `IK-s1` | IK1 replacement preserving `pRJ[69]+gR2[3]` | none selected; best S4 still behind PL-only init36 | `newik1_v6`, v8/v9 adaptive search, v10/v11/v14 notes |
 | `IK-s2 / NewPose` | IK2/pose-control replacement | rejected so far | `newpose_ctrl_v1/v2` |
 | `IMU offset / r_JS data line` | DIP/TC pseudo offset synthesis and audits | active route is `footlock_transpose_v1` only | `Active r_JS Policy` |
 | `Diagnostic IMU control modules` | neighbor velocity/position and joint q/qdot/velocity control diagnostics | diagnostic only; not connected to PL/IK/full pipeline | `imu_neighbor_vel_ctrl_v1`, `imu_neighbor_pos_from_vel_ctrl_v1`, `imu_joint_euler_qdot_vel_ctrl_v1` |
 | `Experiment evidence` | commands, logs, JSONs, failures | archive only, not current status | `EXPERIMENT_LOG.md` detailed log index |
+
+Latest PL-s1 implementation note on 2026-06-16:
+
+```text
+newpl_v6_next_p_pdot_pddot_strong is implemented, smoke-tested, and full
+AMASS->DIP trained/evaluated at module level.
+It preserves the v6 next-control model and downstream PL contract, but changes
+training to decoded next p/pd/pdd pRB[15] supervision with train-cache RMS
+normalization and best_p_pdot_pddot_strong.pt selection.
+Full root: data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full
+Full result: AMASS best composite 0.6011257469 at epoch 70; DIP best composite
+0.9176913500 at epoch 39. Same-cache module eval does not justify promotion:
+DIP after DIP FT pRB/gR1 is 6.353314 cm / 12.901381 deg, versus official PL
+6.345701 cm / 12.902106 deg and newpl_v4 6.349541 cm / 12.722353 deg.
+TotalCapture after DIP FT pRB/gR1 is 7.508233 cm / 13.168667 deg, worse than
+newpl_v4 7.119541 cm / 13.075061 deg and essentially official-level on pRB/gR1.
+No full-pipeline 11 metrics were run; do not promote it.
+```
 
 ## 0.1 IMU Neighbor Velocity-Control Module v1
 

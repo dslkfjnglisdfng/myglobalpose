@@ -33,6 +33,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | newpl_v5_butteracc | `EXP-20260612-newpl_v5_butteracc`; causal Butterworth aM input-only gate under `data/experiments/newpl_v5_butteracc_20260612_full/`, plus forced fc12 longtrain under `data/experiments/newpl_v5_butteracc_20260612_forced_fc12_longtrain/` |
 | newpl_v5_realtime_smooth_residual | `EXP-20260612-newpl_v5_realtime_smooth_residual`; root `data/experiments/newpl_v5_realtime_residual_20260612_full_causal_iir20/`; raw v5 rows are historical references unless same-cache re-eval is run |
 | newpl_v6_next_control_smoothacc_gR1 | `EXP-20260613-newpl_v6_next_control_smoothacc_gR1`; root `/tmp/globalpose_newpl_v6_next_control_smoothacc_gR1_20260613/full`; smooth-aM cache reuse, AMASS 80 -> DIP 40, module eval only |
+| newpl_v6_next_p_pdot_pddot_strong | `EXP-20260616-newpl_v6_next_p_pdot_pddot_strong_smoke`; root `data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full`; decoded next p/pd/pdd strong supervision, full AMASS->DIP module eval, diagnostic only |
 | derivative-aware control-point target policy | `EXP-20260608-derivative_aware_control_fit`; RBDL-only audit and cache smoke artifacts under `data/experiments/gt_control_derivative_audit_20260608/` |
 | newik1_v1_control_tail | `EXP-20260604-004`; logs/S4 JSON in artifact index |
 | newik1_v2_bonelength | `EXP-20260604-005`; logs/S4 JSON in artifact index |
@@ -13631,3 +13632,221 @@ The next iteration should either add a pRB-preserving temporal term that does no
 No DIP translation/root velocity was used or fabricated.
 No full-pipeline 11 metrics were run.
 ```
+
+<!-- BEGIN newpl-v6-next-p-pdot-pddot-strong--2026-06-16 -->
+## EXP-20260616-newpl_v6_next_p_pdot_pddot_strong_smoke — Decoded p/pd/pdd strong supervision
+
+Status: implemented, smoke-tested, and full AMASS->DIP trained/evaluated at
+module level. Full-pipeline 11 metrics were not run because same-cache module
+metrics do not justify escalation.
+
+Question: can the v6 next-control route be trained with only normalized decoded
+`next_pl / next_pldot / next_plddot` pRB[15] supervision, selecting the best
+checkpoint by the validation normalized `p + pd + pdd` composite?
+
+Implementation:
+
+```text
+changed:
+  pl_next_control_train.py
+  scripts/run_newpl_v6_next_control_smoothacc_gR1_20260613.sh
+added:
+  scripts/run_newpl_v6_next_p_pdot_pddot_strong_20260615.sh
+  scripts/summarize_newpl_v6_next_p_pdot_pddot_strong.py
+```
+
+Input/output contract:
+
+```text
+PL input: smooth aRB[18] + raw wRB[18] + raw RRB[45] + gR0[3] = 84D
+init: offset_r[18] + pRL[15] + gR0[3] = 36D
+current output consumed by IK1: pRB_t[15] + gR1_t[3] = 18D
+aux supervised outputs: next_pl[..., :15], next_pldot[..., :15], next_plddot[..., :15]
+GT source: existing next-control cache targets derived from GTControlCache controls
+DIP trans/root velocity: not used
+TotalCapture fine-tune: not run
+```
+
+Loss and selection:
+
+```text
+loss_preset = p_pdot_pddot_strong
+active loss terms:
+  next_pRB_norm_pos = 1.0
+  next_pRB_norm_vel = 1.0
+  next_pRB_norm_acc = 1.0
+all old current/control/gR1/smooth/prior terms = 0.0
+normalization = train-cache RMS scales for p, pd, pdd
+best checkpoint = best_p_pdot_pddot_strong.pt
+selection metric = validation next_pRB_norm_composite
+```
+
+Static validation:
+
+```bash
+/home/lingfeng/.conda/envs/globalpose-gpu/bin/python -m py_compile \
+  pl_next_control_train.py \
+  pl_next_control_cache.py \
+  pl_curve.py \
+  pl_curve_pl_accuracy_eval.py \
+  pl_next_control_eval.py \
+  scripts/summarize_newpl_v6_next_control_smoothacc_gR1.py \
+  scripts/summarize_newpl_v6_next_p_pdot_pddot_strong.py
+
+bash -n \
+  scripts/run_newpl_v6_next_control_smoothacc_gR1_20260613.sh \
+  scripts/run_newpl_v6_next_p_pdot_pddot_strong_20260615.sh
+```
+
+Result: passed.
+
+Smoke command:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+/home/lingfeng/bin/longrun -- bash -lc \
+'CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0} NO_TEE=1 CACHE_MAX=2 \
+MAX_TRAIN_SEQS=2 MAX_VAL_SEQS=2 MAX_EVAL_SEQS=2 AMASS_MAX_EVAL_SEQS=2 \
+MAX_EVAL_FRAMES=128 BATCH_SIZE=2 VAL_BATCH_SIZE=2 WINDOW=21 VAL_WINDOW=21 \
+EPOCHS_AMASS=1 EPOCHS_DIP=1 \
+bash scripts/run_newpl_v6_next_p_pdot_pddot_strong_20260615.sh smoke'
+```
+
+Operational note: the first smoke attempt wrote bounded caches under the old
+`newpl_v6_next_control_smoothacc_gR1_20260613` cache root. That was corrected:
+those generated old-root cache directories were removed, and the wrapper now
+uses the new experiment cache root for smoke. Full mode may reuse compatible
+old full caches only when the expected full cache manifests already exist.
+
+Artifacts:
+
+```text
+smoke root:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/smoke
+cache root:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/caches
+summary:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/smoke/summary_p_pdot_pddot_strong.json
+AMASS checkpoint:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/smoke/amass_pretrain/best_p_pdot_pddot_strong.pt
+DIP checkpoint:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/smoke/dip_finetune/best_p_pdot_pddot_strong.pt
+eval JSONs:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/smoke/eval_amass_after_pretrain.json
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/smoke/eval_dip_test_after_amass_pretrain.json
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/smoke/eval_totalcapture_test_after_amass_pretrain.json
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/smoke/eval_dip_test_after_dip_finetune.json
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/smoke/eval_totalcapture_test_after_dip_finetune.json
+```
+
+Smoke train results:
+
+| Stage | Best epoch | normalized p+pd+pdd | p scale | pd scale | pdd scale |
+|---|---:|---:|---:|---:|---:|
+| AMASS pretrain | `1` | `0.3779128194` | `0.3678918372` | `0.3269050665` | `6.0625984267` |
+| DIP fine-tune | `1` | `0.5174257755` | `0.3709179209` | `0.3357553991` | `6.3741371968` |
+
+Smoke module metrics, same-cache bounded eval:
+
+| Dataset/stage | Version | next p L2 cm | next pd L2 cm/s | next pdd L2 cm/s2 | current gR1 deg |
+|---|---|---:|---:|---:|---:|
+| AMASS after AMASS | strong AMASS | `2.686361` | `6.666100` | `455.439850` | `5.544665` |
+| AMASS after AMASS | prior raw v6 AMASS | `2.730000` | `6.692560` | `455.608688` | `6.184368` |
+| DIP after DIP FT | strong DIP | `1.326445` | `1.070521` | `26.545074` | `0.837331` |
+| DIP after DIP FT | prior raw v6 DIP | `1.226944` | `1.050245` | `31.675880` | `1.475745` |
+| TC after DIP FT | strong DIP | `4.911571` | `28.242008` | `474.005539` | `3.421504` |
+| TC after DIP FT | prior raw v6 DIP | `5.062399` | `28.298583` | `452.309418` | `2.629442` |
+
+Interpretation:
+
+```text
+The implementation path is finite and writes the expected best/last checkpoints
+and same-cache eval JSONs. The loss preset correctly zeroes all old loss terms
+except normalized decoded p/pd/pdd. This smoke is too small to support a
+replacement claim. A full run is still required, and the final decision must
+compare best_p_pdot_pddot_strong.pt and last.pt against official PL,
+newpl_v4_init36, raw newpl_v5_dip_best, and prior v6 on the same caches.
+```
+
+Full command:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+CUDA_VISIBLE_DEVICES=1 \
+NO_TEE=0 \
+CACHE_ROOT=data/experiments/newpl_v5_smoothacc_20260612/caches \
+NEXT_CACHE_ROOT=/tmp/globalpose_newpl_v6_next_control_smoothacc_gR1_20260613/next_cache_full \
+BATCH_SIZE=32 \
+VAL_BATCH_SIZE=32 \
+WINDOW=81 \
+EPOCHS_AMASS=80 \
+EPOCHS_DIP=40 \
+/home/lingfeng/bin/longrun -- bash scripts/run_newpl_v6_next_p_pdot_pddot_strong_20260615.sh full
+```
+
+Full artifacts:
+
+```text
+root:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full
+log:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/logs/run_full.log
+summary:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/summary_p_pdot_pddot_strong.json
+checkpoints:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/amass_pretrain/best_p_pdot_pddot_strong.pt
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/amass_pretrain/last.pt
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/dip_finetune/best_p_pdot_pddot_strong.pt
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/dip_finetune/last.pt
+eval JSONs:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/eval_amass_after_pretrain.json
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/eval_dip_test_after_amass_pretrain.json
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/eval_totalcapture_test_after_amass_pretrain.json
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/eval_dip_test_after_dip_finetune.json
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/eval_totalcapture_test_after_dip_finetune.json
+```
+
+Full training selection:
+
+| Stage | Train seqs | Val seqs | Best epoch | normalized p+pd+pdd | p scale | pd scale | pdd scale |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| AMASS pretrain | `1294` | `128` | `70` | `0.6011257470` | `0.3572728132` | `0.3579577642` | `7.3343620957` |
+| DIP fine-tune | `36` | `6` | `39` | `0.9176913500` | `0.3663190813` | `0.4027485024` | `17.5228447399` |
+
+Full same-cache module eval after DIP fine-tune:
+
+| Dataset | Version | current pRB L2 cm | current gR1 deg | next p L2 cm | next pd L2 cm/s | next pdd L2 cm/s2 |
+|---|---|---:|---:|---:|---:|---:|
+| DIP test | official PL smoothacc | `6.345701` | `12.902106` | `6.465117` | `40.244087` | `2684.142116` |
+| DIP test | newpl_v4_init36_smoothacc | `6.349541` | `12.722353` | `6.496246` | `40.243882` | `2666.394318` |
+| DIP test | newpl_v5_raw_dip_on_smoothinput | `6.357881` | `12.512222` | `6.507716` | `40.250549` | `2666.365777` |
+| DIP test | prior newpl_v6_raw_dip_on_smoothinput | `6.370279` | `12.615336` | `6.478526` | `66.331095` | `2660.687140` |
+| DIP test | strong best_p_pdot_pddot | `6.353314` | `12.901381` | `6.454685` | `64.602965` | `2684.758215` |
+| DIP test | strong last | `6.353314` | `12.901381` | `6.454691` | `64.593160` | `2685.167951` |
+| TC test | official PL smoothacc | `7.508986` | `13.170870` | `7.597959` | `34.038251` | `2099.110771` |
+| TC test | newpl_v4_init36_smoothacc | `7.119541` | `13.075061` | `7.236774` | `32.694513` | `1801.389069` |
+| TC test | newpl_v5_raw_dip_on_smoothinput | `7.255848` | `13.138471` | `7.387153` | `32.724789` | `1800.290009` |
+| TC test | prior newpl_v6_raw_dip_on_smoothinput | `7.484898` | `12.954138` | `7.578813` | `57.576946` | `711.415844` |
+| TC test | strong best_p_pdot_pddot | `7.508233` | `13.168667` | `7.589151` | `55.491009` | `806.639374` |
+| TC test | strong last | `7.508233` | `13.168667` | `7.589482` | `55.475717` | `807.941780` |
+
+Full interpretation:
+
+```text
+The full run is finite and selected best_p_pdot_pddot_strong.pt as intended.
+The normalized p/pd/pdd target reduces the selected composite during training,
+but it does not produce a stronger current PL module.
+
+DIP after DIP fine-tune: current pRB is slightly worse than official PL and v4,
+and gR1 is much worse than v4/raw-v5 while roughly official-level. The candidate
+has slightly better next p than official/v4/v5, but next velocity is much worse.
+
+TotalCapture after DIP fine-tune: the candidate preserves official-level
+pRB/gR1 and improves next acceleration versus official/v4/v5, but it is clearly
+worse than newpl_v4_init36_smoothacc on current pRB/gR1 and worse than official/v4
+on next velocity.
+
+Decision: diagnostic only; do not promote and do not run full-pipeline 11 metrics
+from this checkpoint.
+```
+<!-- END newpl-v6-next-p-pdot-pddot-strong--2026-06-16 -->

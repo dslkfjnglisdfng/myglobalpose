@@ -36,7 +36,7 @@ Version-line index:
 | `PL-s1 / historical processed` | `newpl_v1_processed_no_baseline`, `newpl_v2_gRdyn`, `newpl_v3_gtcontrol_rund`, `newpl_v4_init36` | `newpl_v4_init36` selected only as historical processed-input full-S4 best |
 | `PL-s1 / official-route v5` | `newpl_v5_official_protocol`, `newpl_v5_loss_family_ablation` | no selected replacement; official-route pRB criterion not met |
 | `PL-s1 / acceleration-input filters` | `newpl_v5_smoothacc`, `newpl_v5_butteracc`, `newpl_v5_realtime_smooth_residual` | diagnostic only; smooth/residual/Butter variants not promoted |
-| `PL-s1 / predictive dynamics` | `newpl_v6_next_control`, `newpl_v6_next_control_smoothacc_gR1`, `newpl_root_v1` | diagnostic only; no IK1/full-pipeline promotion |
+| `PL-s1 / predictive dynamics` | `newpl_v6_next_control`, `newpl_v6_next_control_smoothacc_gR1`, `newpl_v6_next_p_pdot_pddot_strong`, `newpl_root_v1` | diagnostic only; no IK1/full-pipeline promotion |
 | `PL-s1 / offset-aware and acc-aux` | `newpl_offset_conditioned_*`, `newpl_offset_v6`, `newpl_v7_learned_offset_accaux`, `newpl_v7b_local_accaux` | diagnostic only; offset signal not converted to robust pRB/gR1 gain |
 | `IK-s1` | `newik1_v1` through `newik1_v14` search/diagnostics | none selected; best remains behind PL-only init36 |
 | `IK-s2 / NewPose` | `newpose_ctrl_v1`, `newpose_ctrl_v2` | rejected/diagnostic |
@@ -147,6 +147,7 @@ Interpretation: processed-input gains come from corrected orientation/RMB and in
 | newpl_v5_butteracc | PL-s1 | realtime causal Butterworth acceleration gate | replace raw `aM` with causal Butterworth filtered `aM`, keep `wM/RMB` | PL output unchanged | same v5 loss and control_physical selection | input-only sweep over fc8/fc10/fc12, then forced fc12 AMASS -> DIP | no; gate fails and forced training does not recover pRB | not measured | not selected |
 | newpl_v6_next_control | PL-s1 | one-step predictive next control with preview tail4 update | official 84D input + init36 | current PL 18D unchanged; adds aux next PL/dynamics | current PL/control plus next state/control/velocity/acceleration and last/tail4 control losses | full AMASS 80 -> DIP 40; TC eval-only | no; AMASS pRB/acc improves, but DIP/TC pRB does not beat baselines | not measured | not selected |
 | newpl_v6_next_control_smoothacc_gR1 | PL-s1 | combine centered smooth acceleration with v6 next-control and gR1 checkpoint selection | smooth `aM`; raw `wM/RMB`; init36 | current PL 18D unchanged; aux next PL/dynamics unchanged | same v6 loss plus saved `best_current_gR1`, `best_next_gR1`, `best_gravity_control` | AMASS 80 -> DIP 40; TC eval-only; final DIP/TC eval fast512 | mixed; best TC/DIP gR1 among smooth baselines, but pRB is worse than v4/raw-v5 | not measured | not selected |
+| newpl_v6_next_p_pdot_pddot_strong | PL-s1 | supervise decoded next `p/pd/pdd` trajectory outputs directly | smooth `aM`; raw `wM/RMB`; init36; reuses compatible next-control cache or builds under run root | current PL 18D unchanged; aux next PL/dynamics unchanged | only normalized decoded next pRB `p/pd/pdd = 1/1/1`; all old current/control/gR1/prior terms zero in preset | AMASS 80 -> DIP 40; batch 32; TC eval-only | no; p/pd/pdd target converges but DIP/TC module metrics do not beat same-cache baselines | not measured | diagnostic only; not selected |
 | imu_neighbor_pos_from_vel_ctrl_v1 | diagnostic neighbor-control | predict root-relative positions from official IMU plus frozen neighbor velocity-control features | 189D: `aM/wM/RMB_6d/r_JS` + velocity control/vel/acc | `neighbor_pos_R_control[33]`, decoded `pos_R/vel_R/acc_R` | position control, decoded position, optional root-relative vel/acc, segment length, smooth/jerk/prior | AMASS 80 -> TC 60 and AMASS 80 -> DIP 30; module eval only | no; pos_R L2 about `48 cm` vs pose_prephysics baseline `2.34-5.57 cm` | not run | rejected for IK/NewIK1 |
 | imu_joint_euler_qdot_vel_ctrl_v1 | diagnostic IMU joint-control | PL-like init network predicts IMU-mapped joint Euler/qdot/velocity controls | current code: `aM[18]+wM[18]+R_rootIMU_sensorIMU_flat[54]=90D`; historical run used world `RMB_flat[54]`; init `q[0]+qdot[0]+vel[0]=54D` | `q_RJ_euler_control[18]+qdot_RJ_euler_control[18]+vel_RJ_control[18]` | q control/q/qdot/qdot-control/qddot/velocity/acceleration/consistency/smooth/jerk/prior; 4 loss variants | historical world-RMB run: 4 variants; root-RMB rerun: `D_all_balanced` only with shared precompute/last.pt disabled for quota | no; root-RMB D is not better than world-RMB D and remains far worse than baseline | not run | rejected for IK/NewIK1 |
 | newik1_v1_control_tail | IK-s1 | control-tail IK1 | 120D control-tail feature | 72D pRJ+gR2 unchanged | baseline IK1 control losses | PL streaming TC finetune | not vs previous | no | not selected |
@@ -1330,6 +1331,108 @@ eval JSONs:
 - Gravity: this is currently the best checked smoothacc/v6 route for TotalCapture fast512 gR1 and slightly better than official/v4 on DIP fast512 gR1 after DIP fine-tune.
 - pRB: fails the PL guard. It loses to `newpl_v4_init36_smoothacc` on DIP and TotalCapture pRB, and loses to raw-v5-on-smoothinput on DIP.
 - Next use: keep the gR1-selection code and metrics, but do not connect this checkpoint to IK1/full pipeline unless a later variant preserves pRB.
+
+## Version: newpl_v6_next_p_pdot_pddot_strong
+
+### 1. Purpose
+
+Test the user's requested v6 next-control variant where supervision is applied
+to the decoded trajectory outputs, not the control points: `next_pl`,
+`next_pldot`, and `next_plddot` pRB[15].
+
+### 2. Main Change
+
+| Change Type | Previous v6 smoothacc | This Version | Motivation |
+|---|---|---|---|
+| Input/cache | smooth `aM`, raw `wM/RMB`, init36 next-control cache | same; compatible full caches may be reused, smoke builds under this run root | isolate loss/selection change |
+| Output | current PL 18D plus aux next PL/dynamics | unchanged | preserve IK1/full-pipeline contract |
+| Loss | mixed current/next/control/gR1/priors | only normalized decoded next pRB `p/pd/pdd = 1/1/1` | prevent control-point or gR1 terms from driving selection |
+| Selection | current/next/control/gR1 metrics | `best_p_pdot_pddot_strong.pt` by validation normalized `p+pd+pdd` composite | align checkpoint selection with direct supervised outputs |
+
+### 3. Loss Design
+
+| Loss | Weight | Scale Source | Notes |
+|---|---:|---|---|
+| `next_pRB_norm_pos` | `1.0` | train-cache RMS of `pl_target_next[..., :15]` | decoded `next_pl` pRB only |
+| `next_pRB_norm_vel` | `1.0` | train-cache RMS of `gt_pldot_next[..., :15]` | decoded `next_pldot` pRB only |
+| `next_pRB_norm_acc` | `1.0` | train-cache RMS of `gt_plddot_next[..., :15]` | decoded `next_plddot` pRB only |
+| all old current/control/gR1/prior terms | `0.0` | not applicable | preset `p_pdot_pddot_strong` zeroes them |
+
+Full normalization scales:
+
+| Stage | p scale | pd scale | pdd scale |
+|---|---:|---:|---:|
+| AMASS pretrain full | `0.3572728132` | `0.3579577642` | `7.3343620957` |
+| DIP fine-tune full | `0.3663190813` | `0.4027485024` | `17.5228447399` |
+
+### 4. Training Recipe
+
+| Stage | Data | Epochs | Batch/window | Selection value | Output |
+|---|---|---:|---|---:|---|
+| AMASS pretrain | 1294 train / 128 val next-control sequences | `80` | batch `32`, window `81` | `0.6011257470` at epoch `70` | `full/amass_pretrain/best_p_pdot_pddot_strong.pt` |
+| DIP fine-tune | 36 train / 6 val next-control sequences | `40` | batch `32`, window `81` | `0.9176913500` at epoch `39` | `full/dip_finetune/best_p_pdot_pddot_strong.pt` |
+
+### 5. Full Module Metrics
+
+Same-cache full eval after DIP fine-tune:
+
+| Dataset / Stage | Version | current pRB L2 cm | current gR1 deg | next p L2 cm | next pd L2 cm/s | next pdd L2 cm/s2 |
+|---|---|---:|---:|---:|---:|---:|
+| DIP after DIP FT | official PL smoothacc | `6.345701` | `12.902106` | `6.465117` | `40.244087` | `2684.142116` |
+| DIP after DIP FT | newpl_v4_init36_smoothacc | `6.349541` | `12.722353` | `6.496246` | `40.243882` | `2666.394318` |
+| DIP after DIP FT | newpl_v5_raw_dip_on_smoothinput | `6.357881` | `12.512222` | `6.507716` | `40.250549` | `2666.365777` |
+| DIP after DIP FT | prior newpl_v6_raw_dip_on_smoothinput | `6.370279` | `12.615336` | `6.478526` | `66.331095` | `2660.687140` |
+| DIP after DIP FT | strong best_p_pdot_pddot | `6.353314` | `12.901381` | `6.454685` | `64.602965` | `2684.758215` |
+| DIP after DIP FT | strong last | `6.353314` | `12.901381` | `6.454691` | `64.593160` | `2685.167951` |
+| TC after DIP FT | official PL smoothacc | `7.508986` | `13.170870` | `7.597959` | `34.038251` | `2099.110771` |
+| TC after DIP FT | newpl_v4_init36_smoothacc | `7.119541` | `13.075061` | `7.236774` | `32.694513` | `1801.389069` |
+| TC after DIP FT | newpl_v5_raw_dip_on_smoothinput | `7.255848` | `13.138471` | `7.387153` | `32.724789` | `1800.290009` |
+| TC after DIP FT | prior newpl_v6_raw_dip_on_smoothinput | `7.484898` | `12.954138` | `7.578813` | `57.576946` | `711.415844` |
+| TC after DIP FT | strong best_p_pdot_pddot | `7.508233` | `13.168667` | `7.589151` | `55.491009` | `806.639374` |
+| TC after DIP FT | strong last | `7.508233` | `13.168667` | `7.589482` | `55.475717` | `807.941780` |
+
+### 6. Official S4 11 Metrics
+
+| Version | Score | Notes |
+|---|---:|---|
+| newpl_v6_next_p_pdot_pddot_strong | not measured | module-level full AMASS->DIP run only; no full-pipeline 11 metrics because module metrics do not justify escalation |
+
+### 7. Artifacts
+
+```text
+changed:
+  pl_next_control_train.py
+  scripts/run_newpl_v6_next_control_smoothacc_gR1_20260613.sh
+added:
+  scripts/run_newpl_v6_next_p_pdot_pddot_strong_20260615.sh
+  scripts/summarize_newpl_v6_next_p_pdot_pddot_strong.py
+smoke root:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/smoke
+smoke summary:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/smoke/summary_p_pdot_pddot_strong.json
+full root:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full
+full summary:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/summary_p_pdot_pddot_strong.json
+full checkpoints:
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/amass_pretrain/best_p_pdot_pddot_strong.pt
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/dip_finetune/best_p_pdot_pddot_strong.pt
+  data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full/dip_finetune/last.pt
+```
+
+### 8. Conclusion
+
+- Keep as mainline: no.
+- The intended loss contract works and training is finite, but the selected
+  checkpoint mostly learns a next-trajectory/dynamics tradeoff rather than a
+  better current PL output.
+- DIP after DIP fine-tune: current pRB is slightly worse than official PL and
+  v4; gR1 is much worse than v4/raw-v5 and roughly official-level.
+- TotalCapture after DIP fine-tune: pRB/gR1 are essentially official-level and
+  clearly worse than `newpl_v4_init36_smoothacc`; next acceleration improves
+  versus official/v4/v5 but not enough to offset worse pRB/gR1 and next velocity.
+- Do not run full-pipeline 11 metrics or promote this checkpoint unless a later
+  variant preserves same-cache pRB/gR1 while keeping the useful acceleration gain.
 
 ## 6. IK-s1 Replacement Versions
 
