@@ -23,7 +23,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | IK-s1 | `newik1_v1` through v14 search records, orchestrator logs, and S4/module JSONs |
 | IK-s2 / NewPose | `newpose_ctrl_v1/v2` records and module/full-pipeline evals |
 | IMU offset / r_JS | `footlock_transpose_v1`, smoothed-fit audit, offset-net/solver retired routes |
-| AccCurve / acceleration residual | `EXP-20260617-acc_curve_v1`; standalone acceleration-level AMASS -> DIP module eval under `data/experiments/acc_curve_v1_20260617/` |
+| AccCurve / acceleration residual | `EXP-20260617-acc_curve_v2_gtfk`; strict GTFK standalone acceleration-level AMASS -> DIP module eval under `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/`; v1 historical record remains below |
 | Official GPNet + official/processed IMU | `EXP-20260604-001`, `EXP-20260604-002`; S4 JSONs referenced in `RECENT_REPLACEMENT_VERSIONS.md` |
 | newpl_v1_processed_no_baseline | `data/experiments/pl_curve_v2_processed_no_baseline/tc_finetune_10ep/train_log.jsonl`; S4 JSON in artifact index |
 | newpl_v2_gRdyn | `data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_finetune_v1/tc_finetune_10ep/train_log.jsonl`; S4 JSON not found |
@@ -44,9 +44,109 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | newik1_v6_official_input_init36_cascade | `EXP-newik1_v6_official_input_init36_cascade_rerun`; AMASS offset enrichment, task logs, S4 JSONs, Module GT JSONs, and final manual selection JSON |
 | DIP footlock TransPose pseudo-rJS | `EXP-20260608-footlock_transpose_rjs`; winner cache under `data/experiments/footlock_transpose_rjs_20260608/` |
 | footlock-only smoothed-acc rJS cleanup | `EXP-20260609-footlock_only_smoothacc_rjs`; active route is `footlock_transpose_v1` only; old offset-route artifacts deleted |
-| acc_curve_v1_20260617 | `EXP-20260617-acc_curve_v1`; root `data/experiments/acc_curve_v1_20260617`; cache root `code/outputs/smooth_acc_cache_amass_dip_20260617`; module-level only |
+| acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617 | `EXP-20260617-acc_curve_v2_gtfk`; root `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617`; cache root `code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617`; module-level only |
+| acc_curve_v1_20260617 | `EXP-20260617-acc_curve_v1`; root `data/experiments/acc_curve_v1_20260617`; cache root `code/outputs/smooth_acc_cache_amass_dip_20260617`; historical diff-pos-style target |
 
 ## Detailed Records
+
+## EXP-20260617-acc_curve_v2_gtfk - Strict GTFK AccCurve residual module
+
+Question: Can the standalone PL-style AccCurve residual module improve six IMU sensor-site acceleration against a strict `smooth(GTFKacc(q,qdot,qddot,rJS))` target?
+
+Target correction: v1 used `aFK_smooth` from a position finite-difference target cache (`smooth(diff_acc(p_WS))` style). v2 uses an explicit `aFK_gtfk_smooth` cache built from RBDL point acceleration:
+
+```text
+GTFKacc(q,qdot,qddot,rJS) -> centered smooth window=9 -> aFK_gtfk_smooth[6,3]
+```
+
+Change tested:
+
+```text
+module: acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617
+input: aM_raw[18] + aM_smooth[18] + (aM_raw-aM_smooth)[18] + wM[18] + RMB_6d[36] = 108D
+RMB_6d: rotation[..., :, :2].transpose(-1, -2).reshape(..., 6)
+input frame: model/world cache frame for aM_raw/aM_smooth/wM/RMB; no root-frame transform
+base: aM_smooth[18]
+output: pred_aM_curve[18]
+target: aFK_gtfk_smooth[18]
+unit: output and target remain m/s^2
+normalization: train-set z-score on input features only, fitted from AMASS train split only
+```
+
+Cache build:
+
+```text
+cache root: code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617
+AMASS train: 1298 sequences, 1118012 frames, 1107628 valid frames, failures=0
+DIP train: 36 sequences, 228807 frames, 228519 valid frames, failures=0
+DIP val: 6 sequences, 30771 frames, 30723 valid frames, failures=0
+DIP test: 19 sequences, 57994 frames, 57842 valid frames, failures=0
+target source: GTFK(q,qdot,qddot,rJS)
+target contract: GTFKacc(q,qdot,qddot,rJS) -> centered smooth -> aFK_gtfk_smooth[6,3]
+```
+
+Commands:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+ENV=/home/lingfeng/.conda/envs/globalpose-gpu
+export PATH="$ENV/bin:$PATH"
+export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"
+
+# Smoke:
+for preset in amass_train dip_train dip_val dip_test; do
+  "$ENV/bin/python" scripts/build_acc_curve_gtfk_cache.py --preset "$preset" --output-root code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617_smoke --max-sequences 2 --max-frames 180 --shard-size 2 --progress-every 1 --overwrite
+done
+"$ENV/bin/python" acc_curve_train.py --amass-cache code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617_smoke/amass_train/acc_curve_gtfk_cache_manifest.json --dip-train-cache code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617_smoke/dip_train/acc_curve_gtfk_cache_manifest.json --dip-val-cache code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617_smoke/dip_val/acc_curve_gtfk_cache_manifest.json --dip-test-cache code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617_smoke/dip_test/acc_curve_gtfk_cache_manifest.json --output-dir data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617_smoke --target-key aFK_gtfk_smooth --epochs 1 --dip-epochs 1 --window 120 --stride 60 --batch-size 2 --num-workers 0 --hidden-size 64 --overwrite
+
+# Full cache + training:
+CUDA_VISIBLE_DEVICES=0 RUN_SMOKE=0 RUN_FULL_CACHE=1 RUN_TRAIN=1 USE_LONGRUN=1 bash scripts/run_acc_curve_v2_gtfk_20260617.sh
+```
+
+Validation:
+
+```text
+compile: python -m py_compile acc_curve.py acc_curve_train.py scripts/build_acc_curve_gtfk_cache.py
+runner syntax: bash -n scripts/run_acc_curve_v2_gtfk_20260617.sh
+smoke: passed; zero_init_max_abs_pred_minus_base=0.0
+window check: AMASS smoke train_windows=2, DIP smoke train_windows=4; full AMASS train_windows=8231, DIP train_windows=1887
+target safety: acc_curve_train.py only allows target_key=aFK_gtfk_smooth and validates manifest target_source=GTFK(q,qdot,qddot,rJS)
+```
+
+Training summary:
+
+| Stage | Train seq | Val seq | Train windows | Val windows | Best epoch | Best selection |
+|---|---:|---:|---:|---:|---:|---:|
+| AMASS pretrain | `1231` | `67` | `8231` | `407` | `29` | `0.8150924359` |
+| DIP finetune | `36` | `6` | `1887` | `253` | `19` | `0.7294550687` |
+
+Module metrics:
+
+| Split | pred L2 | base L2 | pred/base ratio | pred RMSE | base RMSE | corr | cosine | mag MAE | residual std | residual p95 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| DIP val | `1.990773` | `3.102919` | `0.757471` | `1.689920` | `2.535429` | `0.821207` | `0.488962` | `1.060400` | `1.950429` | `6.949836` |
+| DIP test | `2.997944` | `3.958857` | `0.778348` | `2.588015` | `3.341077` | `0.792049` | `0.493421` | `1.639596` | `2.357390` | `8.619020` |
+
+Artifacts:
+
+```text
+module: acc_curve.py
+train/eval: acc_curve_train.py
+strict cache builder: scripts/build_acc_curve_gtfk_cache.py
+runner: scripts/run_acc_curve_v2_gtfk_20260617.sh
+cache root: code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617
+experiment root: data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617
+final checkpoint: data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/dip_finetune/best_loss.pt
+summary: data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/train_result.json
+eval JSONs:
+  data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/eval/dip_val_eval.json
+  data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/eval/dip_test_eval.json
+sanity JSONs:
+  code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/*/sanity_gtfk_target.json
+  data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/eval/*_sanity_gtfk_prediction.json
+```
+
+Interpretation: The strict GTFK v2 module improves acceleration-level regression over the `aM_smooth` base on DIP val/test (`ratio < 1`). It does not satisfy the stronger effectiveness gate (`ratio < 0.7` and `corr > 0.9`), so it should be treated as a useful but not decisive acceleration alignment auxiliary. It is standalone and not connected to PL/IK/full pipeline; no motion-quality improvement is claimed.
 
 ## EXP-20260617-acc_curve_v1 - PL-style AccCurve residual module
 

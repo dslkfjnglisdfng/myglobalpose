@@ -27,12 +27,32 @@ def load_cache_files(cache_path):
     return [path], None
 
 
-def load_acc_records(cache_path, max_sequences=0):
+def validate_target_key(target_key):
+    if target_key != "aFK_gtfk_smooth":
+        raise ValueError(
+            "acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617 only allows "
+            "target_key=aFK_gtfk_smooth; diff-pos/FK-position targets are forbidden."
+        )
+    if "diffpos" in target_key.lower():
+        raise ValueError("diffpos must not appear in v2 target key/source.")
+
+
+def load_acc_records(cache_path, max_sequences=0, target_key="aFK_gtfk_smooth"):
+    validate_target_key(target_key)
     files, manifest = load_cache_files(cache_path)
+    if manifest:
+        source = str(manifest.get("target_source", ""))
+        contract = str(manifest.get("target_contract", ""))
+        if source != "GTFK(q,qdot,qddot,rJS)":
+            raise ValueError(f"{cache_path} target_source is not strict GTFK: {source!r}")
+        if "GTFKacc(q,qdot,qddot,rJS)" not in contract:
+            raise ValueError(f"{cache_path} missing strict target contract: {contract!r}")
+        if "diffpos" in (source + " " + contract).lower():
+            raise ValueError(f"{cache_path} contains forbidden diffpos target source.")
     records = []
     for cache_file in files:
         data = torch.load(cache_file, map_location="cpu")
-        required = ("name", "feature", "aM_smooth", "aFK_smooth", "valid_mask")
+        required = ("name", "feature", "aM_smooth", target_key, "valid_mask")
         missing = [key for key in required if key not in data]
         if missing:
             raise KeyError(f"{cache_file} missing required fields: {missing}")
@@ -41,7 +61,7 @@ def load_acc_records(cache_path, max_sequences=0):
                 "name": str(name),
                 "feature": data["feature"][idx].float(),
                 "base": data["aM_smooth"][idx].float(),
-                "target": data["aFK_smooth"][idx].float(),
+                "target": data[target_key][idx].float(),
                 "valid_mask": data["valid_mask"][idx].bool(),
                 "num_frames": int(data["num_frames"][idx]),
             })
@@ -278,6 +298,8 @@ def train_stage(model, train_records, val_records, norm, args, output_dir, stage
         "batch_size": int(args.batch_size),
         "steps_per_epoch": len(train_loader),
         "norm_count": int(norm["count"]),
+        "feature_normalization": "train-set z-score fitted once from AMASS train split only",
+        "target_key": args.target_key,
     }
     (output_dir / "dataset_summary.json").write_text(json.dumps(dataset_summary, indent=2) + "\n")
     print(json.dumps(dataset_summary, indent=2))
@@ -334,13 +356,16 @@ def save_checkpoint(path, model, optimizer, args, epoch, selection, norm, stage_
         "selection_value": float(selection),
         "feature_norm": {"mean": norm["mean"], "std": norm["std"], "count": norm["count"]},
         "stage": stage_name,
-        "model_type": "acc_curve_v1",
+        "model_type": "acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617",
+        "target_key": args.target_key,
         "output_keys": {
             "pred_aM_curve": "[T,B,18] absolute sensor-site acceleration in m/s^2",
             "base": "[T,B,18] decoded aM_smooth baseline",
             "residual": "pred_aM_curve - base",
         },
         "contract": "108D model/world-frame IMU feature -> absolute 18D sensor-site acceleration in m/s^2",
+        "target_contract": "GTFKacc(q,qdot,qddot,rJS) -> centered smooth -> aFK_gtfk_smooth[6,3]",
+        "normalization_contract": "feature z-score is fitted from AMASS train split only; outputs and targets remain m/s^2",
     }, path)
 
 
@@ -355,6 +380,8 @@ def load_model(path):
     model.load_state_dict(ckpt["model_state_dict"])
     norm = ckpt["feature_norm"]
     norm = {"mean": norm["mean"].float(), "std": norm["std"].float(), "count": int(norm["count"])}
+    if ckpt.get("target_key") and ckpt["target_key"] != "aFK_gtfk_smooth":
+        raise ValueError(f"Unexpected checkpoint target_key: {ckpt['target_key']!r}")
     return model, norm, ckpt
 
 
@@ -391,6 +418,9 @@ def eval_record_metrics(pred, base, target, valid, name):
     pred_err = pred_v - target_v
     base_err = base_v - target_v
     residual = pred_v - base_v
+    pred_flat = pred_v.reshape(-1, 3)
+    target_flat = target_v.reshape(-1, 3)
+    cosine = torch.nn.functional.cosine_similarity(pred_flat, target_flat, dim=-1, eps=1e-8)
     row = {
         "name": name,
         "valid_frames": int(valid.sum()),
@@ -400,6 +430,8 @@ def eval_record_metrics(pred, base, target, valid, name):
         "base_rmse": float(base_err.square().mean().sqrt()),
         "pred_base_ratio": float(pred_err.norm(dim=-1).mean() / base_err.norm(dim=-1).mean().clamp_min(1e-12)),
         "corr": corrcoef(pred_v, target_v),
+        "cosine": float(cosine.mean()),
+        "mag_mae": float((pred_v.norm(dim=-1) - target_v.norm(dim=-1)).abs().mean()),
         "residual_std": float(residual.std()),
         "residual_p95": float(torch.quantile(residual.norm(dim=-1).reshape(-1), 0.95)),
     }
@@ -410,15 +442,19 @@ def eval_record_metrics(pred, base, target, valid, name):
         row[f"base_l2_{sensor}"] = float(base_per_sensor[idx])
     axis_pred = pred_err.abs().mean(dim=(0, 1))
     axis_base = base_err.abs().mean(dim=(0, 1))
+    axis_pred_rmse = pred_err.square().mean(dim=(0, 1)).sqrt()
+    axis_base_rmse = base_err.square().mean(dim=(0, 1)).sqrt()
     for idx, axis in enumerate(("x", "y", "z")):
         row[f"pred_axis_mae_{axis}"] = float(axis_pred[idx])
         row[f"base_axis_mae_{axis}"] = float(axis_base[idx])
+        row[f"pred_axis_rmse_{axis}"] = float(axis_pred_rmse[idx])
+        row[f"base_axis_rmse_{axis}"] = float(axis_base_rmse[idx])
     return row
 
 
-def evaluate_checkpoint(checkpoint, cache, output_dir, split_name, max_sequences=0):
+def evaluate_checkpoint(checkpoint, cache, output_dir, split_name, max_sequences=0, target_key="aFK_gtfk_smooth"):
     model, norm, ckpt = load_model(checkpoint)
-    records, manifest = load_acc_records(cache, max_sequences=max_sequences)
+    records, manifest = load_acc_records(cache, max_sequences=max_sequences, target_key=target_key)
     rows = []
     model.eval()
     for record in records:
@@ -434,6 +470,9 @@ def evaluate_checkpoint(checkpoint, cache, output_dir, split_name, max_sequences
         "rows": rows,
         "manifest": manifest,
         "checkpoint_selection": ckpt.get("selection_value"),
+        "target_key": target_key,
+        "target_source": "GTFK(q,qdot,qddot,rJS)",
+        "target_contract": "GTFKacc(q,qdot,qddot,rJS) -> centered smooth -> aFK_gtfk_smooth[6,3]",
     }
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / f"{split_name}_eval.json").write_text(json.dumps(result, indent=2) + "\n")
@@ -454,10 +493,22 @@ def evaluate_checkpoint(checkpoint, cache, output_dir, split_name, max_sequences
         "| metric | value |",
         "|---|---:|",
     ]
-    for key in ("pred_l2", "base_l2", "pred_rmse", "base_rmse", "pred_base_ratio", "corr", "residual_std", "residual_p95"):
+    for key in ("pred_l2", "base_l2", "pred_rmse", "base_rmse", "pred_base_ratio", "corr", "cosine", "mag_mae", "residual_std", "residual_p95"):
         if key in aggregate:
             md.append(f"| {key} | {aggregate[key]:.6f} |")
     (output_dir / f"{split_name}_eval.md").write_text("\n".join(md) + "\n")
+    if rows:
+        sanity = {
+            "split": split_name,
+            "name": rows[0]["name"],
+            "target_source": "GTFK(q,qdot,qddot,rJS)",
+            "target_contract": "GTFKacc(q,qdot,qddot,rJS) -> centered smooth -> aFK_gtfk_smooth[6,3]",
+            "aM_smooth_vs_aFK_gtfk_smooth_RMSE": rows[0].get("base_rmse"),
+            "pred_vs_aFK_gtfk_smooth_RMSE": rows[0].get("pred_rmse"),
+        }
+        if "diffpos" in sanity["target_source"].lower():
+            raise RuntimeError("diffpos must not appear in v2 target source")
+        (output_dir / f"{split_name}_sanity_gtfk_prediction.json").write_text(json.dumps(sanity, indent=2) + "\n")
     print(json.dumps({"split": split_name, "aggregate": aggregate}, indent=2))
     return result
 
@@ -475,12 +526,13 @@ def smoke_zero_init(records, norm, args):
 def parse_args():
     parser = argparse.ArgumentParser(description="Train/evaluate PL-style AccCurve residual module.")
     parser.add_argument("--mode", choices=("train_full", "eval"), default="train_full")
-    parser.add_argument("--amass-cache", default="code/outputs/smooth_acc_cache_amass_dip_20260617/amass_train/acc_curve_cache_manifest.json")
-    parser.add_argument("--dip-train-cache", default="code/outputs/smooth_acc_cache_amass_dip_20260617/dip_train/acc_curve_cache_manifest.json")
-    parser.add_argument("--dip-val-cache", default="code/outputs/smooth_acc_cache_amass_dip_20260617/dip_val/acc_curve_cache_manifest.json")
-    parser.add_argument("--dip-test-cache", default="code/outputs/smooth_acc_cache_amass_dip_20260617/dip_test/acc_curve_cache_manifest.json")
-    parser.add_argument("--output-dir", default="data/experiments/acc_curve_v1_20260617")
+    parser.add_argument("--amass-cache", default="code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/amass_train/acc_curve_gtfk_cache_manifest.json")
+    parser.add_argument("--dip-train-cache", default="code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/dip_train/acc_curve_gtfk_cache_manifest.json")
+    parser.add_argument("--dip-val-cache", default="code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/dip_val/acc_curve_gtfk_cache_manifest.json")
+    parser.add_argument("--dip-test-cache", default="code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/dip_test/acc_curve_gtfk_cache_manifest.json")
+    parser.add_argument("--output-dir", default="data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617")
     parser.add_argument("--checkpoint", default="")
+    parser.add_argument("--target-key", default="aFK_gtfk_smooth")
     parser.add_argument("--epochs", type=int, default=30)
     parser.add_argument("--dip-epochs", type=int, default=20)
     parser.add_argument("--window", type=int, default=240)
@@ -506,6 +558,7 @@ def parse_args():
 
 def main():
     args = parse_args()
+    validate_target_key(args.target_key)
     random.seed(args.seed)
     torch.manual_seed(args.seed)
     output_dir = Path(args.output_dir)
@@ -521,14 +574,14 @@ def main():
         if not args.checkpoint:
             raise SystemExit("--checkpoint is required for eval")
         eval_dir = output_dir / "eval"
-        evaluate_checkpoint(args.checkpoint, args.dip_val_cache, eval_dir, "dip_val", args.max_eval_sequences)
-        evaluate_checkpoint(args.checkpoint, args.dip_test_cache, eval_dir, "dip_test", args.max_eval_sequences)
+        evaluate_checkpoint(args.checkpoint, args.dip_val_cache, eval_dir, "dip_val", args.max_eval_sequences, args.target_key)
+        evaluate_checkpoint(args.checkpoint, args.dip_test_cache, eval_dir, "dip_test", args.max_eval_sequences, args.target_key)
         return
 
-    amass_records, _ = load_acc_records(args.amass_cache, args.max_amass_sequences)
-    dip_train_records, _ = load_acc_records(args.dip_train_cache, args.max_dip_train_sequences)
-    dip_val_records, _ = load_acc_records(args.dip_val_cache)
-    dip_test_records, _ = load_acc_records(args.dip_test_cache)
+    amass_records, _ = load_acc_records(args.amass_cache, args.max_amass_sequences, args.target_key)
+    dip_train_records, _ = load_acc_records(args.dip_train_cache, args.max_dip_train_sequences, args.target_key)
+    dip_val_records, _ = load_acc_records(args.dip_val_cache, target_key=args.target_key)
+    dip_test_records, _ = load_acc_records(args.dip_test_cache, target_key=args.target_key)
     amass_train, amass_val = split_amass_hash(amass_records, args.amass_val_ratio)
     norm = fit_feature_norm(amass_train)
     zero_diff = smoke_zero_init(amass_train, norm, args)
@@ -546,9 +599,13 @@ def main():
     dip_result = train_stage(model, dip_train_records, dip_val_records, norm, dip_args, output_dir / "dip_finetune", "dip_finetune")
     final_ckpt = output_dir / "dip_finetune" / "best_loss.pt"
     eval_dir = output_dir / "eval"
-    val_result = evaluate_checkpoint(final_ckpt, args.dip_val_cache, eval_dir, "dip_val", args.max_eval_sequences)
-    test_result = evaluate_checkpoint(final_ckpt, args.dip_test_cache, eval_dir, "dip_test", args.max_eval_sequences)
+    val_result = evaluate_checkpoint(final_ckpt, args.dip_val_cache, eval_dir, "dip_val", args.max_eval_sequences, args.target_key)
+    test_result = evaluate_checkpoint(final_ckpt, args.dip_test_cache, eval_dir, "dip_test", args.max_eval_sequences, args.target_key)
     summary = {
+        "version": "acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617",
+        "target_key": args.target_key,
+        "target_source": "GTFK(q,qdot,qddot,rJS)",
+        "target_contract": "GTFKacc(q,qdot,qddot,rJS) -> centered smooth -> aFK_gtfk_smooth[6,3]",
         "zero_init_max_abs_pred_minus_base": zero_diff,
         "amass_pretrain": amass_result,
         "dip_finetune": dip_result,

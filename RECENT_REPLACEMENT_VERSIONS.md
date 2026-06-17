@@ -41,7 +41,7 @@ Version-line index:
 | `IK-s1` | `newik1_v1` through `newik1_v14` search/diagnostics | none selected; best remains behind PL-only init36 |
 | `IK-s2 / NewPose` | `newpose_ctrl_v1`, `newpose_ctrl_v2` | rejected/diagnostic |
 | `Diagnostic IMU-control modules` | `imu_neighbor_vel_ctrl_v1`, `imu_neighbor_pos_from_vel_ctrl_v1`, `imu_joint_euler_qdot_vel_ctrl_v1` | diagnostic only; neighbor position v1 and joint Euler/qdot/velocity v1 are rejected for IK/NewIK1 input |
-| `AccCurve / acceleration residual` | `acc_curve_v1_20260617` | standalone acceleration-level module; improves aFK_smooth regression vs aM_smooth base, not connected to PL/full pipeline |
+| `AccCurve / acceleration residual` | `acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617` | standalone acceleration-level module; strict smooth(GTFKacc(q,qdot,qddot,rJS)) target; improves vs aM_smooth base, not connected to PL/full pipeline |
 | `IMU offset / r_JS` | `footlock_transpose_v1`, retired solver/net/hybrid routes | active pseudo-`r_JS` route is `footlock_transpose_v1` only |
 | `Baselines / official fine-tune` | official GPNet official/processed, TotalCapture fine-tune diagnostic | references only |
 
@@ -151,6 +151,7 @@ Interpretation: processed-input gains come from corrected orientation/RMB and in
 | newpl_v6_next_p_pdot_pddot_strong | PL-s1 | supervise decoded next `p/pd/pdd` trajectory outputs directly | smooth `aM`; raw `wM/RMB`; init36; reuses compatible next-control cache or builds under run root | current PL 18D unchanged; aux next PL/dynamics unchanged | only normalized decoded next pRB `p/pd/pdd = 1/1/1`; all old current/control/gR1/prior terms zero in preset | AMASS 80 -> DIP 40; batch 32; current/next p-pdot-pddot eval added; TC eval-only | no; next p/pd/pdd target converges but current-frame p/pddot fails same-cache non-regression | not measured | diagnostic only; not selected |
 | imu_neighbor_pos_from_vel_ctrl_v1 | diagnostic neighbor-control | predict root-relative positions from official IMU plus frozen neighbor velocity-control features | 189D: `aM/wM/RMB_6d/r_JS` + velocity control/vel/acc | `neighbor_pos_R_control[33]`, decoded `pos_R/vel_R/acc_R` | position control, decoded position, optional root-relative vel/acc, segment length, smooth/jerk/prior | AMASS 80 -> TC 60 and AMASS 80 -> DIP 30; module eval only | no; pos_R L2 about `48 cm` vs pose_prephysics baseline `2.34-5.57 cm` | not run | rejected for IK/NewIK1 |
 | imu_joint_euler_qdot_vel_ctrl_v1 | diagnostic IMU joint-control | PL-like init network predicts IMU-mapped joint Euler/qdot/velocity controls | current code: `aM[18]+wM[18]+R_rootIMU_sensorIMU_flat[54]=90D`; historical run used world `RMB_flat[54]`; init `q[0]+qdot[0]+vel[0]=54D` | `q_RJ_euler_control[18]+qdot_RJ_euler_control[18]+vel_RJ_control[18]` | q control/q/qdot/qdot-control/qddot/velocity/acceleration/consistency/smooth/jerk/prior; 4 loss variants | historical world-RMB run: 4 variants; root-RMB rerun: `D_all_balanced` only with shared precompute/last.pt disabled for quota | no; root-RMB D is not better than world-RMB D and remains far worse than baseline | not run | rejected for IK/NewIK1 |
+| acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617 | AccCurve / acceleration residual | PL-style curve residual over absolute sensor-site acceleration with strict GTFK target | 108D: `aM_raw[18]+aM_smooth[18]+residual[18]+wM[18]+RMB_6d[36]`; all in model/world cache frame; `RMB_6d=rotation[..., :, :2].transpose(-1,-2).reshape(...,6)` | `pred_aM_curve[18]` absolute acceleration; base `aM_smooth[18]` | valid-mask MSE to `aFK_gtfk_smooth[18] = smooth(GTFKacc(q,qdot,qddot,rJS))`; selection by `val_pred_base_ratio` | AMASS 30 -> DIP 20; window 240, stride 120, batch 64; AMASS-train-only feature z-score; module eval only | yes; DIP val ratio `0.7575`, DIP test ratio `0.7783` vs same-cache base | not run | diagnostic only; strict GTFK acceleration target works vs base, but does not meet ratio<0.7/corr>0.9 effectiveness gate |
 | acc_curve_v1_20260617 | AccCurve / acceleration residual | PL-style curve residual over absolute sensor-site acceleration | 108D: `aM_raw[18]+aM_smooth[18]+residual[18]+wM[18]+RMB_6d[36]` | `pred_aM_curve[18]` absolute acceleration; base `aM_smooth[18]` | valid-mask MSE to `aFK_smooth[18]`; selection by `val_pred_base_ratio` | AMASS 30 -> DIP 20; window 240, stride 120, batch 64; module eval only | yes; DIP val ratio `0.6551`, DIP test ratio `0.6220` vs same-cache base | not run | diagnostic only; useful acceleration-level target, no PL/full-pipeline claim |
 | newik1_v1_control_tail | IK-s1 | control-tail IK1 | 120D control-tail feature | 72D pRJ+gR2 unchanged | baseline IK1 control losses | PL streaming TC finetune | not vs previous | no | not selected |
 | newik1_v2_bonelength | IK-s1 | bone length | unchanged | unchanged | add bone_length=0.5 | continue from v1 | yes local loss | no | not selected |
@@ -163,6 +164,73 @@ Interpretation: processed-input gains come from corrected orientation/RMB and in
 | newpose_ctrl_v1 | IK-s2 / pose-control slot | direct pose-control state from official IMU + NewPL control features | 174D official IMU/NewPL feature; offset_r init-only | `RRJ_control[90]+gR_pose_control[3]=93D` | control RRJ/gR, decoded state, FK, temporal losses | AMASS pretrain -> DIP fine-tune; DIP/TC eval | no; FK joint L2 is `43.8-45.4 cm` vs baseline `4.6-5.0 cm` | no; full score `413-432` vs baseline `43-45` | rejected |
 
 ## 4.1 Diagnostic IMU-Control Modules
+
+## Version: acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617
+
+### 1. Purpose
+
+Train the strict standalone AccCurve residual module on IMU sensor-site acceleration targets computed from `GTFKacc(q,qdot,qddot,rJS)`, not from sensor-site position finite differences. This is an acceleration-level diagnostic and does not replace PL-s1, IK-s1, IK-s2, or VR-s1.
+
+### 2. Input / Output Contract
+
+| Item | Value |
+|---|---|
+| Module | `PLStyleAccCurveModule` |
+| Input | `aM_raw[18] + aM_smooth[18] + (aM_raw-aM_smooth)[18] + wM[18] + RMB_6d[36] = 108D` |
+| Input frame | model/world frame from the cache for `aM_raw`, `aM_smooth`, `wM`, and `RMB`; no root-frame transform |
+| `RMB_6d` | `rotation[..., :, :2].transpose(-1, -2).reshape(..., 6)`, matching PL |
+| Base | `aM_smooth[18]` |
+| Output | `pred_aM_curve[18]`, absolute sensor-site acceleration |
+| Target | `aFK_gtfk_smooth[18] = centered_smooth(GTFKacc(q,qdot,qddot,rJS))` |
+| Units | output and target stay in `m/s^2`; only input features are z-scored |
+| Normalization | feature z-score fitted from AMASS train split only |
+| Valid mask | strict GTFK finite frames with smooth trim excluded |
+
+The v1 target `aFK_smooth` was built from a position finite-difference cache (`smooth(diff_acc(p_WS))` style). v2 uses the explicit `aFK_gtfk_smooth` field and refuses target keys or target metadata that are not strict GTFK.
+
+### 3. Architecture
+
+The network keeps the v1 PL-style AccCurve residual structure: `Linear(feature+base) -> GRUCell -> zero-initialized residual control/tail heads -> UniformCubicBSpline`, `state_dim=18`, `tail_update=4`, `dt=1/60`. The smoke run verified `zero_init_max_abs_pred_minus_base=0.0`.
+
+### 4. Training / Evaluation
+
+| Stage | Split | Train seq | Val seq | Train windows | Val windows | Best epoch | Best selection |
+|---|---|---:|---:|---:|---:|---:|---:|
+| AMASS pretrain | AMASS hash 95/5 | `1231` | `67` | `8231` | `407` | `29` | `0.8150924359` |
+| DIP finetune | DIP train -> DIP val | `36` | `6` | `1887` | `253` | `19` | `0.7294550687` |
+
+Checkpoint selection uses:
+
+```text
+val_pred_base_ratio = mean||pred_aM_curve-aFK_gtfk_smooth|| / mean||aM_smooth-aFK_gtfk_smooth||
+```
+
+### 5. Module Metrics
+
+| Split | pred L2 | base L2 | pred/base ratio | pred RMSE | base RMSE | corr | cosine | mag MAE | residual std | residual p95 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| DIP val | `1.990773` | `3.102919` | `0.757471` | `1.689920` | `2.535429` | `0.821207` | `0.488962` | `1.060400` | `1.950429` | `6.949836` |
+| DIP test | `2.997944` | `3.958857` | `0.778348` | `2.588015` | `3.341077` | `0.792049` | `0.493421` | `1.639596` | `2.357390` | `8.619020` |
+
+The model beats the `aM_smooth` base (`ratio < 1`) on DIP val/test, but does not meet the stronger effectiveness gate (`ratio < 0.7` and `corr > 0.9`).
+
+### 6. Artifacts
+
+| Item | Path |
+|---|---|
+| Module | `acc_curve.py` |
+| Train/eval | `acc_curve_train.py` |
+| Strict cache builder | `scripts/build_acc_curve_gtfk_cache.py` |
+| Runner | `scripts/run_acc_curve_v2_gtfk_20260617.sh` |
+| Cache root | `code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617` |
+| Experiment root | `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617` |
+| Final checkpoint | `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/dip_finetune/best_loss.pt` |
+| Summary | `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/train_result.json` |
+| Eval JSONs | `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/eval/dip_val_eval.json`, `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/eval/dip_test_eval.json` |
+
+### 7. Decision
+
+Keep as a standalone acceleration-level diagnostic. It supports continued exploration as an acceleration alignment auxiliary because it improves strict GTFK target regression over the smoothed IMU base, but it is not connected to NewPL/IK/full pipeline and should not be used to claim motion-quality improvement.
 
 ## Version: acc_curve_v1_20260617
 

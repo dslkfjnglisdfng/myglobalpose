@@ -8,7 +8,7 @@ ACC_CURVE_STATE_DIM = 18
 
 
 def rotation_matrix_to_6d(rotation):
-    return rotation[..., :, :2].reshape(rotation.shape[:-2] + (6,))
+    return rotation[..., :, :2].transpose(-1, -2).reshape(rotation.shape[:-2] + (6,))
 
 
 def acc_curve_features(aM_raw, aM_smooth, wM, RMB):

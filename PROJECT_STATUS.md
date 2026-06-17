@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: AccCurve module writeback and commit
-Current task: record acc_curve_v1_20260617 results, keep docs current, and push
+Current stage: AccCurve v2 writeback and commit
+Current task: record acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617 results, keep docs current, and push
 Review state: Approved for next step
-Current changed files: acc_curve.py, acc_curve_train.py, scripts/build_acc_curve_cache.py, scripts/run_acc_curve_v1_20260617.sh, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
-Current module: acc_curve_v1_20260617
-Current replacement version: acc_curve_v1_20260617
-Current experiment: AMASS pretrain -> DIP finetune on 108D acceleration residual module
-Current result: smoke passed; AMASS best epoch 24; DIP best epoch 20; DIP val ratio 0.655075; DIP test ratio 0.622049
+Current changed files: acc_curve.py, acc_curve_train.py, scripts/build_acc_curve_gtfk_cache.py, scripts/run_acc_curve_v2_gtfk_20260617.sh, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
+Current module: acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617
+Current replacement version: acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617
+Current experiment: AMASS pretrain -> DIP finetune on strict GTFK acceleration residual module
+Current result: smoke passed; AMASS best epoch 29; DIP best epoch 19; DIP val ratio 0.757471; DIP test ratio 0.778348
 Current blocker: none
 Next action: stage docs/code and commit to GitHub
 Git state: dirty worktree with existing unrelated edits plus new AccCurve files
 CodeGraph state: healthy indexed native backend
-Detailed logs: data/experiments/acc_curve_v1_20260617/train_result.json and eval/*
+Detailed logs: data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/train_result.json and eval/*
 
 ## 0. Version-Line Reading Guide
 
@@ -43,7 +43,7 @@ Current version-line map:
 | `IK-s2 / NewPose` | IK2/pose-control replacement | rejected so far | `newpose_ctrl_v1/v2` |
 | `IMU offset / r_JS data line` | DIP/TC pseudo offset synthesis and audits | active route is `footlock_transpose_v1` only | `Active r_JS Policy` |
 | `Diagnostic IMU control modules` | neighbor velocity/position and joint q/qdot/velocity control diagnostics | diagnostic only; not connected to PL/IK/full pipeline | `imu_neighbor_vel_ctrl_v1`, `imu_neighbor_pos_from_vel_ctrl_v1`, `imu_joint_euler_qdot_vel_ctrl_v1` |
-| `AccCurve / acceleration residual` | absolute sensor-site acceleration regression from smoothed base + residual IMU features | implemented and trained at module level; no downstream pipeline claim | `acc_curve_v1_20260617` |
+| `AccCurve / acceleration residual` | strict GTFK acceleration regression from smoothed base + residual IMU features | implemented and trained at module level; no downstream pipeline claim | `acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617` |
 | `Experiment evidence` | commands, logs, JSONs, failures | archive only, not current status | `EXPERIMENT_LOG.md` detailed log index |
 
 Latest PL-s1 full-pipeline eval note on 2026-06-16:
@@ -109,7 +109,9 @@ Do not train or promote a new model from this result.
 Latest AccCurve module note on 2026-06-17:
 
 ```text
-acc_curve_v1_20260617 is a standalone acceleration-level module.
+acc_curve_v1_20260617 is the earlier standalone acceleration-level module with
+an `aFK_smooth` cache built from position finite differences.
+acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617 is the strict version.
 Input:
   aM_raw[18] + aM_smooth[18] + (aM_raw-aM_smooth)[18] + wM[18] + RMB_6d[36] = 108D
 Base:
@@ -117,19 +119,19 @@ Base:
 Output:
   pred_aM_curve[18]
 Target:
-  aFK_smooth[18]
+  aFK_gtfk_smooth[18] from centered smooth(GTFKacc(q,qdot,qddot,rJS))
 Training:
   AMASS pretrain -> DIP finetune with fixed windows 240/120, batch 64
 Smoke:
   2 AMASS + 2 DIP records, 1 epoch each, zero-init pred-base = 0
 Full run:
-  AMASS best epoch 24, DIP best epoch 20
+  AMASS best epoch 29, DIP best epoch 19
 DIP val:
-  pred_l2=0.846367, base_l2=1.871923, pred_base_ratio=0.655075
+  pred_l2=1.990773, base_l2=3.102919, pred_base_ratio=0.757471
 DIP test:
-  pred_l2=1.202067, base_l2=2.368697, pred_base_ratio=0.622049
+  pred_l2=2.997944, base_l2=3.958857, pred_base_ratio=0.778348
 Conclusion:
-  finite module-level regression improvement only; not a PL/full-pipeline claim.
+  strict module-level regression improvement only; not a PL/full-pipeline claim.
 ```
 
 ## 0.4 AccCurve / absolute acceleration residual module
@@ -139,41 +141,41 @@ Status: implemented, smoke-tested, and full AMASS -> DIP trained/evaluated at mo
 Contract:
 
 ```text
-module: acc_curve_v1_20260617
+module: acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617
 input: aM_raw[18] + aM_smooth[18] + (aM_raw-aM_smooth)[18] + wM[18] + RMB_6d[36] = 108D
 base: aM_smooth[18]
 output: pred_aM_curve[18]
-target: aFK_smooth[18]
+target: aFK_gtfk_smooth[18] from strict GTFKacc(q,qdot,qddot,rJS)
 frame: model/world frame M
 ```
 
 Implementation and smoke:
 
 ```text
-files: acc_curve.py, acc_curve_train.py, scripts/build_acc_curve_cache.py, scripts/run_acc_curve_v1_20260617.sh
-cache root: code/outputs/smooth_acc_cache_amass_dip_20260617
-experiment root: data/experiments/acc_curve_v1_20260617
-smoke cache: code/outputs/acc_curve_smoke_cache_20260617
+files: acc_curve.py, acc_curve_train.py, scripts/build_acc_curve_gtfk_cache.py, scripts/run_acc_curve_v2_gtfk_20260617.sh
+cache root: code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617
+experiment root: data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617
+smoke cache: code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617_smoke
 smoke result: 2 AMASS + 2 DIP records, 1 epoch each, pred-base zero-init verified, window steps matched window count
 ```
 
 Module-level results:
 
-| Split | pred L2 | base L2 | pred/base ratio | corr | residual std | residual p95 |
-|---|---:|---:|---:|---:|---:|---:|
-| DIP val | `0.846367` | `1.871923` | `0.655075` | `0.957387` | `1.204956` | `3.743450` |
-| DIP test | `1.202067` | `2.368697` | `0.622049` | `0.940837` | `1.450683` | `4.660124` |
+| Split | pred L2 | base L2 | pred/base ratio | corr | cosine | mag MAE | residual std | residual p95 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| DIP val | `1.990773` | `3.102919` | `0.757471` | `0.821207` | `0.488962` | `1.060400` | `1.950429` | `6.949836` |
+| DIP test | `2.997944` | `3.958857` | `0.778348` | `0.792049` | `0.493421` | `1.639596` | `2.357390` | `8.619020` |
 
 Training summary:
 
 | Stage | Train seq | Val seq | Train windows | Val windows | Best epoch | Best selection |
 |---|---:|---:|---:|---:|---:|---:|
-| AMASS pretrain | `1231` | `67` | `8231` | `407` | `24` | `0.9526165639` |
-| DIP finetune | `36` | `6` | `1887` | `253` | `20` | `0.5814286023` |
+| AMASS pretrain | `1231` | `67` | `8231` | `407` | `29` | `0.8150924359` |
+| DIP finetune | `36` | `6` | `1887` | `253` | `19` | `0.7294550687` |
 
 Known risks:
 
-- This module only improves the acceleration regression target against its smoothed base.
+- This module only improves the strict GTFK acceleration regression target against its smoothed base.
 - It is not connected to PL/IK/VR or full-pipeline 11 metrics.
 - Cache size is large; avoid staging `data/experiments/` or `code/outputs/` wholesale.
 
