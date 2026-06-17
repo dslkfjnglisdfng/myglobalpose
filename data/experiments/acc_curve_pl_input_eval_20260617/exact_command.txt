@@ -1,0 +1,3 @@
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+export LD_LIBRARY_PATH=/home/lingfeng/.conda/envs/globalpose-gpu/lib:${LD_LIBRARY_PATH:-}
+/home/lingfeng/.conda/envs/globalpose-gpu/bin/python scripts/eval_pl_with_acc_curve_input_20260617.py --output-root data/experiments/acc_curve_pl_input_eval_20260617 --device cuda

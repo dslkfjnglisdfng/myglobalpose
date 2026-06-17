@@ -1,0 +1,277 @@
+{
+  "experiment": "EXP-20260617-acc_curve_pl_input_eval",
+  "experiment_root": "data/experiments/acc_curve_pl_input_eval_20260617",
+  "evaluator": "scripts/eval_pl_with_acc_curve_input_20260617.py",
+  "baseline_pl_checkpoint": "data/weights.pt",
+  "dip_test_cache": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json",
+  "dip_test_protocol": "newpl_v5_official_protocol_20260607 DIP test with offset_r baseline cache; evaluation-only",
+  "acc_curve_v1_checkpoint": "data/experiments/acc_curve_v1_20260617/dip_finetune/best_loss.pt",
+  "acc_curve_v2_checkpoint": "data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/dip_finetune/best_loss.pt",
+  "acc_curve_v1_cache": "code/outputs/smooth_acc_cache_amass_dip_20260617/dip_test/acc_curve_cache_manifest.json",
+  "acc_curve_v2_cache": "code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/dip_test/acc_curve_gtfk_cache_manifest.json",
+  "num_sequences": 19,
+  "num_frames": 57994,
+  "assertions": {
+    "official_feature_max_abs_diff": 7.62939453125e-06,
+    "non_acc_block_max_abs_diff": 0.0,
+    "acc_curve_prediction_shape": "[T,6,3] for v1 and v2",
+    "dip_test_no_train_norm_or_checkpoint_selection": true
+  },
+  "target_contract": "PL target from pl_target_from_pose(pose_gt, SMPL_male vert_mask=GPNet.v_imu): pRB[15]+gR1[3]",
+  "frame_contract": "AccCurve pred is model/world-frame M acceleration; PL input uses root-frame aRB = acc_M @ RMB_root.",
+  "debug_json": "data/experiments/acc_curve_pl_input_eval_20260617/debug_first_sequence_acceleration_blocks.json",
+  "variants": [
+    {
+      "variant": "official_raw_acc",
+      "acc_source": "raw aM",
+      "target_used_by_acc_curve": "none",
+      "valid_frames": 57994,
+      "pRB_l2_cm": 6.529109925031662,
+      "pRB_rmse_cm": 4.638030380010605,
+      "pRB_mae_cm": 3.1746599823236465,
+      "gR1_deg": 15.267152786254883,
+      "gR1_cos_loss": 0.07081231474876404,
+      "num_sequences": 19,
+      "num_frames": 57994,
+      "pRB_l2_delta_vs_official_cm": 0.0,
+      "gR1_deg_delta_vs_official": 0.0,
+      "pRB_l2_improves_vs_official": false,
+      "gR1_deg_improves_vs_official": false
+    },
+    {
+      "variant": "smooth_acc",
+      "acc_source": "smooth(aM)",
+      "target_used_by_acc_curve": "none",
+      "valid_frames": 57994,
+      "pRB_l2_cm": 6.462386250495911,
+      "pRB_rmse_cm": 4.5897044241428375,
+      "pRB_mae_cm": 3.145206719636917,
+      "gR1_deg": 15.216246604919434,
+      "gR1_cos_loss": 0.07045438885688782,
+      "num_sequences": 19,
+      "num_frames": 57994,
+      "pRB_l2_delta_vs_official_cm": -0.06672367453575134,
+      "gR1_deg_delta_vs_official": -0.05090618133544922,
+      "pRB_l2_improves_vs_official": true,
+      "gR1_deg_improves_vs_official": true
+    },
+    {
+      "variant": "acc_curve_v1_pred",
+      "acc_source": "AccCurve v1 pred",
+      "target_used_by_acc_curve": "smooth(diff_acc(p_WS))",
+      "valid_frames": 57994,
+      "pRB_l2_cm": 6.9679610431194305,
+      "pRB_rmse_cm": 4.866400361061096,
+      "pRB_mae_cm": 3.374982252717018,
+      "gR1_deg": 15.036874771118164,
+      "gR1_cos_loss": 0.06911159306764603,
+      "num_sequences": 19,
+      "num_frames": 57994,
+      "pRB_l2_delta_vs_official_cm": 0.43885111808776855,
+      "gR1_deg_delta_vs_official": -0.23027801513671875,
+      "pRB_l2_improves_vs_official": false,
+      "gR1_deg_improves_vs_official": true
+    },
+    {
+      "variant": "acc_curve_v2_gtfk_pred",
+      "acc_source": "AccCurve v2 pred",
+      "target_used_by_acc_curve": "smooth(GTFKacc(q,qdot,qddot,rJS))",
+      "valid_frames": 57994,
+      "pRB_l2_cm": 8.347050100564957,
+      "pRB_rmse_cm": 5.958994477987289,
+      "pRB_mae_cm": 4.042301699519157,
+      "gR1_deg": 15.229429244995117,
+      "gR1_cos_loss": 0.07037778198719025,
+      "num_sequences": 19,
+      "num_frames": 57994,
+      "pRB_l2_delta_vs_official_cm": 1.8179401755332947,
+      "gR1_deg_delta_vs_official": -0.037723541259765625,
+      "pRB_l2_improves_vs_official": false,
+      "gR1_deg_improves_vs_official": true
+    }
+  ],
+  "source_manifests": {
+    "baseline": {
+      "source_input": "data/test_datasets/dipimu.pt",
+      "source_manifest": null,
+      "device": "cuda",
+      "euler_seq": "XYZ",
+      "max_frames": 0,
+      "max_sequences": 0,
+      "save_prephysics": true,
+      "neural_only_prephysics": true,
+      "cache_files": [
+        {
+          "path": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_shard00000.pt",
+          "source_path": "data/experiments/dip_official_protocol_check_20260607/dip_test_prephysics_neural_only/baseline_cache_shard00000.pt",
+          "num_sequences": 19,
+          "num_frames": 57994,
+          "failures": [],
+          "offset_r_shape": [
+            19,
+            6,
+            3
+          ]
+        }
+      ],
+      "num_sequences": 19,
+      "num_frames": 57994,
+      "source_cache_manifest": "data/experiments/dip_official_protocol_check_20260607/dip_test_prephysics_neural_only/baseline_cache_manifest.json",
+      "offset_source_path": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_offset_alias.pt",
+      "offset_source_key": "imu_offset_r",
+      "offset_field_added": "offset_r",
+      "offset_contract": "offset_r is sequence-level r_JS with shape [6,3]: IMU origin relative to mapped joint, expressed in joint-local coordinates. It is copied from processed data and is not repeated per frame."
+    },
+    "acc_curve_v1": {
+      "type": "acc_curve_cache_v1",
+      "preset": "dip_test",
+      "dataset": "DIP-IMU",
+      "split": "test",
+      "source_cache": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json",
+      "source_manifest": {
+        "source_input": "data/test_datasets/dipimu.pt",
+        "source_manifest": null,
+        "device": "cuda",
+        "euler_seq": "XYZ",
+        "max_frames": 0,
+        "max_sequences": 0,
+        "save_prephysics": true,
+        "neural_only_prephysics": true,
+        "cache_files": [
+          {
+            "path": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_shard00000.pt",
+            "source_path": "data/experiments/dip_official_protocol_check_20260607/dip_test_prephysics_neural_only/baseline_cache_shard00000.pt",
+            "num_sequences": 19,
+            "num_frames": 57994,
+            "failures": [],
+            "offset_r_shape": [
+              19,
+              6,
+              3
+            ]
+          }
+        ],
+        "num_sequences": 19,
+        "num_frames": 57994,
+        "source_cache_manifest": "data/experiments/dip_official_protocol_check_20260607/dip_test_prephysics_neural_only/baseline_cache_manifest.json",
+        "offset_source_path": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_offset_alias.pt",
+        "offset_source_key": "imu_offset_r",
+        "offset_field_added": "offset_r",
+        "offset_contract": "offset_r is sequence-level r_JS with shape [6,3]: IMU origin relative to mapped joint, expressed in joint-local coordinates. It is copied from processed data and is not repeated per frame."
+      },
+      "cache_files": [
+        {
+          "path": "code/outputs/smooth_acc_cache_amass_dip_20260617/dip_test/acc_curve_cache_shard00000.pt",
+          "num_sequences": 19,
+          "num_frames": 57994
+        }
+      ],
+      "num_sequences": 19,
+      "num_frames": 57994,
+      "valid_frames": 57804,
+      "feature_dim": 108,
+      "target_dim": 18,
+      "dt": 0.016666666666666666,
+      "smooth_window": 9,
+      "smoothing_mode": "centered_moving_average",
+      "trim": 4,
+      "coordinate_contract": {
+        "input_frame": "model/world frame M from GlobalPose aM/wM/RMB cache fields",
+        "target_frame": "same model/world frame M; aFK_smooth is ddot(p_WJ + R_WJ @ r_JS)",
+        "offset": "r_JS is the IMU origin position relative to the mapped joint J, expressed in joint-local coordinates. World prediction: p_WS(t)=p_WJ(t)+R_WJ(t)@r_JS."
+      },
+      "feature_layout": "aM_raw[18] + aM_smooth[18] + raw_minus_smooth[18] + wM[18] + RMB_6d[36]",
+      "target_layout": "aFK_smooth[18], six sensor-site accelerations in m/s^2",
+      "base_layout": "aM_smooth[18], same units and frame as target",
+      "valid_mask": "finite centered-difference FK acceleration frames, with configured trim removed",
+      "created_at_unix": 1781691885.5821695
+    },
+    "acc_curve_v2": {
+      "type": "acc_curve_cache_v2_gtfk",
+      "version": "acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617",
+      "preset": "dip_test",
+      "dataset": "DIP-IMU",
+      "split": "test",
+      "source_cache": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json",
+      "source_manifest": {
+        "source_input": "data/test_datasets/dipimu.pt",
+        "source_manifest": null,
+        "device": "cuda",
+        "euler_seq": "XYZ",
+        "max_frames": 0,
+        "max_sequences": 0,
+        "save_prephysics": true,
+        "neural_only_prephysics": true,
+        "cache_files": [
+          {
+            "path": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_shard00000.pt",
+            "source_path": "data/experiments/dip_official_protocol_check_20260607/dip_test_prephysics_neural_only/baseline_cache_shard00000.pt",
+            "num_sequences": 19,
+            "num_frames": 57994,
+            "failures": [],
+            "offset_r_shape": [
+              19,
+              6,
+              3
+            ]
+          }
+        ],
+        "num_sequences": 19,
+        "num_frames": 57994,
+        "source_cache_manifest": "data/experiments/dip_official_protocol_check_20260607/dip_test_prephysics_neural_only/baseline_cache_manifest.json",
+        "offset_source_path": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_offset_alias.pt",
+        "offset_source_key": "imu_offset_r",
+        "offset_field_added": "offset_r",
+        "offset_contract": "offset_r is sequence-level r_JS with shape [6,3]: IMU origin relative to mapped joint, expressed in joint-local coordinates. It is copied from processed data and is not repeated per frame."
+      },
+      "cache_files": [
+        {
+          "path": "code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/dip_test/acc_curve_gtfk_cache_shard00000.pt",
+          "num_sequences": 19,
+          "num_frames": 57994
+        }
+      ],
+      "num_sequences": 19,
+      "num_frames": 57994,
+      "valid_frames": 57842,
+      "num_failures": 0,
+      "failures": [],
+      "feature_dim": 108,
+      "target_dim": 18,
+      "dt": 0.016666666666666666,
+      "smooth_window": 9,
+      "smoothing_mode": "centered_moving_average",
+      "trim": 4,
+      "q_derivative_source": "derivative_aware_spline",
+      "target_key": "aFK_gtfk_smooth",
+      "target_source": "GTFK(q,qdot,qddot,rJS)",
+      "target_contract": "GTFKacc(q,qdot,qddot,rJS) -> centered smooth -> aFK_gtfk_smooth[6,3]",
+      "coordinate_contract": {
+        "input_frame": "model/world frame M from GlobalPose aM/wM/RMB cache fields; no root-frame transform",
+        "target_frame": "RBDL base/world frame from GTFKacc(q,qdot,qddot,rJS)",
+        "offset": "r_JS is the IMU origin position relative to the mapped joint J, expressed in joint-local coordinates. World prediction: p_WS(t)=p_WJ(t)+R_WJ(t)@r_JS.",
+        "RMB_6d": "rotation[..., :, :2].transpose(-1, -2).reshape(..., 6), matching PL convention"
+      },
+      "feature_layout": "aM_raw[18] + aM_smooth[18] + raw_minus_smooth[18] + wM[18] + RMB_6d[36]",
+      "target_layout": "aFK_gtfk_smooth[18], six sensor-site accelerations in m/s^2",
+      "raw_target_layout": "aFK_gtfk_raw[18], direct RBDL calc_point_acceleration before smoothing",
+      "base_layout": "aM_smooth[18], same units and frame as target",
+      "valid_mask": "finite strict GTFK acceleration frames, with configured trim removed",
+      "forbidden_fallback": "No p_WS finite difference target; no smooth(diff_acc(p_WS)) fallback is allowed.",
+      "sanity": {
+        "name": "s09_01_a",
+        "target_source": "GTFK(q,qdot,qddot,rJS)",
+        "target_contract": "GTFKacc(q,qdot,qddot,rJS) -> centered smooth -> aFK_gtfk_smooth[6,3]",
+        "aM_smooth_vs_aFK_gtfk_smooth_RMSE": 2.3872084617614746,
+        "pred_vs_aFK_gtfk_smooth_RMSE": null,
+        "valid_frames": 4749,
+        "note": "pred field is filled by training/eval; cache sanity reports strict target/base alignment only."
+      },
+      "created_at_unix": 1781705792.6499104
+    }
+  },
+  "checkpoint_contracts": {
+    "acc_curve_v1": "108D model/world-frame IMU feature -> absolute 18D sensor-site acceleration in m/s^2",
+    "acc_curve_v2": "GTFKacc(q,qdot,qddot,rJS) -> centered smooth -> aFK_gtfk_smooth[6,3]"
+  }
+}

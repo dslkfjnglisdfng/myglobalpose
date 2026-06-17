@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: AccCurve v2 writeback and commit
-Current task: record acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617 results, keep docs current, and push
+Current stage: AccCurve-to-PL input evaluation writeback and commit
+Current task: record acc_curve_pl_input_eval_20260617 results, keep docs current, and push
 Review state: Approved for next step
-Current changed files: acc_curve.py, acc_curve_train.py, scripts/build_acc_curve_gtfk_cache.py, scripts/run_acc_curve_v2_gtfk_20260617.sh, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
-Current module: acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617
-Current replacement version: acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617
-Current experiment: AMASS pretrain -> DIP finetune on strict GTFK acceleration residual module
-Current result: smoke passed; AMASS best epoch 29; DIP best epoch 19; DIP val ratio 0.757471; DIP test ratio 0.778348
+Current changed files: scripts/eval_pl_with_acc_curve_input_20260617.py, data/experiments/acc_curve_pl_input_eval_20260617/*, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
+Current module: acc_curve_pl_input_eval_20260617
+Current replacement version: evaluation-only, no PL retraining
+Current experiment: replace only frozen official PL acceleration input with raw/smooth/AccCurve v1/AccCurve v2 acceleration on DIP test
+Current result: smooth_acc improves pRB and gR1; AccCurve v1/v2 improve gR1 only and regress pRB; no simultaneous PL pRB+gR1 transfer from AccCurve predictions
 Current blocker: none
 Next action: stage docs/code and commit to GitHub
-Git state: dirty worktree with existing unrelated edits plus new AccCurve files
+Git state: dirty worktree with existing unrelated edits plus new AccCurve-to-PL eval files
 CodeGraph state: healthy indexed native backend
-Detailed logs: data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/train_result.json and eval/*
+Detailed logs: data/experiments/acc_curve_pl_input_eval_20260617/summary.md and result_summary.json
 
 ## 0. Version-Line Reading Guide
 
@@ -132,6 +132,37 @@ DIP test:
   pred_l2=2.997944, base_l2=3.958857, pred_base_ratio=0.778348
 Conclusion:
   strict module-level regression improvement only; not a PL/full-pipeline claim.
+```
+
+Latest AccCurve-to-PL input evaluation note on 2026-06-17:
+
+```text
+Experiment:
+  data/experiments/acc_curve_pl_input_eval_20260617
+Evaluator:
+  scripts/eval_pl_with_acc_curve_input_20260617.py
+Frozen PL:
+  data/weights.pt, official GPNet.plnet only
+DIP test cache/protocol:
+  data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json
+Contract:
+  replace only PL acceleration block aRB[18]; keep wRB[18]+RRB[45]+gR0[3],
+  target, mask, sequence split, and PL checkpoint fixed.
+Frame:
+  AccCurve outputs are model/world-frame M acceleration and are converted to
+  PL root frame by aRB = acc_M @ RMB_root before PL forward.
+Validation:
+  official_raw_acc vectorized 84D feature vs pl_input_feature max diff
+  7.6293945e-06; non-acc 66D block max diff 0.
+Result on DIP test:
+  official_raw_acc pRB 6.529110 cm, gR1 15.267153 deg
+  smooth_acc pRB 6.462386 cm, gR1 15.216247 deg
+  acc_curve_v1_pred pRB 6.967961 cm, gR1 15.036875 deg
+  acc_curve_v2_gtfk_pred pRB 8.347050 cm, gR1 15.229429 deg
+Decision:
+  smooth_acc helps frozen PL pRB and gR1. AccCurve v1/v2 do not improve pRB,
+  so AccCurve acceleration-level gains do not transfer into a simultaneous
+  PL module-output gain. Do not connect AccCurve to PL as-is.
 ```
 
 ## 0.4 AccCurve / absolute acceleration residual module

@@ -1,0 +1,33 @@
+start: 2026-06-17T23:33:46+0800
+device: cuda
+output_root: data/experiments/acc_curve_pl_input_eval_20260617
+dip_test_cache: data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json
+baseline_pl_weights: data/weights.pt
+loaded DIP test records: 19
+[1/19] s09_01_a: frames=4757
+[2/19] s09_01_b: frames=2641
+[3/19] s09_01_c: frames=2136
+[4/19] s09_02_a: frames=2767
+[5/19] s09_02_b: frames=2559
+[6/19] s09_03_a: frames=2907
+[7/19] s09_03_b: frames=3015
+[8/19] s09_04: frames=1188
+[9/19] s09_05: frames=4539
+[10/19] s10_01_a: frames=5609
+[11/19] s10_01_b: frames=3330
+[12/19] s10_01_c: frames=2284
+[13/19] s10_02: frames=3619
+[14/19] s10_03_a: frames=3038
+[15/19] s10_03_b: frames=3751
+[16/19] s10_04_a: frames=865
+[17/19] s10_04_b: frames=1511
+[18/19] s10_04_c: frames=2051
+[19/19] s10_05: frames=5427
+| Variant | Acc source | Target used by AccCurve | PL pRB L2 cm | PL pRB RMSE cm | PL gR1 deg | valid frames |
+|---|---|---|---:|---:|---:|---:|
+| official_raw_acc | raw aM | none | 6.529110 | 4.638030 | 15.267153 | 57994 |
+| smooth_acc | smooth(aM) | none | 6.462386 | 4.589704 | 15.216247 | 57994 |
+| acc_curve_v1_pred | AccCurve v1 pred | smooth(diff_acc(p_WS)) | 6.967961 | 4.866400 | 15.036875 | 57994 |
+| acc_curve_v2_gtfk_pred | AccCurve v2 pred | smooth(GTFKacc(q,qdot,qddot,rJS)) | 8.347050 | 5.958994 | 15.229429 | 57994 |
+result_summary: data/experiments/acc_curve_pl_input_eval_20260617/result_summary.json
+end: 2026-06-17T23:37:12+0800

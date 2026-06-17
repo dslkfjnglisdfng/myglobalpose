@@ -41,7 +41,7 @@ Version-line index:
 | `IK-s1` | `newik1_v1` through `newik1_v14` search/diagnostics | none selected; best remains behind PL-only init36 |
 | `IK-s2 / NewPose` | `newpose_ctrl_v1`, `newpose_ctrl_v2` | rejected/diagnostic |
 | `Diagnostic IMU-control modules` | `imu_neighbor_vel_ctrl_v1`, `imu_neighbor_pos_from_vel_ctrl_v1`, `imu_joint_euler_qdot_vel_ctrl_v1` | diagnostic only; neighbor position v1 and joint Euler/qdot/velocity v1 are rejected for IK/NewIK1 input |
-| `AccCurve / acceleration residual` | `acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617` | standalone acceleration-level module; strict smooth(GTFKacc(q,qdot,qddot,rJS)) target; improves vs aM_smooth base, not connected to PL/full pipeline |
+| `AccCurve / acceleration residual` | `acc_curve_v1_20260617`, `acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617`, `acc_curve_pl_input_eval_20260617` | standalone acceleration-level modules; v2 strict smooth(GTFKacc(q,qdot,qddot,rJS)) target; downstream PL-input eval shows v1/v2 do not improve pRB, so do not connect as-is |
 | `IMU offset / r_JS` | `footlock_transpose_v1`, retired solver/net/hybrid routes | active pseudo-`r_JS` route is `footlock_transpose_v1` only |
 | `Baselines / official fine-tune` | official GPNet official/processed, TotalCapture fine-tune diagnostic | references only |
 
@@ -153,6 +153,7 @@ Interpretation: processed-input gains come from corrected orientation/RMB and in
 | imu_joint_euler_qdot_vel_ctrl_v1 | diagnostic IMU joint-control | PL-like init network predicts IMU-mapped joint Euler/qdot/velocity controls | current code: `aM[18]+wM[18]+R_rootIMU_sensorIMU_flat[54]=90D`; historical run used world `RMB_flat[54]`; init `q[0]+qdot[0]+vel[0]=54D` | `q_RJ_euler_control[18]+qdot_RJ_euler_control[18]+vel_RJ_control[18]` | q control/q/qdot/qdot-control/qddot/velocity/acceleration/consistency/smooth/jerk/prior; 4 loss variants | historical world-RMB run: 4 variants; root-RMB rerun: `D_all_balanced` only with shared precompute/last.pt disabled for quota | no; root-RMB D is not better than world-RMB D and remains far worse than baseline | not run | rejected for IK/NewIK1 |
 | acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617 | AccCurve / acceleration residual | PL-style curve residual over absolute sensor-site acceleration with strict GTFK target | 108D: `aM_raw[18]+aM_smooth[18]+residual[18]+wM[18]+RMB_6d[36]`; all in model/world cache frame; `RMB_6d=rotation[..., :, :2].transpose(-1,-2).reshape(...,6)` | `pred_aM_curve[18]` absolute acceleration; base `aM_smooth[18]` | valid-mask MSE to `aFK_gtfk_smooth[18] = smooth(GTFKacc(q,qdot,qddot,rJS))`; selection by `val_pred_base_ratio` | AMASS 30 -> DIP 20; window 240, stride 120, batch 64; AMASS-train-only feature z-score; module eval only | yes; DIP val ratio `0.7575`, DIP test ratio `0.7783` vs same-cache base | not run | diagnostic only; strict GTFK acceleration target works vs base, but does not meet ratio<0.7/corr>0.9 effectiveness gate |
 | acc_curve_v1_20260617 | AccCurve / acceleration residual | PL-style curve residual over absolute sensor-site acceleration | 108D: `aM_raw[18]+aM_smooth[18]+residual[18]+wM[18]+RMB_6d[36]` | `pred_aM_curve[18]` absolute acceleration; base `aM_smooth[18]` | valid-mask MSE to `aFK_smooth[18]`; selection by `val_pred_base_ratio` | AMASS 30 -> DIP 20; window 240, stride 120, batch 64; module eval only | yes; DIP val ratio `0.6551`, DIP test ratio `0.6220` vs same-cache base | not run | diagnostic only; useful acceleration-level target, no PL/full-pipeline claim |
+| acc_curve_pl_input_eval_20260617 | AccCurve / PL input evaluation | feed raw/smooth/v1/v2 acceleration into the same frozen official PL input | legacy PL 84D with only `aRB[18]` replaced; `wRB[18]+RRB[45]+gR0[3]` identical; AccCurve M-frame outputs converted by `aRB=acc_M @ RMB_root` | official PL `pRB[15]+gR1[3]` from `data/weights.pt` `GPNet.plnet` | no training; same `pl_target_from_pose(pose_gt)` target for all variants | DIP test evaluation only on `newpl_v5_official_protocol_20260607` cache | smooth_acc improves pRB/gR1; AccCurve v1/v2 improve gR1 only but regress pRB | module-level PL pRB/gR1 only, not full S4 | do not connect AccCurve v1/v2 to PL as-is; acceleration-level gains did not transfer to simultaneous PL output gain |
 | newik1_v1_control_tail | IK-s1 | control-tail IK1 | 120D control-tail feature | 72D pRJ+gR2 unchanged | baseline IK1 control losses | PL streaming TC finetune | not vs previous | no | not selected |
 | newik1_v2_bonelength | IK-s1 | bone length | unchanged | unchanged | add bone_length=0.5 | continue from v1 | yes local loss | no | not selected |
 | newik1_v3_strong_pRJ_control | IK-s1 | strong pRJ/control | unchanged | unchanged | pRJ=2.0, control_pRJ=0.3 | continue from v2 | no local total | better than v1/v2 but not PL-only | not selected |
@@ -164,6 +165,54 @@ Interpretation: processed-input gains come from corrected orientation/RMB and in
 | newpose_ctrl_v1 | IK-s2 / pose-control slot | direct pose-control state from official IMU + NewPL control features | 174D official IMU/NewPL feature; offset_r init-only | `RRJ_control[90]+gR_pose_control[3]=93D` | control RRJ/gR, decoded state, FK, temporal losses | AMASS pretrain -> DIP fine-tune; DIP/TC eval | no; FK joint L2 is `43.8-45.4 cm` vs baseline `4.6-5.0 cm` | no; full score `413-432` vs baseline `43-45` | rejected |
 
 ## 4.1 Diagnostic IMU-Control Modules
+
+## Version: acc_curve_pl_input_eval_20260617
+
+### 1. Purpose
+
+Evaluate whether AccCurve v1/v2 predicted accelerations improve the frozen official baseline PL module when used only as the PL acceleration input. This is evaluation-only: no PL retraining and no PL network change.
+
+### 2. Contract
+
+| Item | Value |
+|---|---|
+| Experiment root | `data/experiments/acc_curve_pl_input_eval_20260617` |
+| Evaluator | `scripts/eval_pl_with_acc_curve_input_20260617.py` |
+| Frozen PL checkpoint | `data/weights.pt`, official `GPNet.plnet` weights only |
+| DIP test cache/protocol | `data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json` |
+| PL feature | `aRB[18] + wRB[18] + RRB[45] + gR0[3] = 84D` |
+| Replacement rule | replace only `aRB[18]`; keep the other 66D, target, mask, split, and checkpoint fixed |
+| Frame conversion | AccCurve output is model/world-frame M; PL input uses root-frame `aRB = acc_M @ RMB_root` |
+| Target | same `pl_target_from_pose(pose_gt)` pRB/gR1 target for every variant |
+
+Validation:
+
+| Check | Value |
+|---|---:|
+| official vectorized 84D feature vs `pl_input_feature` max abs diff | `7.6293945e-06` |
+| non-acc 66D block max abs diff across variants | `0` |
+| AccCurve v1/v2 pred shape | `[T,6,3]` for every evaluated sequence |
+| DIP test used for train/norm/checkpoint selection | no |
+
+### 3. DIP Test Results
+
+| Variant | Acc source | Target used by AccCurve | PL pRB L2 cm | PL pRB RMSE cm | PL gR1 deg | valid frames |
+|---|---|---|---:|---:|---:|---:|
+| official_raw_acc | raw aM | none | `6.529110` | `4.638030` | `15.267153` | `57994` |
+| smooth_acc | smooth(aM) | none | `6.462386` | `4.589704` | `15.216247` | `57994` |
+| acc_curve_v1_pred | AccCurve v1 pred | smooth(diff_acc(p_WS)) | `6.967961` | `4.866400` | `15.036875` | `57994` |
+| acc_curve_v2_gtfk_pred | AccCurve v2 pred | smooth(GTFKacc(q,qdot,qddot,rJS)) | `8.347050` | `5.958994` | `15.229429` | `57994` |
+
+Decision:
+
+```text
+smooth_acc improves both PL pRB and gR1 versus official_raw_acc.
+acc_curve_v1_pred improves gR1 but regresses pRB by +0.438851 cm.
+acc_curve_v2_gtfk_pred slightly improves gR1 but regresses pRB by +1.817940 cm.
+Therefore AccCurve acceleration-level gains did not transfer into a simultaneous
+PL pRB+gR1 module-output gain. Do not connect AccCurve v1/v2 into PL as-is.
+This is not a full-pipeline S4/motion-quality result.
+```
 
 ## Version: acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617
 

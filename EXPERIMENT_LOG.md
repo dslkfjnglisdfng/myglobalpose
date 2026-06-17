@@ -23,7 +23,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | IK-s1 | `newik1_v1` through v14 search records, orchestrator logs, and S4/module JSONs |
 | IK-s2 / NewPose | `newpose_ctrl_v1/v2` records and module/full-pipeline evals |
 | IMU offset / r_JS | `footlock_transpose_v1`, smoothed-fit audit, offset-net/solver retired routes |
-| AccCurve / acceleration residual | `EXP-20260617-acc_curve_v2_gtfk`; strict GTFK standalone acceleration-level AMASS -> DIP module eval under `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/`; v1 historical record remains below |
+| AccCurve / acceleration residual | `EXP-20260617-acc_curve_v2_gtfk`; strict GTFK standalone acceleration-level AMASS -> DIP module eval under `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/`; `EXP-20260617-acc_curve_pl_input_eval` tests v1/v2 acceleration as frozen PL input; v1 historical record remains below |
 | Official GPNet + official/processed IMU | `EXP-20260604-001`, `EXP-20260604-002`; S4 JSONs referenced in `RECENT_REPLACEMENT_VERSIONS.md` |
 | newpl_v1_processed_no_baseline | `data/experiments/pl_curve_v2_processed_no_baseline/tc_finetune_10ep/train_log.jsonl`; S4 JSON in artifact index |
 | newpl_v2_gRdyn | `data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_finetune_v1/tc_finetune_10ep/train_log.jsonl`; S4 JSON not found |
@@ -44,10 +44,93 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | newik1_v6_official_input_init36_cascade | `EXP-newik1_v6_official_input_init36_cascade_rerun`; AMASS offset enrichment, task logs, S4 JSONs, Module GT JSONs, and final manual selection JSON |
 | DIP footlock TransPose pseudo-rJS | `EXP-20260608-footlock_transpose_rjs`; winner cache under `data/experiments/footlock_transpose_rjs_20260608/` |
 | footlock-only smoothed-acc rJS cleanup | `EXP-20260609-footlock_only_smoothacc_rjs`; active route is `footlock_transpose_v1` only; old offset-route artifacts deleted |
+| acc_curve_pl_input_eval_20260617 | `EXP-20260617-acc_curve_pl_input_eval`; root `data/experiments/acc_curve_pl_input_eval_20260617`; frozen official `GPNet.plnet` input-only evaluation on DIP test |
 | acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617 | `EXP-20260617-acc_curve_v2_gtfk`; root `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617`; cache root `code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617`; module-level only |
 | acc_curve_v1_20260617 | `EXP-20260617-acc_curve_v1`; root `data/experiments/acc_curve_v1_20260617`; cache root `code/outputs/smooth_acc_cache_amass_dip_20260617`; historical diff-pos-style target |
 
 ## Detailed Records
+
+## EXP-20260617-acc_curve_pl_input_eval - AccCurve v1/v2 as Frozen Baseline PL Acceleration Input
+
+Question: Do AccCurve v1/v2 acceleration predictions improve the frozen official
+baseline PL module output when they replace only the legacy PL acceleration
+channel?
+
+Run contract:
+
+```text
+experiment: acc_curve_pl_input_eval_20260617
+root: data/experiments/acc_curve_pl_input_eval_20260617
+evaluator: scripts/eval_pl_with_acc_curve_input_20260617.py
+frozen PL checkpoint: data/weights.pt, official GPNet.plnet weights only
+DIP test cache/protocol:
+  data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json
+AccCurve v1 checkpoint:
+  data/experiments/acc_curve_v1_20260617/dip_finetune/best_loss.pt
+AccCurve v2 checkpoint:
+  data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/dip_finetune/best_loss.pt
+PL input contract:
+  aRB[18] + wRB[18] + RRB[45] + gR0[3] = 84D
+Replacement rule:
+  only replace aRB[18]; keep wRB/RRB/gR0, target, mask, split, and checkpoint fixed
+Frame contract:
+  AccCurve pred is model/world-frame M acceleration; convert to PL root frame
+  with aRB = acc_M @ RMB_root before PL forward
+Target:
+  pl_target_from_pose(pose_gt): pRB[15]+gR1[3], shared by all variants
+DIP test training/norm/checkpoint selection:
+  none
+```
+
+Exact command:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+mkdir -p data/experiments/acc_curve_pl_input_eval_20260617/logs
+export LD_LIBRARY_PATH=/home/lingfeng/.conda/envs/globalpose-gpu/lib:${LD_LIBRARY_PATH:-}
+/home/lingfeng/.conda/envs/globalpose-gpu/bin/python scripts/eval_pl_with_acc_curve_input_20260617.py --output-root data/experiments/acc_curve_pl_input_eval_20260617 --device cuda 2>&1 | tee data/experiments/acc_curve_pl_input_eval_20260617/logs/run.log
+```
+
+Validation:
+
+| Check | Value |
+|---|---:|
+| official_raw_acc vectorized 84D feature vs `pl_input_feature` max abs diff | `7.6293945e-06` |
+| non-acceleration 66D block max abs diff across variants | `0` |
+| AccCurve v1/v2 prediction shape | `[T,6,3]` for every sequence |
+| sequences / frames / valid frames | `19 / 57994 / 57994` |
+
+Results:
+
+| Variant | Acc source | Target used by AccCurve | PL pRB L2 cm | PL pRB RMSE cm | PL gR1 deg | valid frames |
+|---|---|---|---:|---:|---:|---:|
+| official_raw_acc | raw aM | none | `6.529110` | `4.638030` | `15.267153` | `57994` |
+| smooth_acc | smooth(aM) | none | `6.462386` | `4.589704` | `15.216247` | `57994` |
+| acc_curve_v1_pred | AccCurve v1 pred | smooth(diff_acc(p_WS)) | `6.967961` | `4.866400` | `15.036875` | `57994` |
+| acc_curve_v2_gtfk_pred | AccCurve v2 pred | smooth(GTFKacc(q,qdot,qddot,rJS)) | `8.347050` | `5.958994` | `15.229429` | `57994` |
+
+Conclusion:
+
+```text
+smooth_acc improves both frozen-PL pRB and gR1 versus official_raw_acc.
+acc_curve_v1_pred improves gR1 but regresses pRB.
+acc_curve_v2_gtfk_pred slightly improves gR1 but strongly regresses pRB.
+Thus AccCurve acceleration-level improvement did not transfer into a simultaneous
+PL pRB+gR1 output improvement. Do not connect AccCurve v1/v2 into PL as-is.
+This is module-level PL input evaluation only, not a full-pipeline S4 claim.
+```
+
+Artifacts:
+
+```text
+summary: data/experiments/acc_curve_pl_input_eval_20260617/summary.md
+result JSON: data/experiments/acc_curve_pl_input_eval_20260617/result_summary.json
+overall CSV: data/experiments/acc_curve_pl_input_eval_20260617/dip_test_pl_input_eval.csv
+per-sequence CSV: data/experiments/acc_curve_pl_input_eval_20260617/per_sequence_metrics.csv
+debug JSON: data/experiments/acc_curve_pl_input_eval_20260617/debug_first_sequence_acceleration_blocks.json
+run log: data/experiments/acc_curve_pl_input_eval_20260617/logs/run.log
+exact command: data/experiments/acc_curve_pl_input_eval_20260617/exact_command.txt
+```
 
 ## EXP-20260617-acc_curve_v2_gtfk - Strict GTFK AccCurve residual module
 

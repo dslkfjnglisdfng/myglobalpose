@@ -1,0 +1,28 @@
+{
+  "sequence": "s09_01_a",
+  "frame": "PL root-frame acceleration block aRB[18]",
+  "official_raw_acc": {
+    "mean": -0.022377965971827507,
+    "std": 3.0362489223480225,
+    "rmse_vs_official_raw_acc": 0.0,
+    "rmse_vs_smooth_acc": 0.621085524559021
+  },
+  "smooth_acc": {
+    "mean": -0.022756975144147873,
+    "std": 2.7467617988586426,
+    "rmse_vs_official_raw_acc": 0.621085524559021,
+    "rmse_vs_smooth_acc": 0.0
+  },
+  "acc_curve_v1_pred": {
+    "mean": 0.007632690016180277,
+    "std": 2.6571624279022217,
+    "rmse_vs_official_raw_acc": 0.7456624507904053,
+    "rmse_vs_smooth_acc": 0.3715672194957733
+  },
+  "acc_curve_v2_gtfk_pred": {
+    "mean": -0.008006474003195763,
+    "std": 3.190260648727417,
+    "rmse_vs_official_raw_acc": 1.4240810871124268,
+    "rmse_vs_smooth_acc": 1.3043758869171143
+  }
+}
