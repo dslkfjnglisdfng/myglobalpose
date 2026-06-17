@@ -36,6 +36,7 @@ from acc_curve import PLStyleAccCurveModule
 DEFAULT_OUTPUT_ROOT = Path("data/experiments/acc_curve_v1_totalcapture_eval_20260618")
 DEFAULT_CHECKPOINT = Path("data/experiments/acc_curve_v1_20260617/dip_finetune/best_loss.pt")
 DEFAULT_CACHE = Path("code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test/acc_curve_cache_manifest.json")
+DEFAULT_EXPERIMENT_NAME = "acc_curve_v1_totalcapture_eval_20260618"
 
 SENSOR_NAMES = ("sensor_0", "sensor_1", "sensor_2", "sensor_3", "sensor_4", "sensor_5")
 DIP_V1_HISTORICAL = {
@@ -45,6 +46,14 @@ DIP_V1_HISTORICAL = {
     "pred_rmse": 0.930242,
     "base_rmse": 1.733464,
     "corr": 0.940837,
+}
+TC_FULL_TRANS_PREVIOUS = {
+    "base_l2": 0.873843,
+    "pred_l2": 2.091960,
+    "pred_base_ratio": 2.393977,
+    "base_rmse": 0.693060,
+    "pred_rmse": 1.539445,
+    "corr": 0.866428,
 }
 
 
@@ -65,7 +74,11 @@ def validate_v1_manifest(manifest_path: Path, manifest: dict) -> None:
     target_frame = str(coordinate.get("target_frame", ""))
     if "model/world frame M" not in input_frame:
         raise ValueError(f"{manifest_path} input_frame is not model/world frame M: {input_frame!r}")
-    if "same model/world frame M" not in target_frame or "ddot(p_WJ + R_WJ @ r_JS)" not in target_frame:
+    valid_target_frame = (
+        ("same model/world frame M" in target_frame and "ddot(p_WJ + R_WJ @ r_JS)" in target_frame)
+        or ("root translation removed" in target_frame and "p_WS = p_WJ + R_WJ @ rJS" in target_frame)
+    )
+    if not valid_target_frame:
         raise ValueError(f"{manifest_path} target_frame is not v1 diff-pos target: {target_frame!r}")
     if "GTFK" in json.dumps(manifest):
         raise ValueError(f"{manifest_path} unexpectedly mentions GTFK; this evaluator is v1 diff-pos only.")
@@ -76,7 +89,7 @@ def load_records(manifest_path: Path, max_sequences: int = 0) -> Tuple[List[dict
     validate_v1_manifest(manifest_path, manifest)
     records = []
     for cache_file in files:
-        data = torch.load(cache_file, map_location="cpu")
+        data = torch.load(cache_file, map_location="cpu", weights_only=False)
         required = ("name", "num_frames", "feature", "aM_smooth", "aFK_smooth", "valid_mask")
         missing = [key for key in required if key not in data]
         if missing:
@@ -96,7 +109,7 @@ def load_records(manifest_path: Path, max_sequences: int = 0) -> Tuple[List[dict
 
 
 def load_model(checkpoint: Path, device: torch.device) -> Tuple[PLStyleAccCurveModule, dict, dict]:
-    ckpt = torch.load(checkpoint, map_location="cpu")
+    ckpt = torch.load(checkpoint, map_location="cpu", weights_only=False)
     config = ckpt.get("config", {})
     model = PLStyleAccCurveModule(
         hidden_size=int(config.get("hidden_size", 512)),
@@ -217,17 +230,24 @@ def write_csv(path: Path, rows: Iterable[dict]) -> None:
             writer.writerow(row)
 
 
-def result_table(aggregate: dict) -> str:
+def target_label(manifest: dict) -> tuple[str, str]:
+    if manifest.get("force_zero_tran"):
+        return "forced zero", "smooth(diff_acc(p_WS_zero_trans))"
+    return "source tran", "smooth(diff_acc(trans + p_WS))"
+
+
+def result_table(aggregate: dict, manifest: dict) -> str:
+    target_translation, target = target_label(manifest)
     return "\n".join([
-        "| Dataset | Target | Acc source | L2 error | RMSE | pred/base ratio | corr | valid frames |",
-        "|---|---|---|---:|---:|---:|---:|---:|",
+        "| Dataset | Target translation | Target | Acc source | L2 error | RMSE | pred/base ratio | corr | valid frames |",
+        "|---|---|---|---|---:|---:|---:|---:|---:|",
         (
-            "| TotalCapture test | smooth(diff_acc(p_WS)) | aM_smooth | "
+            f"| TotalCapture test | {target_translation} | {target} | aM_smooth | "
             f"{aggregate['base_l2']:.6f} | {aggregate['base_rmse']:.6f} | 1.000000 | "
             f"{aggregate['base_corr']:.6f} | {int(aggregate['valid_frames'])} |"
         ),
         (
-            "| TotalCapture test | smooth(diff_acc(p_WS)) | AccCurve v1 pred | "
+            f"| TotalCapture test | {target_translation} | {target} | AccCurve v1 pred | "
             f"{aggregate['pred_l2']:.6f} | {aggregate['pred_rmse']:.6f} | {aggregate['pred_base_ratio']:.6f} | "
             f"{aggregate['corr']:.6f} | {int(aggregate['valid_frames'])} |"
         ),
@@ -236,19 +256,18 @@ def result_table(aggregate: dict) -> str:
 
 def build_summary(summary: dict) -> str:
     aggregate = summary["aggregate"]
+    manifest = summary["manifest"]
     dip = DIP_V1_HISTORICAL
-    gap = aggregate["pred_base_ratio"] - dip["pred_base_ratio"]
+    prev = TC_FULL_TRANS_PREVIOUS
+    target_translation, target = target_label(manifest)
+    zero_trans = bool(manifest.get("force_zero_tran"))
     if aggregate["pred_base_ratio"] < 1.0:
-        verdict = "AccCurve v1 is better than the aM_smooth baseline on TotalCapture v1 acceleration targets."
+        verdict = "TC zero-trans pred/base ratio is below 1, so v1's DIP-style zero-trans acceleration target can generalize to TC; the previous full-trans failure is mainly consistent with target translation mismatch."
+        recommendation = "Continue considering zero-trans v1 acceleration as a NewPL retrain input candidate, but still gate it with same-cache PL module metrics before any full-pipeline claim."
     else:
-        verdict = "AccCurve v1 is not better than the aM_smooth baseline on TotalCapture v1 acceleration targets."
-    if aggregate["pred_base_ratio"] < 1.0 and gap > 0.15:
-        gen = "It still generalizes to TotalCapture, but the ratio is clearly weaker than DIP."
-    elif aggregate["pred_base_ratio"] < 1.0:
-        gen = "Its TotalCapture ratio is close enough to DIP to suggest reasonable cross-dataset generalization."
-    else:
-        gen = "The TotalCapture ratio is not suitable for direct cross-dataset acceleration replacement."
-    return f"""# AccCurve v1 TotalCapture Eval 20260618
+        verdict = "TC zero-trans pred/base ratio is still above or equal to 1, so aligning target translation is not enough; v1 residual does not generalize across datasets."
+        recommendation = "Do not continue v1 acceleration replacement as a NewPL retrain input without revising the acceleration module or adding a stronger gate/fallback."
+    return f"""# {summary['experiment']}
 
 ## Purpose
 
@@ -260,31 +279,31 @@ Evaluate AccCurve v1 on TotalCapture test before using v1 acceleration to retrai
 - Cache root: `{summary['cache_root']}`
 - Checkpoint: `{summary['checkpoint']}`
 - Cache manifest: `{summary['cache_manifest']}`
-- Target: `smooth(diff_acc(p_WS))`, where `p_WS = p_WJ + R_WJ @ rJS`
+- Target translation: `{target_translation}`
+- Target: `{target}`
 - Target key: `aFK_smooth[18]`
 - Frame: model/world frame M for input, base, prediction, and target
 - This is v1 target namespace, not strict GTFK v2.
+- Force zero tran: `{zero_trans}`
 
 ## TotalCapture Results
 
-{result_table(aggregate)}
+{result_table(aggregate, manifest)}
 
-## DIP v1 Historical Reference
+## Three-Way Comparison
 
-| Dataset | Target | pred L2 | base L2 | pred/base ratio | pred RMSE | base RMSE | corr |
-|---|---|---:|---:|---:|---:|---:|---:|
-| DIP test | smooth(diff_acc(p_WS)) | {dip['pred_l2']:.6f} | {dip['base_l2']:.6f} | {dip['pred_base_ratio']:.6f} | {dip['pred_rmse']:.6f} | {dip['base_rmse']:.6f} | {dip['corr']:.6f} |
-| TotalCapture test | smooth(diff_acc(p_WS)) | {aggregate['pred_l2']:.6f} | {aggregate['base_l2']:.6f} | {aggregate['pred_base_ratio']:.6f} | {aggregate['pred_rmse']:.6f} | {aggregate['base_rmse']:.6f} | {aggregate['corr']:.6f} |
+| Eval | Target translation | Target | Base L2 | Pred L2 | Pred/Base | Base RMSE | Pred RMSE | Pred Corr |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| DIP historical | zero/none | smooth(diff_acc(p_WS_zero_trans)) | {dip['base_l2']:.6f} | {dip['pred_l2']:.6f} | {dip['pred_base_ratio']:.6f} | {dip['base_rmse']:.6f} | {dip['pred_rmse']:.6f} | {dip['corr']:.6f} |
+| TC previous | source tran | smooth(diff_acc(trans + p_WS)) | {prev['base_l2']:.6f} | {prev['pred_l2']:.6f} | {prev['pred_base_ratio']:.6f} | {prev['base_rmse']:.6f} | {prev['pred_rmse']:.6f} | {prev['corr']:.6f} |
+| TC zero-trans | forced zero | smooth(diff_acc(p_WS_zero_trans)) | {aggregate['base_l2']:.6f} | {aggregate['pred_l2']:.6f} | {aggregate['pred_base_ratio']:.6f} | {aggregate['base_rmse']:.6f} | {aggregate['pred_rmse']:.6f} | {aggregate['corr']:.6f} |
 
 ## Conclusion
 
 - TotalCapture pred/base ratio: `{aggregate['pred_base_ratio']:.6f}`.
 - DIP historical pred/base ratio: `{dip['pred_base_ratio']:.6f}`.
-- Ratio gap TC-DIP: `{gap:.6f}`.
 - {verdict}
-- {gen}
-
-Recommendation: {'continue cautiously with v1 acceleration as a NewPL retrain input candidate, with same-cache PL module gates before any full-pipeline claim.' if aggregate['pred_base_ratio'] < 1.0 else 'do not use v1 acceleration as a cross-dataset NewPL retrain input without revising the acceleration module.'}
+- {recommendation}
 """
 
 
@@ -293,6 +312,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--checkpoint", type=Path, default=DEFAULT_CHECKPOINT)
     parser.add_argument("--cache", type=Path, default=DEFAULT_CACHE)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    parser.add_argument("--experiment-name", default=DEFAULT_EXPERIMENT_NAME)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--max-sequences", type=int, default=0)
     return parser.parse_args()
@@ -346,12 +366,13 @@ def main() -> None:
     aggregate["num_sequences"] = len(records)
     aggregate["num_frames"] = int(total_frames)
     result = {
-        "experiment": "acc_curve_v1_totalcapture_eval_20260618",
+        "experiment": args.experiment_name,
         "experiment_root": str(output_root),
         "cache_root": str(args.cache.parent),
         "checkpoint": str(args.checkpoint),
         "cache_manifest": str(args.cache),
-        "target": "smooth(diff_acc(p_WS))",
+        "target": target_label(manifest)[1],
+        "target_translation": target_label(manifest)[0],
         "target_key": "aFK_smooth",
         "target_contract": "p_WS = p_WJ + R_WJ @ rJS; centered smooth window=9 of finite-difference acceleration",
         "frame": "model/world frame M",
@@ -362,11 +383,12 @@ def main() -> None:
         "aggregate": aggregate,
         "rows": rows,
         "dip_v1_historical": DIP_V1_HISTORICAL,
+        "tc_full_trans_previous": TC_FULL_TRANS_PREVIOUS,
     }
     (output_root / "tc_test_eval.json").write_text(json.dumps(result, indent=2) + "\n")
     write_csv(output_root / "tc_test_per_sequence.csv", rows)
     (output_root / "summary.md").write_text(build_summary(result))
-    print(result_table(aggregate))
+    print(result_table(aggregate, manifest))
     print(f"result: {output_root / 'tc_test_eval.json'}")
     print(f"end: {time.strftime('%Y-%m-%dT%H:%M:%S%z')}")
 

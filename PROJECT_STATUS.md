@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: AccCurve v1 TotalCapture evaluation writeback and commit
-Current task: record acc_curve_v1_totalcapture_eval_20260618 results, keep docs current, and push
+Current stage: AccCurve v1 TotalCapture zero-trans evaluation writeback and commit
+Current task: record acc_curve_v1_totalcapture_zero_trans_eval_20260618 results, keep docs current, and push
 Review state: Approved for next step
-Current changed files: scripts/eval_acc_curve_v1_totalcapture_20260618.py, code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test/*, data/experiments/acc_curve_v1_totalcapture_eval_20260618/*, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
-Current module: acc_curve_v1_totalcapture_eval_20260618
+Current changed files: scripts/build_acc_curve_cache.py, scripts/eval_acc_curve_v1_totalcapture_20260618.py, code/outputs/smooth_acc_cache_totalcapture_v1_zero_trans_20260618/tc_test/*, data/experiments/acc_curve_v1_totalcapture_zero_trans_eval_20260618/*, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
+Current module: acc_curve_v1_totalcapture_zero_trans_eval_20260618
 Current replacement version: evaluation-only, no AccCurve/PL retraining
-Current experiment: AccCurve v1 acceleration-level TotalCapture test eval on smooth(diff_acc(p_WS)) target
-Current result: TC base L2/RMSE 0.873843/0.693060; pred L2/RMSE 2.091960/1.539445; pred/base ratio 2.393977; corr 0.866428; v1 fails TC baseline
+Current experiment: AccCurve v1 acceleration-level TotalCapture test eval on smooth(diff_acc(p_WS_zero_trans)) target
+Current result: TC base L2/RMSE 1.832642/1.466451; pred L2/RMSE 1.415560/0.977232; pred/base ratio 0.772415; corr 0.945382; zero-trans target now beats TC baseline
 Current blocker: none
 Next action: stage docs/code and commit to GitHub
 Git state: dirty worktree with existing unrelated edits plus new AccCurve v1 TC eval files
 CodeGraph state: healthy indexed native backend
-Detailed logs: data/experiments/acc_curve_v1_totalcapture_eval_20260618/summary.md and tc_test_eval.json
+Detailed logs: data/experiments/acc_curve_v1_totalcapture_zero_trans_eval_20260618/summary.md and tc_test_eval.json
 
 ## 0. Version-Line Reading Guide
 
@@ -43,7 +43,7 @@ Current version-line map:
 | `IK-s2 / NewPose` | IK2/pose-control replacement | rejected so far | `newpose_ctrl_v1/v2` |
 | `IMU offset / r_JS data line` | DIP/TC pseudo offset synthesis and audits | active route is `footlock_transpose_v1` only | `Active r_JS Policy` |
 | `Diagnostic IMU control modules` | neighbor velocity/position and joint q/qdot/velocity control diagnostics | diagnostic only; not connected to PL/IK/full pipeline | `imu_neighbor_vel_ctrl_v1`, `imu_neighbor_pos_from_vel_ctrl_v1`, `imu_joint_euler_qdot_vel_ctrl_v1` |
-| `AccCurve / acceleration residual` | v1 diff-pos and v2 strict GTFK acceleration diagnostics | v1 fails TotalCapture generalization; v2 remains standalone strict GTFK diagnostic; no downstream pipeline claim | `acc_curve_v1_totalcapture_eval_20260618`, `acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617` |
+| `AccCurve / acceleration residual` | v1 diff-pos, v1 zero-trans TC eval, and v2 strict GTFK acceleration diagnostics | v1 full-trans target fails TC; zero-trans target now beats TC baseline and aligns with DIP-style contract; v2 remains standalone strict GTFK diagnostic; no downstream pipeline claim | `acc_curve_v1_totalcapture_eval_20260618`, `acc_curve_v1_totalcapture_zero_trans_eval_20260618`, `acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617` |
 | `Experiment evidence` | commands, logs, JSONs, failures | archive only, not current status | `EXPERIMENT_LOG.md` detailed log index |
 
 Latest PL-s1 full-pipeline eval note on 2026-06-16:
@@ -194,6 +194,40 @@ Decision:
   v1 does not beat aM_smooth on TotalCapture and the ratio gap versus DIP is
   +1.771928. Do not proceed with v1 acceleration as a cross-dataset NewPL
   retrain input without revising the acceleration module or adding a stronger gate.
+```
+
+Latest AccCurve v1 TotalCapture zero-trans acceleration-level eval note on 2026-06-18:
+
+```text
+Experiment:
+  data/experiments/acc_curve_v1_totalcapture_zero_trans_eval_20260618
+Cache root:
+  code/outputs/smooth_acc_cache_totalcapture_v1_zero_trans_20260618/tc_test
+Evaluator:
+  scripts/eval_acc_curve_v1_totalcapture_20260618.py
+Checkpoint:
+  data/experiments/acc_curve_v1_20260617/dip_finetune/best_loss.pt
+Source TC cache/protocol:
+  data/experiments/newpl_v5_official_protocol_20260607/caches/tc_test_official_with_offset_r/baseline_cache_manifest.json
+Target:
+  v1 smooth(diff_acc(p_WS_zero_trans)); p_WS = p_WJ + R_WJ @ rJS with tran forced to zero
+Frame:
+  input/base/pred/target are model/world frame M
+Scope:
+  acceleration-level only; no AccCurve training, no PL retraining, no IK/VR/full pipeline, no S4
+Result on TotalCapture test:
+  aM_smooth base L2/RMSE/corr = 1.832642 / 1.466451 / 0.883554
+  AccCurve v1 pred L2/RMSE/corr = 1.415560 / 0.977232 / 0.945382
+  pred/base ratio = 0.772415 over 16084 valid frames
+DIP v1 historical:
+  pred/base ratio = 0.622049, pred L2 = 1.202067, base L2 = 2.368697, corr = 0.940837
+TC full-trans previous:
+  pred/base ratio = 2.393977, pred L2 = 2.091960, base L2 = 0.873843, corr = 0.866428
+Decision:
+  zero-trans alignment removes the TC failure seen in the source-translation eval.
+  The TC target-definition mismatch was the main issue, not a complete collapse
+  of v1 residual structure on TotalCapture. Continue considering zero-trans v1
+  acceleration as a NewPL retrain input candidate, but keep same-cache PL gates.
 ```
 
 ## 0.4 AccCurve / absolute acceleration residual module

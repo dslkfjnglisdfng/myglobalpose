@@ -51,6 +51,116 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 
 ## Detailed Records
 
+## EXP-20260618-acc_curve_v1_totalcapture_zero_trans_eval - v1 Zero-Translation Acceleration Target on TotalCapture Test
+
+Question: after forcing TotalCapture translation to zero, does the existing AccCurve v1 checkpoint still fail on the DIP-style acceleration target?
+
+Scope:
+
+```text
+model training: none
+PL training: none
+IK/VR/full pipeline: not evaluated
+S4 metrics: not evaluated
+target namespace: v1 only, smooth(diff_acc(p_WS_zero_trans)); not strict GTFK v2
+p_WS_zero_trans: p_WJ + R_WJ @ rJS with tran forced to zero
+frame: model/world frame M for input/base/pred/target
+```
+
+Cache build:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+export LD_LIBRARY_PATH=/home/lingfeng/.conda/envs/globalpose-gpu/lib:${LD_LIBRARY_PATH:-}
+/home/lingfeng/bin/longrun -- /home/lingfeng/.conda/envs/globalpose-gpu/bin/python scripts/build_acc_curve_cache.py \
+  --input-cache data/experiments/newpl_v5_official_protocol_20260607/caches/tc_test_official_with_offset_r/baseline_cache_manifest.json \
+  --output-dir code/outputs/smooth_acc_cache_totalcapture_v1_zero_trans_20260618/tc_test \
+  --dataset TotalCapture \
+  --split test_zero_trans \
+  --smooth-window 9 \
+  --smoothing-mode centered_moving_average \
+  --trim 4 \
+  --shard-size 32 \
+  --fk-batch-size 2048 \
+  --force-zero-tran \
+  --overwrite
+```
+
+Cache contract:
+
+```text
+manifest: code/outputs/smooth_acc_cache_totalcapture_v1_zero_trans_20260618/tc_test/acc_curve_cache_manifest.json
+type: acc_curve_cache_v1
+force_zero_tran: true
+source cache/protocol: data/experiments/newpl_v5_official_protocol_20260607/caches/tc_test_official_with_offset_r/baseline_cache_manifest.json
+dataset/split: TotalCapture/test_zero_trans
+sequences/frames/valid: 4 / 16124 / 16084
+target_layout: aFK_smooth[18], six sensor-site accelerations in m/s^2
+input_frame: model/world frame M from GlobalPose aM/wM/RMB cache fields
+target_frame: model/world frame with root translation removed; p_WS = p_WJ + R_WJ @ rJS
+```
+
+Eval command:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+mkdir -p data/experiments/acc_curve_v1_totalcapture_zero_trans_eval_20260618/logs
+export LD_LIBRARY_PATH=/home/lingfeng/.conda/envs/globalpose-gpu/lib:${LD_LIBRARY_PATH:-}
+/home/lingfeng/bin/longrun -- /home/lingfeng/.conda/envs/globalpose-gpu/bin/python scripts/eval_acc_curve_v1_totalcapture_20260618.py \
+  --experiment-name acc_curve_v1_totalcapture_zero_trans_eval_20260618 \
+  --output-root data/experiments/acc_curve_v1_totalcapture_zero_trans_eval_20260618 \
+  --cache code/outputs/smooth_acc_cache_totalcapture_v1_zero_trans_20260618/tc_test/acc_curve_cache_manifest.json \
+  --checkpoint data/experiments/acc_curve_v1_20260617/dip_finetune/best_loss.pt \
+  --device cuda
+```
+
+TotalCapture zero-trans results:
+
+| Dataset | Target | Acc source | L2 error | RMSE | pred/base ratio | corr | valid frames |
+|---|---|---|---:|---:|---:|---:|---:|
+| TotalCapture test | `smooth(diff_acc(p_WS_zero_trans))` | `aM_smooth` | `1.832642` | `1.466451` | `1.000000` | `0.883554` | `16084` |
+| TotalCapture test | `smooth(diff_acc(p_WS_zero_trans))` | AccCurve v1 pred | `1.415560` | `0.977232` | `0.772415` | `0.945382` | `16084` |
+
+DIP v1 historical reference:
+
+| Dataset | Target | pred L2 | base L2 | pred/base ratio | pred RMSE | base RMSE | corr |
+|---|---|---:|---:|---:|---:|---:|---:|
+| DIP test | `smooth(diff_acc(p_WS_zero_trans))` | `1.202067` | `2.368697` | `0.622049` | `0.930242` | `1.733464` | `0.940837` |
+| TotalCapture zero-trans test | `smooth(diff_acc(p_WS_zero_trans))` | `1.415560` | `1.832642` | `0.772415` | `0.977232` | `1.466451` | `0.945382` |
+
+TC full-trans historical reference:
+
+| Dataset | Target | pred L2 | base L2 | pred/base ratio | pred RMSE | base RMSE | corr |
+|---|---|---:|---:|---:|---:|---:|---:|
+| TotalCapture test | `smooth(diff_acc(trans + p_WS))` | `2.091960` | `0.873843` | `2.393977` | `1.539445` | `0.693060` | `0.866428` |
+
+Conclusion:
+
+```text
+Forcing TC tran to zero removes the previous TC failure: v1 now beats aM_smooth
+on TotalCapture zero-trans with pred/base ratio 0.772415 and corr 0.945382.
+This strongly suggests the earlier TC full-trans failure was driven mainly by
+target translation mismatch, not by a complete loss of v1 residual structure.
+Zero-trans v1 remains a candidate for NewPL retrain input, but should still be
+gated with same-cache PL metrics before any downstream claim.
+```
+
+Artifacts:
+
+```text
+script: scripts/build_acc_curve_cache.py
+script: scripts/eval_acc_curve_v1_totalcapture_20260618.py
+cache root: code/outputs/smooth_acc_cache_totalcapture_v1_zero_trans_20260618/tc_test
+experiment root: data/experiments/acc_curve_v1_totalcapture_zero_trans_eval_20260618
+cache manifest: code/outputs/smooth_acc_cache_totalcapture_v1_zero_trans_20260618/tc_test/acc_curve_cache_manifest.json
+eval JSON: data/experiments/acc_curve_v1_totalcapture_zero_trans_eval_20260618/tc_test_eval.json
+per-sequence CSV: data/experiments/acc_curve_v1_totalcapture_zero_trans_eval_20260618/tc_test_per_sequence.csv
+summary: data/experiments/acc_curve_v1_totalcapture_zero_trans_eval_20260618/summary.md
+cache build log: data/experiments/acc_curve_v1_totalcapture_zero_trans_eval_20260618/logs/cache_build.log
+eval log: data/experiments/acc_curve_v1_totalcapture_zero_trans_eval_20260618/logs/run.log
+exact command: data/experiments/acc_curve_v1_totalcapture_zero_trans_eval_20260618/exact_command.txt
+```
+
 ## EXP-20260618-acc_curve_v1_totalcapture_eval - v1 Diff-Pos Acceleration Target on TotalCapture Test
 
 Question: before using AccCurve v1 acceleration to retrain NewPL, does the

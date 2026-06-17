@@ -1,0 +1,13 @@
+longrun: starting: /home/lingfeng/.conda/envs/globalpose-gpu/bin/python scripts/build_acc_curve_cache.py --input-cache data/experiments/newpl_v5_official_protocol_20260607/caches/tc_test_official_with_offset_r/baseline_cache_manifest.json --output-dir code/outputs/smooth_acc_cache_totalcapture_v1_zero_trans_20260618/tc_test --dataset TotalCapture --split test_zero_trans --smooth-window 9 --smoothing-mode centered_moving_average --trim 4 --shard-size 32 --fk-batch-size 2048 --force-zero-tran --overwrite
+longrun: notification email sent
+/home/lingfeng/projects/GlobalposeMy/GlobalPose/l4_sensor_offset_utils.py:19: FutureWarning: In the future `np.object` will be defined as the corresponding NumPy scalar.
+  if not hasattr(np, _name):
+/home/lingfeng/projects/GlobalposeMy/GlobalPose/l4_sensor_offset_utils.py:19: FutureWarning: In the future `np.str` will be defined as the corresponding NumPy scalar.
+  if not hasattr(np, _name):
+{
+  "manifest": "code/outputs/smooth_acc_cache_totalcapture_v1_zero_trans_20260618/tc_test/acc_curve_cache_manifest.json",
+  "num_sequences": 4,
+  "num_frames": 16124,
+  "valid_frames": 16084,
+  "elapsed_sec": 0.514
+}

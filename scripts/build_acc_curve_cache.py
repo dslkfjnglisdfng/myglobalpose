@@ -92,6 +92,8 @@ def build_sequence(data, seq_idx, name, args, body_model, device):
         n = min(n, int(args.max_frames))
     pose = pose[:n]
     tran = None if tran is None else tran[:n]
+    if args.force_zero_tran:
+        tran = torch.zeros(n, 3, dtype=pose.dtype)
     aM_raw, wM, RMB = aM_raw[:n], wM[:n], RMB[:n]
     aM_smooth = smooth_centered(aM_raw, args.smooth_window, mode=args.smoothing_mode)
     aFK = sensor_site_acc_from_pose(pose, tran, offset_r, body_model, device, args.fk_batch_size)
@@ -182,7 +184,7 @@ def build_cache(args, preset_name=None):
         shard = empty_shard()
 
     for cache_file in files:
-        data = torch.load(cache_file, map_location="cpu")
+        data = torch.load(cache_file, map_location="cpu", weights_only=False)
         for seq_idx, name in enumerate(data["name"]):
             if args.max_sequences and total_sequences >= args.max_sequences:
                 break
@@ -220,9 +222,19 @@ def build_cache(args, preset_name=None):
         "smooth_window": int(args.smooth_window),
         "smoothing_mode": args.smoothing_mode,
         "trim": int(args.trim),
+        "force_zero_tran": bool(args.force_zero_tran),
+        "target_translation_contract": (
+            "tran forced to zero even if source cache contains tran"
+            if args.force_zero_tran
+            else "source tran is used when available; otherwise zero translation is used"
+        ),
         "coordinate_contract": {
             "input_frame": "model/world frame M from GlobalPose aM/wM/RMB cache fields",
-            "target_frame": "same model/world frame M; aFK_smooth is ddot(p_WJ + R_WJ @ r_JS)",
+            "target_frame": (
+                "model/world frame with root translation removed; p_WS = p_WJ + R_WJ @ rJS"
+                if args.force_zero_tran
+                else "same model/world frame M; aFK_smooth is ddot(p_WJ + R_WJ @ r_JS)"
+            ),
             "offset": COORDINATE_CONTRACT,
         },
         "feature_layout": "aM_raw[18] + aM_smooth[18] + raw_minus_smooth[18] + wM[18] + RMB_6d[36]",
@@ -271,6 +283,7 @@ def parse_args():
     parser.add_argument("--max-sequences", type=int, default=0)
     parser.add_argument("--max-frames", type=int, default=0)
     parser.add_argument("--progress-every", type=int, default=10)
+    parser.add_argument("--force-zero-tran", action="store_true")
     parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args()
 
