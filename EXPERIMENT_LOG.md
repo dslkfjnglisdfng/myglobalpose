@@ -23,6 +23,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | IK-s1 | `newik1_v1` through v14 search records, orchestrator logs, and S4/module JSONs |
 | IK-s2 / NewPose | `newpose_ctrl_v1/v2` records and module/full-pipeline evals |
 | IMU offset / r_JS | `footlock_transpose_v1`, smoothed-fit audit, offset-net/solver retired routes |
+| AccCurve / acceleration residual | `EXP-20260617-acc_curve_v1`; standalone acceleration-level AMASS -> DIP module eval under `data/experiments/acc_curve_v1_20260617/` |
 | Official GPNet + official/processed IMU | `EXP-20260604-001`, `EXP-20260604-002`; S4 JSONs referenced in `RECENT_REPLACEMENT_VERSIONS.md` |
 | newpl_v1_processed_no_baseline | `data/experiments/pl_curve_v2_processed_no_baseline/tc_finetune_10ep/train_log.jsonl`; S4 JSON in artifact index |
 | newpl_v2_gRdyn | `data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_finetune_v1/tc_finetune_10ep/train_log.jsonl`; S4 JSON not found |
@@ -43,8 +44,103 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | newik1_v6_official_input_init36_cascade | `EXP-newik1_v6_official_input_init36_cascade_rerun`; AMASS offset enrichment, task logs, S4 JSONs, Module GT JSONs, and final manual selection JSON |
 | DIP footlock TransPose pseudo-rJS | `EXP-20260608-footlock_transpose_rjs`; winner cache under `data/experiments/footlock_transpose_rjs_20260608/` |
 | footlock-only smoothed-acc rJS cleanup | `EXP-20260609-footlock_only_smoothacc_rjs`; active route is `footlock_transpose_v1` only; old offset-route artifacts deleted |
+| acc_curve_v1_20260617 | `EXP-20260617-acc_curve_v1`; root `data/experiments/acc_curve_v1_20260617`; cache root `code/outputs/smooth_acc_cache_amass_dip_20260617`; module-level only |
 
 ## Detailed Records
+
+## EXP-20260617-acc_curve_v1 - PL-style AccCurve residual module
+
+Question: Can a standalone PLCurve-style residual network improve absolute sensor-site acceleration against the centered-smoothed acceleration base?
+
+Hypothesis: `aM_raw`, `aM_smooth`, acceleration residual, gyro, and IMU orientation can learn the FK sensor-site acceleration residual while preserving a zero-initialized base behavior.
+
+Change tested:
+
+```text
+module: acc_curve_v1_20260617
+input: aM_raw[18] + aM_smooth[18] + (aM_raw-aM_smooth)[18] + wM[18] + RMB_6d[36] = 108D
+base: aM_smooth[18]
+output: pred_aM_curve[18]
+target: aFK_smooth[18]
+frame: model/world frame M
+```
+
+Dataset/split:
+
+```text
+cache root: code/outputs/smooth_acc_cache_amass_dip_20260617
+AMASS train cache: 1298 sequences, 1118012 frames, 1105032 valid frames
+DIP train cache: 36 sequences, 228807 frames, 228447 valid frames
+DIP val cache: 6 sequences, 30771 frames, 30711 valid frames
+DIP test cache: 19 sequences, 57994 frames, 57804 valid frames
+AMASS training split: hash 95/5 train/val
+DIP checkpoint selection: DIP val only
+DIP test: final module-level evaluation only
+```
+
+Commands:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+ENV=/home/lingfeng/.conda/envs/globalpose-gpu
+export PATH="$ENV/bin:$PATH"
+export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"
+
+# Smoke cache and training:
+"$ENV/bin/python" scripts/build_acc_curve_cache.py --preset amass_train --output-root code/outputs/acc_curve_smoke_cache_20260617 --max-sequences 2 --max-frames 180 --fk-batch-size 256 --overwrite
+"$ENV/bin/python" scripts/build_acc_curve_cache.py --preset dip_train --output-root code/outputs/acc_curve_smoke_cache_20260617 --max-sequences 2 --max-frames 180 --fk-batch-size 256 --overwrite
+"$ENV/bin/python" scripts/build_acc_curve_cache.py --preset dip_val --output-root code/outputs/acc_curve_smoke_cache_20260617 --max-sequences 2 --max-frames 180 --fk-batch-size 256 --overwrite
+"$ENV/bin/python" scripts/build_acc_curve_cache.py --preset dip_test --output-root code/outputs/acc_curve_smoke_cache_20260617 --max-sequences 2 --max-frames 180 --fk-batch-size 256 --overwrite
+"$ENV/bin/python" acc_curve_train.py --amass-cache code/outputs/acc_curve_smoke_cache_20260617/amass_train/acc_curve_cache_manifest.json --dip-train-cache code/outputs/acc_curve_smoke_cache_20260617/dip_train/acc_curve_cache_manifest.json --dip-val-cache code/outputs/acc_curve_smoke_cache_20260617/dip_val/acc_curve_cache_manifest.json --dip-test-cache code/outputs/acc_curve_smoke_cache_20260617/dip_test/acc_curve_cache_manifest.json --output-dir data/experiments/acc_curve_v1_20260617_smoke --epochs 1 --dip-epochs 1 --window 120 --stride 60 --batch-size 2 --num-workers 0 --hidden-size 64 --overwrite
+
+# Full run resume:
+CUDA_VISIBLE_DEVICES=0 /home/lingfeng/bin/longrun -- "$ENV/bin/python" acc_curve_train.py --output-dir data/experiments/acc_curve_v1_20260617 --epochs 30 --dip-epochs 20 --window 240 --stride 120 --batch-size 64 --num-workers 8 --hidden-size 512 --resume
+```
+
+Validation:
+
+```text
+compile: python -m py_compile acc_curve.py acc_curve_train.py scripts/build_acc_curve_cache.py
+smoke: passed; zero_init_max_abs_pred_minus_base=0.0
+window check: AMASS smoke train_windows=2, DIP smoke train_windows=4; full AMASS train_windows=8231, DIP train_windows=1887
+normalization: feature z-score fitted from AMASS train split only and reused for DIP
+```
+
+Metrics:
+
+| Stage | Best epoch | Selection |
+|---|---:|---:|
+| AMASS pretrain | `24` | `0.9526165639` |
+| DIP finetune | `20` | `0.5814286023` |
+
+| Split | pred L2 | base L2 | pred/base ratio | pred RMSE | base RMSE | corr | residual std | residual p95 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| DIP val | `0.846367` | `1.871923` | `0.655075` | `0.628144` | `1.324018` | `0.957387` | `1.204956` | `3.743450` |
+| DIP test | `1.202067` | `2.368697` | `0.622049` | `0.930242` | `1.733464` | `0.940837` | `1.450683` | `4.660124` |
+
+Artifacts:
+
+```text
+module: acc_curve.py
+train/eval: acc_curve_train.py
+cache builder: scripts/build_acc_curve_cache.py
+runner: scripts/run_acc_curve_v1_20260617.sh
+experiment root: data/experiments/acc_curve_v1_20260617
+final checkpoint: data/experiments/acc_curve_v1_20260617/dip_finetune/best_loss.pt
+summary: data/experiments/acc_curve_v1_20260617/train_result.json
+eval JSONs:
+  data/experiments/acc_curve_v1_20260617/eval/dip_val_eval.json
+  data/experiments/acc_curve_v1_20260617/eval/dip_test_eval.json
+longrun log: data/experiments/acc_curve_v1_20260617/logs/resume_longrun_20260617_205531.log
+```
+
+Interpretation: The module improves same-cache acceleration target regression over the `aM_smooth` base on DIP val/test. This supports the standalone acceleration residual hypothesis, not a downstream motion-quality claim.
+
+Claim support: validation result
+
+Problems: Full cache and experiment checkpoints are large and ignored by git. Commit only code, scripts, docs, and compact result summaries if needed.
+
+Next action: keep AccCurve separate unless a later experiment explicitly defines how this acceleration output is consumed by PL/IK/physics.
 
 ## EXP-20260612-newpl_v5_butteracc — NewPL v5 with realtime causal ButterAcc input
 
@@ -14092,3 +14188,67 @@ Final audit conclusion:
   network structure based only on this metric.
 ```
 <!-- END newpl-v6-next-p-pdot-pddot-strong--2026-06-16 -->
+
+<!-- BEGIN newpl-v4-init36-dip-fullpipeline-11metrics--2026-06-16 -->
+## 2026-06-16 - newpl_v4_init36 DIP Full-Pipeline 11 Metrics Backfill
+
+Task: fill the missing DIP test full-pipeline 11 metrics for the historical
+`newpl_v4_init36` checkpoint. Do not reuse PL module-level pRB/gR1 metrics as
+full-pipeline evidence.
+
+Run contract:
+
+```text
+root: data/experiments/newpl_v4_init36_dip_fullpipeline_11metrics_20260616
+evaluator: newik1_real_streaming_audit.py
+cache/protocol: data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json
+source raw DIP cache: data/experiments/dip_official_protocol_check_20260607/dip_test_prephysics_neural_only/baseline_cache_manifest.json
+checkpoint: data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+replacement: PL-s1 only; official IK-s1, IK-s2, VR, and carticulate physics downstream preserved
+DIP trans/root-velocity supervision: false; evaluation only
+metric: MotionEvaluator full-pipeline 11 metrics
+```
+
+Exact command:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+CUDA_VISIBLE_DEVICES=0 METRIC_CHUNK_FRAMES=256 /home/lingfeng/bin/longrun -- bash scripts/run_newpl_v4_init36_dip_fullpipeline_11metrics_20260616.sh
+```
+
+Implementation note:
+
+```text
+newik1_real_streaming_audit.py already supported --pl-checkpoint with
+--ik1-backend original, which preserves official downstream modules. The only
+code change needed for this run was evaluation/runtime wrapping: GPU chunked
+MotionEvaluator metrics via --metric-chunk-frames and --skip-module-metrics for
+this full-pipeline-only task. The PL/IK/VR/physics forward path is unchanged.
+```
+
+Results:
+
+| Dataset | Version | Score | Local SIP | Local Angle | Local Joint | Local Mesh | Global SIP | Global Angle | Global Joint | Global Mesh | Root Jitter | Joint Jitter |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| DIP-IMU-test | official_gpnet | `44.641437` | `13.548337` | `8.469859` | `4.648157` | `5.408259` | `13.409406` | `8.291682` | `4.547544` | `5.265691` | `0.157846` | `0.258183` |
+| DIP-IMU-test | newpl_v4_init36_official_downstream | `44.708897` | `13.537034` | `8.484648` | `4.646514` | `5.426462` | `13.429909` | `8.329860` | `4.602831` | `5.356486` | `0.154876` | `0.251050` |
+
+Conclusion:
+
+```text
+Score delta newpl_v4_init36 - official_gpnet = +0.067461 (worse).
+不支持 DIP full-pipeline improvement claim.
+These are full-pipeline 11 metrics, not PL module-level pRB/gR1 metrics.
+```
+
+Artifacts:
+
+```text
+summary: data/experiments/newpl_v4_init36_dip_fullpipeline_11metrics_20260616/summary.md
+result JSON: data/experiments/newpl_v4_init36_dip_fullpipeline_11metrics_20260616/result_summary.json
+baseline JSON: data/experiments/newpl_v4_init36_dip_fullpipeline_11metrics_20260616/eval/dip_official_gpnet.json
+newpl JSON: data/experiments/newpl_v4_init36_dip_fullpipeline_11metrics_20260616/eval/dip_newpl_v4_init36_official_downstream.json
+run log: data/experiments/newpl_v4_init36_dip_fullpipeline_11metrics_20260616/logs/run.log
+exact command: data/experiments/newpl_v4_init36_dip_fullpipeline_11metrics_20260616/exact_command.txt
+```
+<!-- END newpl-v4-init36-dip-fullpipeline-11metrics--2026-06-16 -->

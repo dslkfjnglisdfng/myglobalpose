@@ -1,5 +1,21 @@
 # GlobalPose Project Status
 
+## ACTIVE SUMMARY
+
+Current stage: AccCurve module writeback and commit
+Current task: record acc_curve_v1_20260617 results, keep docs current, and push
+Review state: Approved for next step
+Current changed files: acc_curve.py, acc_curve_train.py, scripts/build_acc_curve_cache.py, scripts/run_acc_curve_v1_20260617.sh, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
+Current module: acc_curve_v1_20260617
+Current replacement version: acc_curve_v1_20260617
+Current experiment: AMASS pretrain -> DIP finetune on 108D acceleration residual module
+Current result: smoke passed; AMASS best epoch 24; DIP best epoch 20; DIP val ratio 0.655075; DIP test ratio 0.622049
+Current blocker: none
+Next action: stage docs/code and commit to GitHub
+Git state: dirty worktree with existing unrelated edits plus new AccCurve files
+CodeGraph state: healthy indexed native backend
+Detailed logs: data/experiments/acc_curve_v1_20260617/train_result.json and eval/*
+
 ## 0. Version-Line Reading Guide
 
 This status file is now organized by version line first, then by experiment date. Use this section as the current map; use `RECENT_REPLACEMENT_VERSIONS.md` for the version ledger and `EXPERIMENT_LOG.md` for full command/log/JSON evidence.
@@ -20,14 +36,38 @@ Current version-line map:
 
 | Version line | Scope | Current selected / status | Read first |
 |---|---|---|---|
-| `PL-s1 / historical processed` | PL replacement under processed/TC-oriented route | `newpl_v4_init36` remains best historical full S4 artifact | `RECENT_REPLACEMENT_VERSIONS.md` section `PL-s1 Replacement Versions` |
+| `PL-s1 / historical processed` | PL replacement under processed/TC-oriented route | `newpl_v4_init36` remains best historical full S4 artifact; DIP full-pipeline 11 metrics do not beat official GPNet | `RECENT_REPLACEMENT_VERSIONS.md` section `PL-s1 Replacement Versions` |
 | `PL-s1 / official-route v5 family` | AMASS -> DIP, DIP/TC module eval, no TC fine-tune | no selected replacement; v5 variants are diagnostic | `newpl_v5_official_protocol`, loss-family, smoothacc, butteracc, realtime smooth+residual |
 | `PL-s1 / predictive/root/offset variants` | NewPL-root, next-control, offset/acc-aux, learned offset | diagnostic only unless explicitly promoted later | `newpl_root_v1`, `newpl_v6_next_control`, `newpl_v6_next_control_smoothacc_gR1`, `newpl_v6_next_p_pdot_pddot_strong`, `newpl_offset_v6`, `newpl_v7/v7b` |
 | `IK-s1` | IK1 replacement preserving `pRJ[69]+gR2[3]` | none selected; best S4 still behind PL-only init36 | `newik1_v6`, v8/v9 adaptive search, v10/v11/v14 notes |
 | `IK-s2 / NewPose` | IK2/pose-control replacement | rejected so far | `newpose_ctrl_v1/v2` |
 | `IMU offset / r_JS data line` | DIP/TC pseudo offset synthesis and audits | active route is `footlock_transpose_v1` only | `Active r_JS Policy` |
 | `Diagnostic IMU control modules` | neighbor velocity/position and joint q/qdot/velocity control diagnostics | diagnostic only; not connected to PL/IK/full pipeline | `imu_neighbor_vel_ctrl_v1`, `imu_neighbor_pos_from_vel_ctrl_v1`, `imu_joint_euler_qdot_vel_ctrl_v1` |
+| `AccCurve / acceleration residual` | absolute sensor-site acceleration regression from smoothed base + residual IMU features | implemented and trained at module level; no downstream pipeline claim | `acc_curve_v1_20260617` |
 | `Experiment evidence` | commands, logs, JSONs, failures | archive only, not current status | `EXPERIMENT_LOG.md` detailed log index |
+
+Latest PL-s1 full-pipeline eval note on 2026-06-16:
+
+```text
+newpl_v4_init36 DIP test full-pipeline 11 metrics were backfilled under:
+  data/experiments/newpl_v4_init36_dip_fullpipeline_11metrics_20260616
+Evaluator:
+  newik1_real_streaming_audit.py
+Cache/protocol:
+  data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json
+Checkpoint:
+  data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+Replacement:
+  PL-s1 only; official IK-s1, IK-s2, VR, and carticulate physics downstream
+  preserved. DIP trans/root-velocity supervision was not used.
+Result:
+  official_gpnet Score 44.641437
+  newpl_v4_init36_official_downstream Score 44.708897
+  delta +0.067461 (worse)
+Conclusion:
+  不支持 DIP full-pipeline improvement claim. These are full-pipeline 11
+  metrics, not PL module-level pRB/gR1.
+```
 
 Latest PL-s1 implementation note on 2026-06-16:
 
@@ -65,6 +105,77 @@ specific to next-head derivatives (`next_pldot`/`next_plddot`) with nonzero
 best shifts; classify as diagnostic B, next-head temporal/source mismatch.
 Do not train or promote a new model from this result.
 ```
+
+Latest AccCurve module note on 2026-06-17:
+
+```text
+acc_curve_v1_20260617 is a standalone acceleration-level module.
+Input:
+  aM_raw[18] + aM_smooth[18] + (aM_raw-aM_smooth)[18] + wM[18] + RMB_6d[36] = 108D
+Base:
+  aM_smooth[18]
+Output:
+  pred_aM_curve[18]
+Target:
+  aFK_smooth[18]
+Training:
+  AMASS pretrain -> DIP finetune with fixed windows 240/120, batch 64
+Smoke:
+  2 AMASS + 2 DIP records, 1 epoch each, zero-init pred-base = 0
+Full run:
+  AMASS best epoch 24, DIP best epoch 20
+DIP val:
+  pred_l2=0.846367, base_l2=1.871923, pred_base_ratio=0.655075
+DIP test:
+  pred_l2=1.202067, base_l2=2.368697, pred_base_ratio=0.622049
+Conclusion:
+  finite module-level regression improvement only; not a PL/full-pipeline claim.
+```
+
+## 0.4 AccCurve / absolute acceleration residual module
+
+Status: implemented, smoke-tested, and full AMASS -> DIP trained/evaluated at module level on 2026-06-17. Diagnostic standalone only.
+
+Contract:
+
+```text
+module: acc_curve_v1_20260617
+input: aM_raw[18] + aM_smooth[18] + (aM_raw-aM_smooth)[18] + wM[18] + RMB_6d[36] = 108D
+base: aM_smooth[18]
+output: pred_aM_curve[18]
+target: aFK_smooth[18]
+frame: model/world frame M
+```
+
+Implementation and smoke:
+
+```text
+files: acc_curve.py, acc_curve_train.py, scripts/build_acc_curve_cache.py, scripts/run_acc_curve_v1_20260617.sh
+cache root: code/outputs/smooth_acc_cache_amass_dip_20260617
+experiment root: data/experiments/acc_curve_v1_20260617
+smoke cache: code/outputs/acc_curve_smoke_cache_20260617
+smoke result: 2 AMASS + 2 DIP records, 1 epoch each, pred-base zero-init verified, window steps matched window count
+```
+
+Module-level results:
+
+| Split | pred L2 | base L2 | pred/base ratio | corr | residual std | residual p95 |
+|---|---:|---:|---:|---:|---:|---:|
+| DIP val | `0.846367` | `1.871923` | `0.655075` | `0.957387` | `1.204956` | `3.743450` |
+| DIP test | `1.202067` | `2.368697` | `0.622049` | `0.940837` | `1.450683` | `4.660124` |
+
+Training summary:
+
+| Stage | Train seq | Val seq | Train windows | Val windows | Best epoch | Best selection |
+|---|---:|---:|---:|---:|---:|---:|
+| AMASS pretrain | `1231` | `67` | `8231` | `407` | `24` | `0.9526165639` |
+| DIP finetune | `36` | `6` | `1887` | `253` | `20` | `0.5814286023` |
+
+Known risks:
+
+- This module only improves the acceleration regression target against its smoothed base.
+- It is not connected to PL/IK/VR or full-pipeline 11 metrics.
+- Cache size is large; avoid staging `data/experiments/` or `code/outputs/` wholesale.
 
 ## 0.1 IMU Neighbor Velocity-Control Module v1
 

@@ -41,6 +41,7 @@ Version-line index:
 | `IK-s1` | `newik1_v1` through `newik1_v14` search/diagnostics | none selected; best remains behind PL-only init36 |
 | `IK-s2 / NewPose` | `newpose_ctrl_v1`, `newpose_ctrl_v2` | rejected/diagnostic |
 | `Diagnostic IMU-control modules` | `imu_neighbor_vel_ctrl_v1`, `imu_neighbor_pos_from_vel_ctrl_v1`, `imu_joint_euler_qdot_vel_ctrl_v1` | diagnostic only; neighbor position v1 and joint Euler/qdot/velocity v1 are rejected for IK/NewIK1 input |
+| `AccCurve / acceleration residual` | `acc_curve_v1_20260617` | standalone acceleration-level module; improves aFK_smooth regression vs aM_smooth base, not connected to PL/full pipeline |
 | `IMU offset / r_JS` | `footlock_transpose_v1`, retired solver/net/hybrid routes | active pseudo-`r_JS` route is `footlock_transpose_v1` only |
 | `Baselines / official fine-tune` | official GPNet official/processed, TotalCapture fine-tune diagnostic | references only |
 
@@ -150,6 +151,7 @@ Interpretation: processed-input gains come from corrected orientation/RMB and in
 | newpl_v6_next_p_pdot_pddot_strong | PL-s1 | supervise decoded next `p/pd/pdd` trajectory outputs directly | smooth `aM`; raw `wM/RMB`; init36; reuses compatible next-control cache or builds under run root | current PL 18D unchanged; aux next PL/dynamics unchanged | only normalized decoded next pRB `p/pd/pdd = 1/1/1`; all old current/control/gR1/prior terms zero in preset | AMASS 80 -> DIP 40; batch 32; current/next p-pdot-pddot eval added; TC eval-only | no; next p/pd/pdd target converges but current-frame p/pddot fails same-cache non-regression | not measured | diagnostic only; not selected |
 | imu_neighbor_pos_from_vel_ctrl_v1 | diagnostic neighbor-control | predict root-relative positions from official IMU plus frozen neighbor velocity-control features | 189D: `aM/wM/RMB_6d/r_JS` + velocity control/vel/acc | `neighbor_pos_R_control[33]`, decoded `pos_R/vel_R/acc_R` | position control, decoded position, optional root-relative vel/acc, segment length, smooth/jerk/prior | AMASS 80 -> TC 60 and AMASS 80 -> DIP 30; module eval only | no; pos_R L2 about `48 cm` vs pose_prephysics baseline `2.34-5.57 cm` | not run | rejected for IK/NewIK1 |
 | imu_joint_euler_qdot_vel_ctrl_v1 | diagnostic IMU joint-control | PL-like init network predicts IMU-mapped joint Euler/qdot/velocity controls | current code: `aM[18]+wM[18]+R_rootIMU_sensorIMU_flat[54]=90D`; historical run used world `RMB_flat[54]`; init `q[0]+qdot[0]+vel[0]=54D` | `q_RJ_euler_control[18]+qdot_RJ_euler_control[18]+vel_RJ_control[18]` | q control/q/qdot/qdot-control/qddot/velocity/acceleration/consistency/smooth/jerk/prior; 4 loss variants | historical world-RMB run: 4 variants; root-RMB rerun: `D_all_balanced` only with shared precompute/last.pt disabled for quota | no; root-RMB D is not better than world-RMB D and remains far worse than baseline | not run | rejected for IK/NewIK1 |
+| acc_curve_v1_20260617 | AccCurve / acceleration residual | PL-style curve residual over absolute sensor-site acceleration | 108D: `aM_raw[18]+aM_smooth[18]+residual[18]+wM[18]+RMB_6d[36]` | `pred_aM_curve[18]` absolute acceleration; base `aM_smooth[18]` | valid-mask MSE to `aFK_smooth[18]`; selection by `val_pred_base_ratio` | AMASS 30 -> DIP 20; window 240, stride 120, batch 64; module eval only | yes; DIP val ratio `0.6551`, DIP test ratio `0.6220` vs same-cache base | not run | diagnostic only; useful acceleration-level target, no PL/full-pipeline claim |
 | newik1_v1_control_tail | IK-s1 | control-tail IK1 | 120D control-tail feature | 72D pRJ+gR2 unchanged | baseline IK1 control losses | PL streaming TC finetune | not vs previous | no | not selected |
 | newik1_v2_bonelength | IK-s1 | bone length | unchanged | unchanged | add bone_length=0.5 | continue from v1 | yes local loss | no | not selected |
 | newik1_v3_strong_pRJ_control | IK-s1 | strong pRJ/control | unchanged | unchanged | pRJ=2.0, control_pRJ=0.3 | continue from v2 | no local total | better than v1/v2 but not PL-only | not selected |
@@ -161,6 +163,67 @@ Interpretation: processed-input gains come from corrected orientation/RMB and in
 | newpose_ctrl_v1 | IK-s2 / pose-control slot | direct pose-control state from official IMU + NewPL control features | 174D official IMU/NewPL feature; offset_r init-only | `RRJ_control[90]+gR_pose_control[3]=93D` | control RRJ/gR, decoded state, FK, temporal losses | AMASS pretrain -> DIP fine-tune; DIP/TC eval | no; FK joint L2 is `43.8-45.4 cm` vs baseline `4.6-5.0 cm` | no; full score `413-432` vs baseline `43-45` | rejected |
 
 ## 4.1 Diagnostic IMU-Control Modules
+
+## Version: acc_curve_v1_20260617
+
+### 1. Purpose
+
+Train a standalone PL-style acceleration curve module that predicts absolute sensor-site acceleration in the model/world frame. This is an acceleration-level diagnostic and does not replace PL-s1, IK-s1, IK-s2, or VR-s1.
+
+### 2. Input / Output Contract
+
+| Item | Value |
+|---|---|
+| Module | `PLStyleAccCurveModule` |
+| Input | `aM_raw[18] + aM_smooth[18] + (aM_raw-aM_smooth)[18] + wM[18] + RMB_6d[36] = 108D` |
+| Base | `aM_smooth[18]` |
+| Output | `pred_aM_curve[18]`, absolute sensor-site acceleration |
+| Target | `aFK_smooth[18]` from FK sensor-site acceleration |
+| Frame | model/world frame `M` |
+| Units | `m/s^2` |
+| Valid mask | centered-difference FK acceleration endpoints plus smooth trim excluded |
+
+### 3. Architecture
+
+The module follows the PLCurve streaming style: input encoder, `GRUCell`, zero-initialized new-control and tail-delta heads, and `UniformCubicBSpline` decoding with `tail_update=4`, `dt=1/60`, and `state_dim=18`. Initial output is exactly the smoothed acceleration base.
+
+### 4. Training / Evaluation
+
+| Stage | Split | Train seq | Val seq | Train windows | Val windows | Best epoch | Best selection |
+|---|---|---:|---:|---:|---:|---:|---:|
+| AMASS pretrain | AMASS hash 95/5 | `1231` | `67` | `8231` | `407` | `24` | `0.9526165639` |
+| DIP finetune | DIP train -> DIP val | `36` | `6` | `1887` | `253` | `20` | `0.5814286023` |
+
+Training uses fixed windows (`window=240`, `stride=120`, `batch_size=64`), train-split-only feature z-score normalization, and same-cache module evaluation on DIP val/test. Checkpoint selection uses:
+
+```text
+val_pred_base_ratio = mean||pred_aM_curve-aFK_smooth|| / mean||aM_smooth-aFK_smooth||
+```
+
+### 5. Module Metrics
+
+| Split | pred L2 | base L2 | pred/base ratio | pred RMSE | base RMSE | corr | residual std | residual p95 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| DIP val | `0.846367` | `1.871923` | `0.655075` | `0.628144` | `1.324018` | `0.957387` | `1.204956` | `3.743450` |
+| DIP test | `1.202067` | `2.368697` | `0.622049` | `0.930242` | `1.733464` | `0.940837` | `1.450683` | `4.660124` |
+
+### 6. Artifacts
+
+| Item | Path |
+|---|---|
+| Module | `acc_curve.py` |
+| Train/eval | `acc_curve_train.py` |
+| Cache builder | `scripts/build_acc_curve_cache.py` |
+| Runner | `scripts/run_acc_curve_v1_20260617.sh` |
+| Cache root | `code/outputs/smooth_acc_cache_amass_dip_20260617` |
+| Experiment root | `data/experiments/acc_curve_v1_20260617` |
+| Final checkpoint | `data/experiments/acc_curve_v1_20260617/dip_finetune/best_loss.pt` |
+| Summary | `data/experiments/acc_curve_v1_20260617/train_result.json` |
+| Eval JSONs | `data/experiments/acc_curve_v1_20260617/eval/dip_val_eval.json`, `data/experiments/acc_curve_v1_20260617/eval/dip_test_eval.json` |
+
+### 7. Decision
+
+This is a successful standalone acceleration-regression diagnostic: it beats the `aM_smooth` base on DIP val/test under the same cache and metric. It is not a PL/NewPL replacement and no full-pipeline 11 metrics were run. Do not claim downstream improvement from this result.
 
 ## Version: imu_joint_euler_qdot_vel_ctrl_v1
 
@@ -660,6 +723,45 @@ Change only stream initialization to include real IMU offsets while preserving P
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | newpl_v4_init36 | `38.625657` | `10.135251` | `8.772134` | `4.495146` | `5.138202` | `10.290856` | `8.538511` | `4.346227` | `4.898401` | `0.285848` | `0.476914` |
 
+### 7.1 DIP Test Full-Pipeline 11 Metrics
+
+Backfilled on 2026-06-16 to close the historical gap. This is a DIP test
+official-protocol full-pipeline run, not PL module-level pRB/gR1 evaluation.
+
+Evaluator and contract:
+
+```text
+evaluator: newik1_real_streaming_audit.py
+cache/protocol: data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json
+source raw DIP cache: data/experiments/dip_official_protocol_check_20260607/dip_test_prephysics_neural_only/baseline_cache_manifest.json
+checkpoint: data/experiments/pl_curve_init36_processed_rund_style/best_loss.pt
+replacement: PL-s1 only; official IK-s1, IK-s2, VR, and carticulate physics downstream preserved
+DIP trans/root-velocity supervision: not used; evaluation only
+metric implementation: MotionEvaluator full-pipeline 11 metrics, GPU chunked metric evaluation, IK1 module metrics skipped
+```
+
+| Dataset | Version | Score ↓ | Local SIP ↓ | Local Angle ↓ | Local Joint ↓ | Local Mesh ↓ | Global SIP ↓ | Global Angle ↓ | Global Joint ↓ | Global Mesh ↓ | Root Jitter ↓ | Joint Jitter ↓ |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| DIP-IMU-test | official_gpnet | `44.641437` | `13.548337` | `8.469859` | `4.648157` | `5.408259` | `13.409406` | `8.291682` | `4.547544` | `5.265691` | `0.157846` | `0.258183` |
+| DIP-IMU-test | newpl_v4_init36_official_downstream | `44.708897` | `13.537034` | `8.484648` | `4.646514` | `5.426462` | `13.429909` | `8.329860` | `4.602831` | `5.356486` | `0.154876` | `0.251050` |
+
+Decision: `newpl_v4_init36` does not improve over official GPNet on DIP
+full-pipeline Score (`+0.067461`, worse). 不支持 DIP full-pipeline improvement
+claim. It remains a historical processed-input TotalCapture/S4 artifact, not a
+DIP full-pipeline improvement.
+
+Artifacts:
+
+```text
+root: data/experiments/newpl_v4_init36_dip_fullpipeline_11metrics_20260616
+summary: data/experiments/newpl_v4_init36_dip_fullpipeline_11metrics_20260616/summary.md
+result JSON: data/experiments/newpl_v4_init36_dip_fullpipeline_11metrics_20260616/result_summary.json
+baseline JSON: data/experiments/newpl_v4_init36_dip_fullpipeline_11metrics_20260616/eval/dip_official_gpnet.json
+newpl JSON: data/experiments/newpl_v4_init36_dip_fullpipeline_11metrics_20260616/eval/dip_newpl_v4_init36_official_downstream.json
+run log: data/experiments/newpl_v4_init36_dip_fullpipeline_11metrics_20260616/logs/run.log
+exact command: data/experiments/newpl_v4_init36_dip_fullpipeline_11metrics_20260616/exact_command.txt
+```
+
 ### 8. Comparison
 
 | Compared With | Score Delta | Module GT Delta | Main Observation |
@@ -671,7 +773,8 @@ Change only stream initialization to include real IMU offsets while preserving P
 - Module GT: see Module GT Delta table
 - Official S4: `38.625657`
 - Keep as mainline: yes
-- Reason: Best current S4; selected mainline.
+- Reason: Best historical processed-input S4 artifact. The 2026-06-16 DIP
+  full-pipeline 11-metric backfill does not support a DIP improvement claim.
 
 ## Version: newpl_v5_official_protocol
 
