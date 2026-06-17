@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: AccCurve v1 TotalCapture zero-trans evaluation writeback and commit
-Current task: record acc_curve_v1_totalcapture_zero_trans_eval_20260618 results, keep docs current, and push
+Current stage: AccCurve v2 root-IMU-relative acceleration datacache rebuild and commit
+Current task: record acc_invariance_datacache_v2_rebuild_20260618 results, keep docs current, and push
 Review state: Approved for next step
-Current changed files: scripts/build_acc_curve_cache.py, scripts/eval_acc_curve_v1_totalcapture_20260618.py, code/outputs/smooth_acc_cache_totalcapture_v1_zero_trans_20260618/tc_test/*, data/experiments/acc_curve_v1_totalcapture_zero_trans_eval_20260618/*, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
-Current module: acc_curve_v1_totalcapture_zero_trans_eval_20260618
-Current replacement version: evaluation-only, no AccCurve/PL retraining
-Current experiment: AccCurve v1 acceleration-level TotalCapture test eval on smooth(diff_acc(p_WS_zero_trans)) target
-Current result: TC base L2/RMSE 1.832642/1.466451; pred L2/RMSE 1.415560/0.977232; pred/base ratio 0.772415; corr 0.945382; zero-trans target now beats TC baseline
+Current changed files: scripts/build_acc_invariance_datacache_v2_20260618.py, scripts/validate_acc_invariance_datacache_v2_20260618.py, data/experiments/acc_invariance_datacache_v2_20260618/*, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
+Current module: acc_invariance_datacache_v2_rebuild_20260618
+Current replacement version: cache/rebuild-only, no model retraining
+Current experiment: root-IMU-relative acceleration cache rebuild on AMASS/DIP/TotalCapture with zero-translation FK
+Current result: shape consistency true; root invariance max mean |aM_rel[:,5]| = 0.000000; leakage pass 1251/1404; mean corr(v2 relative) 0.617329 vs raw absolute 0.623005
 Current blocker: none
 Next action: stage docs/code and commit to GitHub
 Git state: dirty worktree with existing unrelated edits plus new AccCurve v1 TC eval files
 CodeGraph state: healthy indexed native backend
-Detailed logs: data/experiments/acc_curve_v1_totalcapture_zero_trans_eval_20260618/summary.md and tc_test_eval.json
+Detailed logs: data/experiments/acc_invariance_datacache_v2_20260618/summary.md and metrics.json
 
 ## 0. Version-Line Reading Guide
 

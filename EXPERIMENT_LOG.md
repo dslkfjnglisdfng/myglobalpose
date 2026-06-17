@@ -24,6 +24,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | IK-s2 / NewPose | `newpose_ctrl_v1/v2` records and module/full-pipeline evals |
 | IMU offset / r_JS | `footlock_transpose_v1`, smoothed-fit audit, offset-net/solver retired routes |
 | AccCurve / acceleration residual | `EXP-20260617-acc_curve_v2_gtfk`; strict GTFK standalone acceleration-level AMASS -> DIP module eval under `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/`; `EXP-20260617-acc_curve_pl_input_eval` tests v1/v2 acceleration as frozen PL input; `EXP-20260618-acc_curve_v1_totalcapture_eval` tests v1 TC acceleration-level generalization |
+| AccCurve / acceleration residual datacache | `EXP-20260618-acc_invariance_datacache_v2_rebuild`; root-IMU-relative AMASS/DIP/TotalCapture cache rebuild and validation under `data/experiments/acc_invariance_datacache_v2_20260618/` |
 | Official GPNet + official/processed IMU | `EXP-20260604-001`, `EXP-20260604-002`; S4 JSONs referenced in `RECENT_REPLACEMENT_VERSIONS.md` |
 | newpl_v1_processed_no_baseline | `data/experiments/pl_curve_v2_processed_no_baseline/tc_finetune_10ep/train_log.jsonl`; S4 JSON in artifact index |
 | newpl_v2_gRdyn | `data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_finetune_v1/tc_finetune_10ep/train_log.jsonl`; S4 JSON not found |
@@ -48,8 +49,101 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | acc_curve_v1_totalcapture_eval_20260618 | `EXP-20260618-acc_curve_v1_totalcapture_eval`; root `data/experiments/acc_curve_v1_totalcapture_eval_20260618`; cache root `code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test`; v1 diff-pos acceleration-level TC test only |
 | acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617 | `EXP-20260617-acc_curve_v2_gtfk`; root `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617`; cache root `code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617`; module-level only |
 | acc_curve_v1_20260617 | `EXP-20260617-acc_curve_v1`; root `data/experiments/acc_curve_v1_20260617`; cache root `code/outputs/smooth_acc_cache_amass_dip_20260617`; historical diff-pos-style target |
+| acc_invariance_datacache_v2_rebuild_20260618 | `EXP-20260618-acc_invariance_datacache_v2_rebuild`; root `data/experiments/acc_invariance_datacache_v2_20260618`; cache root `data/experiments/acc_invariance_datacache_v2_20260618`; rootIMU-relative acceleration cache rebuild |
 
 ## Detailed Records
+
+## EXP-20260618-acc_invariance_datacache_v2_rebuild - Root-IMU-Relative Acceleration Cache Rebuild
+
+Question: can we rebuild a single acceleration cache contract where the IMU and GT targets are both root-IMU-relative and zero-translation aligned across AMASS, DIP, and TotalCapture?
+
+Scope:
+
+```text
+model training: none
+PL training: none
+IK/VR/full pipeline: not evaluated
+cache rebuild: yes
+validation: root invariance, shape consistency, leakage corr, per-sequence/per-sensor metrics
+frame: model/world frame M; no sensor-local rotation
+root index: 5 (pelvis)
+```
+
+Build command:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+export LD_LIBRARY_PATH=/home/lingfeng/.conda/envs/globalpose-gpu/lib:${LD_LIBRARY_PATH:-}
+/home/lingfeng/bin/longrun -- /home/lingfeng/.conda/envs/globalpose-gpu/bin/python scripts/build_acc_invariance_datacache_v2_20260618.py \
+  --output-root data/experiments/acc_invariance_datacache_v2_20260618 \
+  --fk-batch-size 2048 \
+  --progress-every 50 \
+  --overwrite
+```
+
+Validate command:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+export LD_LIBRARY_PATH=/home/lingfeng/.conda/envs/globalpose-gpu/lib:${LD_LIBRARY_PATH:-}
+/home/lingfeng/.conda/envs/globalpose-gpu/bin/python scripts/validate_acc_invariance_datacache_v2_20260618.py \
+  --root data/experiments/acc_invariance_datacache_v2_20260618
+```
+
+Cache contract:
+
+```text
+manifest: data/experiments/acc_invariance_datacache_v2_20260618/cache_manifest.json
+type: rootIMU_relative_acceleration
+datasets: AMASS / DIP / TotalCapture
+sequences: 1404
+root index: 5 (pelvis)
+IMU target: aM_rel = aM_smooth - aM_smooth[:, 5]
+GT target: aGT_rel = diff_acc(FK_zero_translation(p_WJ + R_WJ @ rJS)) - root
+diff method: centered second difference / dt^2 with dt = 1/60
+```
+
+Validation summary:
+
+| formulation | dataset | L2 | RMSE | corr |
+|---|---|---:|---:|---:|
+| raw absolute | ALL | 2.559527 | 2.973042 | 0.693266 |
+| zero-trans old | ALL | 2.767145 | 3.342987 | 0.540240 |
+| v2 relative (NEW) | ALL | 2.048167 | 3.035057 | 0.639486 |
+
+Root/leakage checks:
+
+```text
+shape consistency: True
+root invariance max mean |aM_rel[:,5]|: 0.0
+leakage pass: 1251/1404 sequences
+mean corr(v2 relative): 0.617329
+mean corr(raw absolute): 0.623005
+```
+
+Conclusion:
+
+```text
+The rebuild is physically well-formed: shape checks pass and the root-IMU
+relative acceleration is exactly root-invariant by construction.  However, the
+new root-relative formulation does not beat raw absolute correlation overall;
+mean corr(v2 relative)=0.617329 is slightly below raw absolute=0.623005.
+This means the cache is consistent, but raw absolute acceleration still carries
+slightly more direct correlation in this validation slice. Keep the new cache
+for root-invariant experiments, but do not claim it improves correlation by
+itself.
+```
+
+Artifacts:
+
+```text
+experiment root: data/experiments/acc_invariance_datacache_v2_20260618
+cache manifest: data/experiments/acc_invariance_datacache_v2_20260618/cache_manifest.json
+metrics: data/experiments/acc_invariance_datacache_v2_20260618/metrics.json
+per-sequence csv: data/experiments/acc_invariance_datacache_v2_20260618/per_sequence.csv
+debug root leakage: data/experiments/acc_invariance_datacache_v2_20260618/debug_root_leakage.json
+summary: data/experiments/acc_invariance_datacache_v2_20260618/summary.md
+```
 
 ## EXP-20260618-acc_curve_v1_totalcapture_zero_trans_eval - v1 Zero-Translation Acceleration Target on TotalCapture Test
 
