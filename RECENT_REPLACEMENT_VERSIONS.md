@@ -41,7 +41,7 @@ Version-line index:
 | `IK-s1` | `newik1_v1` through `newik1_v14` search/diagnostics | none selected; best remains behind PL-only init36 |
 | `IK-s2 / NewPose` | `newpose_ctrl_v1`, `newpose_ctrl_v2` | rejected/diagnostic |
 | `Diagnostic IMU-control modules` | `imu_neighbor_vel_ctrl_v1`, `imu_neighbor_pos_from_vel_ctrl_v1`, `imu_joint_euler_qdot_vel_ctrl_v1` | diagnostic only; neighbor position v1 and joint Euler/qdot/velocity v1 are rejected for IK/NewIK1 input |
-| `AccCurve / acceleration residual` | `acc_curve_v1_20260617`, `acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617`, `acc_curve_pl_input_eval_20260617` | standalone acceleration-level modules; v2 strict smooth(GTFKacc(q,qdot,qddot,rJS)) target; downstream PL-input eval shows v1/v2 do not improve pRB, so do not connect as-is |
+| `AccCurve / acceleration residual` | `acc_curve_v1_20260617`, `acc_curve_v1_totalcapture_eval_20260618`, `acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617`, `acc_curve_pl_input_eval_20260617` | standalone acceleration-level modules; v1 improves DIP diff-pos target but fails TotalCapture diff-pos target; v2 strict GTFK remains diagnostic; do not connect as-is |
 | `IMU offset / r_JS` | `footlock_transpose_v1`, retired solver/net/hybrid routes | active pseudo-`r_JS` route is `footlock_transpose_v1` only |
 | `Baselines / official fine-tune` | official GPNet official/processed, TotalCapture fine-tune diagnostic | references only |
 
@@ -152,7 +152,8 @@ Interpretation: processed-input gains come from corrected orientation/RMB and in
 | imu_neighbor_pos_from_vel_ctrl_v1 | diagnostic neighbor-control | predict root-relative positions from official IMU plus frozen neighbor velocity-control features | 189D: `aM/wM/RMB_6d/r_JS` + velocity control/vel/acc | `neighbor_pos_R_control[33]`, decoded `pos_R/vel_R/acc_R` | position control, decoded position, optional root-relative vel/acc, segment length, smooth/jerk/prior | AMASS 80 -> TC 60 and AMASS 80 -> DIP 30; module eval only | no; pos_R L2 about `48 cm` vs pose_prephysics baseline `2.34-5.57 cm` | not run | rejected for IK/NewIK1 |
 | imu_joint_euler_qdot_vel_ctrl_v1 | diagnostic IMU joint-control | PL-like init network predicts IMU-mapped joint Euler/qdot/velocity controls | current code: `aM[18]+wM[18]+R_rootIMU_sensorIMU_flat[54]=90D`; historical run used world `RMB_flat[54]`; init `q[0]+qdot[0]+vel[0]=54D` | `q_RJ_euler_control[18]+qdot_RJ_euler_control[18]+vel_RJ_control[18]` | q control/q/qdot/qdot-control/qddot/velocity/acceleration/consistency/smooth/jerk/prior; 4 loss variants | historical world-RMB run: 4 variants; root-RMB rerun: `D_all_balanced` only with shared precompute/last.pt disabled for quota | no; root-RMB D is not better than world-RMB D and remains far worse than baseline | not run | rejected for IK/NewIK1 |
 | acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617 | AccCurve / acceleration residual | PL-style curve residual over absolute sensor-site acceleration with strict GTFK target | 108D: `aM_raw[18]+aM_smooth[18]+residual[18]+wM[18]+RMB_6d[36]`; all in model/world cache frame; `RMB_6d=rotation[..., :, :2].transpose(-1,-2).reshape(...,6)` | `pred_aM_curve[18]` absolute acceleration; base `aM_smooth[18]` | valid-mask MSE to `aFK_gtfk_smooth[18] = smooth(GTFKacc(q,qdot,qddot,rJS))`; selection by `val_pred_base_ratio` | AMASS 30 -> DIP 20; window 240, stride 120, batch 64; AMASS-train-only feature z-score; module eval only | yes; DIP val ratio `0.7575`, DIP test ratio `0.7783` vs same-cache base | not run | diagnostic only; strict GTFK acceleration target works vs base, but does not meet ratio<0.7/corr>0.9 effectiveness gate |
-| acc_curve_v1_20260617 | AccCurve / acceleration residual | PL-style curve residual over absolute sensor-site acceleration | 108D: `aM_raw[18]+aM_smooth[18]+residual[18]+wM[18]+RMB_6d[36]` | `pred_aM_curve[18]` absolute acceleration; base `aM_smooth[18]` | valid-mask MSE to `aFK_smooth[18]`; selection by `val_pred_base_ratio` | AMASS 30 -> DIP 20; window 240, stride 120, batch 64; module eval only | yes; DIP val ratio `0.6551`, DIP test ratio `0.6220` vs same-cache base | not run | diagnostic only; useful acceleration-level target, no PL/full-pipeline claim |
+| acc_curve_v1_20260617 | AccCurve / acceleration residual | PL-style curve residual over absolute sensor-site acceleration | 108D: `aM_raw[18]+aM_smooth[18]+residual[18]+wM[18]+RMB_6d[36]` | `pred_aM_curve[18]` absolute acceleration; base `aM_smooth[18]` | valid-mask MSE to `aFK_smooth[18]`; selection by `val_pred_base_ratio` | AMASS 30 -> DIP 20; window 240, stride 120, batch 64; module eval only | mixed; DIP test ratio `0.6220`, but TotalCapture test ratio `2.3940` after `acc_curve_v1_totalcapture_eval_20260618` | not run | diagnostic only; do not use v1 acceleration directly for cross-dataset NewPL retrain |
+| acc_curve_v1_totalcapture_eval_20260618 | AccCurve / acceleration residual | evaluate v1 checkpoint on TotalCapture v1 diff-pos acceleration target | same v1 108D input from TC official offset cache | `pred_aM_curve[18]` vs `aFK_smooth[18]` | no training; target is `smooth(diff_acc(p_WS))`, not strict GTFK | TC test cache build + eval only; checkpoint `acc_curve_v1_20260617/dip_finetune/best_loss.pt` | no; TC pred L2/RMSE `2.091960/1.539445` vs base `0.873843/0.693060`, ratio `2.393977`, corr `0.866428` | not run | rejects direct v1 cross-dataset acceleration replacement before NewPL retrain |
 | acc_curve_pl_input_eval_20260617 | AccCurve / PL input evaluation | feed raw/smooth/v1/v2 acceleration into the same frozen official PL input | legacy PL 84D with only `aRB[18]` replaced; `wRB[18]+RRB[45]+gR0[3]` identical; AccCurve M-frame outputs converted by `aRB=acc_M @ RMB_root` | official PL `pRB[15]+gR1[3]` from `data/weights.pt` `GPNet.plnet` | no training; same `pl_target_from_pose(pose_gt)` target for all variants | DIP test evaluation only on `newpl_v5_official_protocol_20260607` cache | smooth_acc improves pRB/gR1; AccCurve v1/v2 improve gR1 only but regress pRB | module-level PL pRB/gR1 only, not full S4 | do not connect AccCurve v1/v2 to PL as-is; acceleration-level gains did not transfer to simultaneous PL output gain |
 | newik1_v1_control_tail | IK-s1 | control-tail IK1 | 120D control-tail feature | 72D pRJ+gR2 unchanged | baseline IK1 control losses | PL streaming TC finetune | not vs previous | no | not selected |
 | newik1_v2_bonelength | IK-s1 | bone length | unchanged | unchanged | add bone_length=0.5 | continue from v1 | yes local loss | no | not selected |
@@ -324,6 +325,15 @@ val_pred_base_ratio = mean||pred_aM_curve-aFK_smooth|| / mean||aM_smooth-aFK_smo
 | DIP val | `0.846367` | `1.871923` | `0.655075` | `0.628144` | `1.324018` | `0.957387` | `1.204956` | `3.743450` |
 | DIP test | `1.202067` | `2.368697` | `0.622049` | `0.930242` | `1.733464` | `0.940837` | `1.450683` | `4.660124` |
 
+TotalCapture generalization check on 2026-06-18:
+
+| Dataset | Target | Acc source | L2 error | RMSE | pred/base ratio | corr | valid frames |
+|---|---|---|---:|---:|---:|---:|---:|
+| TotalCapture test | `smooth(diff_acc(p_WS))` | `aM_smooth` | `0.873843` | `0.693060` | `1.000000` | `0.974734` | `16084` |
+| TotalCapture test | `smooth(diff_acc(p_WS))` | AccCurve v1 pred | `2.091960` | `1.539445` | `2.393977` | `0.866428` | `16084` |
+
+Interpretation: DIP test v1 ratio was `0.622049`; TotalCapture test ratio is `2.393977`, a gap of `+1.771928`. v1 improves the DIP diff-pos target but does not generalize to TotalCapture, where `aM_smooth` is already much closer to `aFK_smooth` than the prediction.
+
 ### 6. Artifacts
 
 | Item | Path |
@@ -337,10 +347,13 @@ val_pred_base_ratio = mean||pred_aM_curve-aFK_smooth|| / mean||aM_smooth-aFK_smo
 | Final checkpoint | `data/experiments/acc_curve_v1_20260617/dip_finetune/best_loss.pt` |
 | Summary | `data/experiments/acc_curve_v1_20260617/train_result.json` |
 | Eval JSONs | `data/experiments/acc_curve_v1_20260617/eval/dip_val_eval.json`, `data/experiments/acc_curve_v1_20260617/eval/dip_test_eval.json` |
+| TC cache root | `code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test` |
+| TC eval root | `data/experiments/acc_curve_v1_totalcapture_eval_20260618` |
+| TC eval script | `scripts/eval_acc_curve_v1_totalcapture_20260618.py` |
 
 ### 7. Decision
 
-This is a successful standalone acceleration-regression diagnostic: it beats the `aM_smooth` base on DIP val/test under the same cache and metric. It is not a PL/NewPL replacement and no full-pipeline 11 metrics were run. Do not claim downstream improvement from this result.
+This is a successful DIP-only standalone acceleration-regression diagnostic: it beats the `aM_smooth` base on DIP val/test under the same cache and metric. The 2026-06-18 TotalCapture check fails the cross-dataset gate (`pred/base ratio=2.393977 >= 1`). Do not use v1 acceleration directly as a cross-dataset NewPL retrain input unless the acceleration module is revised or a stronger same-cache gate is added. It is not a PL/NewPL replacement and no full-pipeline 11 metrics were run.
 
 ## Version: imu_joint_euler_qdot_vel_ctrl_v1
 

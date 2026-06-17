@@ -23,7 +23,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | IK-s1 | `newik1_v1` through v14 search records, orchestrator logs, and S4/module JSONs |
 | IK-s2 / NewPose | `newpose_ctrl_v1/v2` records and module/full-pipeline evals |
 | IMU offset / r_JS | `footlock_transpose_v1`, smoothed-fit audit, offset-net/solver retired routes |
-| AccCurve / acceleration residual | `EXP-20260617-acc_curve_v2_gtfk`; strict GTFK standalone acceleration-level AMASS -> DIP module eval under `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/`; `EXP-20260617-acc_curve_pl_input_eval` tests v1/v2 acceleration as frozen PL input; v1 historical record remains below |
+| AccCurve / acceleration residual | `EXP-20260617-acc_curve_v2_gtfk`; strict GTFK standalone acceleration-level AMASS -> DIP module eval under `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/`; `EXP-20260617-acc_curve_pl_input_eval` tests v1/v2 acceleration as frozen PL input; `EXP-20260618-acc_curve_v1_totalcapture_eval` tests v1 TC acceleration-level generalization |
 | Official GPNet + official/processed IMU | `EXP-20260604-001`, `EXP-20260604-002`; S4 JSONs referenced in `RECENT_REPLACEMENT_VERSIONS.md` |
 | newpl_v1_processed_no_baseline | `data/experiments/pl_curve_v2_processed_no_baseline/tc_finetune_10ep/train_log.jsonl`; S4 JSON in artifact index |
 | newpl_v2_gRdyn | `data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_finetune_v1/tc_finetune_10ep/train_log.jsonl`; S4 JSON not found |
@@ -45,10 +45,111 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | DIP footlock TransPose pseudo-rJS | `EXP-20260608-footlock_transpose_rjs`; winner cache under `data/experiments/footlock_transpose_rjs_20260608/` |
 | footlock-only smoothed-acc rJS cleanup | `EXP-20260609-footlock_only_smoothacc_rjs`; active route is `footlock_transpose_v1` only; old offset-route artifacts deleted |
 | acc_curve_pl_input_eval_20260617 | `EXP-20260617-acc_curve_pl_input_eval`; root `data/experiments/acc_curve_pl_input_eval_20260617`; frozen official `GPNet.plnet` input-only evaluation on DIP test |
+| acc_curve_v1_totalcapture_eval_20260618 | `EXP-20260618-acc_curve_v1_totalcapture_eval`; root `data/experiments/acc_curve_v1_totalcapture_eval_20260618`; cache root `code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test`; v1 diff-pos acceleration-level TC test only |
 | acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617 | `EXP-20260617-acc_curve_v2_gtfk`; root `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617`; cache root `code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617`; module-level only |
 | acc_curve_v1_20260617 | `EXP-20260617-acc_curve_v1`; root `data/experiments/acc_curve_v1_20260617`; cache root `code/outputs/smooth_acc_cache_amass_dip_20260617`; historical diff-pos-style target |
 
 ## Detailed Records
+
+## EXP-20260618-acc_curve_v1_totalcapture_eval - v1 Diff-Pos Acceleration Target on TotalCapture Test
+
+Question: before using AccCurve v1 acceleration to retrain NewPL, does the
+existing v1 checkpoint generalize to TotalCapture test on its own acceleration
+target?
+
+Scope:
+
+```text
+model training: none
+PL training: none
+IK/VR/full pipeline: not evaluated
+S4 metrics: not evaluated
+target namespace: v1 only, smooth(diff_acc(p_WS)); not strict GTFK v2
+p_WS: p_WJ + R_WJ @ rJS
+frame: model/world frame M for input/base/pred/target
+```
+
+Cache build:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+export LD_LIBRARY_PATH=/home/lingfeng/.conda/envs/globalpose-gpu/lib:${LD_LIBRARY_PATH:-}
+/home/lingfeng/bin/longrun -- /home/lingfeng/.conda/envs/globalpose-gpu/bin/python scripts/build_acc_curve_cache.py \
+  --input-cache data/experiments/newpl_v5_official_protocol_20260607/caches/tc_test_official_with_offset_r/baseline_cache_manifest.json \
+  --output-dir code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test \
+  --dataset TotalCapture \
+  --split test \
+  --smooth-window 9 \
+  --smoothing-mode centered_moving_average \
+  --trim 4 \
+  --shard-size 32 \
+  --fk-batch-size 2048 \
+  --overwrite
+```
+
+Cache contract:
+
+```text
+manifest: code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test/acc_curve_cache_manifest.json
+type: acc_curve_cache_v1
+source cache/protocol: data/experiments/newpl_v5_official_protocol_20260607/caches/tc_test_official_with_offset_r/baseline_cache_manifest.json
+dataset/split: TotalCapture/test
+sequences/frames/valid: 4 / 16124 / 16084
+target_layout: aFK_smooth[18], six sensor-site accelerations in m/s^2
+input_frame: model/world frame M from GlobalPose aM/wM/RMB cache fields
+target_frame: same model/world frame M; aFK_smooth is ddot(p_WJ + R_WJ @ r_JS)
+```
+
+Eval command:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+mkdir -p data/experiments/acc_curve_v1_totalcapture_eval_20260618/logs
+export LD_LIBRARY_PATH=/home/lingfeng/.conda/envs/globalpose-gpu/lib:${LD_LIBRARY_PATH:-}
+/home/lingfeng/bin/longrun -- /home/lingfeng/.conda/envs/globalpose-gpu/bin/python scripts/eval_acc_curve_v1_totalcapture_20260618.py \
+  --output-root data/experiments/acc_curve_v1_totalcapture_eval_20260618 \
+  --cache code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test/acc_curve_cache_manifest.json \
+  --checkpoint data/experiments/acc_curve_v1_20260617/dip_finetune/best_loss.pt \
+  --device cuda
+```
+
+TotalCapture results:
+
+| Dataset | Target | Acc source | L2 error | RMSE | pred/base ratio | corr | valid frames |
+|---|---|---|---:|---:|---:|---:|---:|
+| TotalCapture test | `smooth(diff_acc(p_WS))` | `aM_smooth` | `0.873843` | `0.693060` | `1.000000` | `0.974734` | `16084` |
+| TotalCapture test | `smooth(diff_acc(p_WS))` | AccCurve v1 pred | `2.091960` | `1.539445` | `2.393977` | `0.866428` | `16084` |
+
+DIP v1 historical reference:
+
+| Dataset | Target | pred L2 | base L2 | pred/base ratio | pred RMSE | base RMSE | corr |
+|---|---|---:|---:|---:|---:|---:|---:|
+| DIP test | `smooth(diff_acc(p_WS))` | `1.202067` | `2.368697` | `0.622049` | `0.930242` | `1.733464` | `0.940837` |
+| TotalCapture test | `smooth(diff_acc(p_WS))` | `2.091960` | `0.873843` | `2.393977` | `1.539445` | `0.693060` | `0.866428` |
+
+Conclusion:
+
+```text
+TotalCapture pred/base ratio = 2.393977, so v1 is worse than aM_smooth on TC.
+DIP historical pred/base ratio = 0.622049; TC-DIP ratio gap = +1.771928.
+This is a cross-dataset generalization failure for v1 diff-pos acceleration.
+Do not proceed with v1 acceleration as a direct NewPL retrain input unless the
+acceleration module is revised or a stronger same-cache gate is added.
+```
+
+Artifacts:
+
+```text
+script: scripts/eval_acc_curve_v1_totalcapture_20260618.py
+cache root: code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test
+experiment root: data/experiments/acc_curve_v1_totalcapture_eval_20260618
+eval JSON: data/experiments/acc_curve_v1_totalcapture_eval_20260618/tc_test_eval.json
+per-sequence CSV: data/experiments/acc_curve_v1_totalcapture_eval_20260618/tc_test_per_sequence.csv
+summary: data/experiments/acc_curve_v1_totalcapture_eval_20260618/summary.md
+cache build log: data/experiments/acc_curve_v1_totalcapture_eval_20260618/logs/cache_build.log
+eval log: data/experiments/acc_curve_v1_totalcapture_eval_20260618/logs/run.log
+exact command: data/experiments/acc_curve_v1_totalcapture_eval_20260618/exact_command.txt
+```
 
 ## EXP-20260617-acc_curve_pl_input_eval - AccCurve v1/v2 as Frozen Baseline PL Acceleration Input
 

@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: AccCurve-to-PL input evaluation writeback and commit
-Current task: record acc_curve_pl_input_eval_20260617 results, keep docs current, and push
+Current stage: AccCurve v1 TotalCapture evaluation writeback and commit
+Current task: record acc_curve_v1_totalcapture_eval_20260618 results, keep docs current, and push
 Review state: Approved for next step
-Current changed files: scripts/eval_pl_with_acc_curve_input_20260617.py, data/experiments/acc_curve_pl_input_eval_20260617/*, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
-Current module: acc_curve_pl_input_eval_20260617
-Current replacement version: evaluation-only, no PL retraining
-Current experiment: replace only frozen official PL acceleration input with raw/smooth/AccCurve v1/AccCurve v2 acceleration on DIP test
-Current result: smooth_acc improves pRB and gR1; AccCurve v1/v2 improve gR1 only and regress pRB; no simultaneous PL pRB+gR1 transfer from AccCurve predictions
+Current changed files: scripts/eval_acc_curve_v1_totalcapture_20260618.py, code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test/*, data/experiments/acc_curve_v1_totalcapture_eval_20260618/*, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
+Current module: acc_curve_v1_totalcapture_eval_20260618
+Current replacement version: evaluation-only, no AccCurve/PL retraining
+Current experiment: AccCurve v1 acceleration-level TotalCapture test eval on smooth(diff_acc(p_WS)) target
+Current result: TC base L2/RMSE 0.873843/0.693060; pred L2/RMSE 2.091960/1.539445; pred/base ratio 2.393977; corr 0.866428; v1 fails TC baseline
 Current blocker: none
 Next action: stage docs/code and commit to GitHub
-Git state: dirty worktree with existing unrelated edits plus new AccCurve-to-PL eval files
+Git state: dirty worktree with existing unrelated edits plus new AccCurve v1 TC eval files
 CodeGraph state: healthy indexed native backend
-Detailed logs: data/experiments/acc_curve_pl_input_eval_20260617/summary.md and result_summary.json
+Detailed logs: data/experiments/acc_curve_v1_totalcapture_eval_20260618/summary.md and tc_test_eval.json
 
 ## 0. Version-Line Reading Guide
 
@@ -43,7 +43,7 @@ Current version-line map:
 | `IK-s2 / NewPose` | IK2/pose-control replacement | rejected so far | `newpose_ctrl_v1/v2` |
 | `IMU offset / r_JS data line` | DIP/TC pseudo offset synthesis and audits | active route is `footlock_transpose_v1` only | `Active r_JS Policy` |
 | `Diagnostic IMU control modules` | neighbor velocity/position and joint q/qdot/velocity control diagnostics | diagnostic only; not connected to PL/IK/full pipeline | `imu_neighbor_vel_ctrl_v1`, `imu_neighbor_pos_from_vel_ctrl_v1`, `imu_joint_euler_qdot_vel_ctrl_v1` |
-| `AccCurve / acceleration residual` | strict GTFK acceleration regression from smoothed base + residual IMU features | implemented and trained at module level; no downstream pipeline claim | `acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617` |
+| `AccCurve / acceleration residual` | v1 diff-pos and v2 strict GTFK acceleration diagnostics | v1 fails TotalCapture generalization; v2 remains standalone strict GTFK diagnostic; no downstream pipeline claim | `acc_curve_v1_totalcapture_eval_20260618`, `acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617` |
 | `Experiment evidence` | commands, logs, JSONs, failures | archive only, not current status | `EXPERIMENT_LOG.md` detailed log index |
 
 Latest PL-s1 full-pipeline eval note on 2026-06-16:
@@ -163,6 +163,37 @@ Decision:
   smooth_acc helps frozen PL pRB and gR1. AccCurve v1/v2 do not improve pRB,
   so AccCurve acceleration-level gains do not transfer into a simultaneous
   PL module-output gain. Do not connect AccCurve to PL as-is.
+```
+
+Latest AccCurve v1 TotalCapture acceleration-level eval note on 2026-06-18:
+
+```text
+Experiment:
+  data/experiments/acc_curve_v1_totalcapture_eval_20260618
+Cache root:
+  code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test
+Evaluator:
+  scripts/eval_acc_curve_v1_totalcapture_20260618.py
+Checkpoint:
+  data/experiments/acc_curve_v1_20260617/dip_finetune/best_loss.pt
+Source TC cache/protocol:
+  data/experiments/newpl_v5_official_protocol_20260607/caches/tc_test_official_with_offset_r/baseline_cache_manifest.json
+Target:
+  v1 smooth(diff_acc(p_WS)), p_WS = p_WJ + R_WJ @ rJS; field aFK_smooth[18]
+Frame:
+  input/base/pred/target are model/world frame M
+Scope:
+  acceleration-level only; no AccCurve training, no PL retraining, no IK/VR/full pipeline, no S4
+Result on TotalCapture test:
+  aM_smooth base L2/RMSE/corr = 0.873843 / 0.693060 / 0.974734
+  AccCurve v1 pred L2/RMSE/corr = 2.091960 / 1.539445 / 0.866428
+  pred/base ratio = 2.393977 over 16084 valid frames
+DIP v1 historical:
+  pred/base ratio = 0.622049, pred L2 = 1.202067, base L2 = 2.368697, corr = 0.940837
+Decision:
+  v1 does not beat aM_smooth on TotalCapture and the ratio gap versus DIP is
+  +1.771928. Do not proceed with v1 acceleration as a cross-dataset NewPL
+  retrain input without revising the acceleration module or adding a stronger gate.
 ```
 
 ## 0.4 AccCurve / absolute acceleration residual module

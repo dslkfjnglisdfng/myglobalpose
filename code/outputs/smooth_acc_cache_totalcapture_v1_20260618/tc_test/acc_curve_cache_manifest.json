@@ -1,0 +1,64 @@
+{
+  "type": "acc_curve_cache_v1",
+  "preset": null,
+  "dataset": "TotalCapture",
+  "split": "test",
+  "source_cache": "data/experiments/newpl_v5_official_protocol_20260607/caches/tc_test_official_with_offset_r/baseline_cache_manifest.json",
+  "source_manifest": {
+    "source_input": "data/dataset_work/TotalCapture_globalpose_official/test_with_offsets.pt",
+    "source_manifest": null,
+    "device": "cuda",
+    "euler_seq": "XYZ",
+    "max_frames": 0,
+    "max_sequences": 0,
+    "save_prephysics": true,
+    "neural_only_prephysics": true,
+    "cache_files": [
+      {
+        "path": "data/experiments/newpl_v5_official_protocol_20260607/caches/tc_test_official_with_offset_r/baseline_cache_shard00000.pt",
+        "source_path": "data/dataset_work/L4Cache/prephysics_pose_velocity_totalcapture_test_official_neural_only/baseline_cache_shard00000.pt",
+        "num_sequences": 4,
+        "num_frames": 16124,
+        "failures": [],
+        "offset_r_shape": [
+          4,
+          6,
+          3
+        ]
+      }
+    ],
+    "num_sequences": 4,
+    "num_frames": 16124,
+    "source_cache_manifest": "data/dataset_work/L4Cache/prephysics_pose_velocity_totalcapture_test_official_neural_only/baseline_cache_manifest.json",
+    "offset_source_path": "data/experiments/newpl_v5_official_protocol_20260607/caches/tc_test_offset_alias.pt",
+    "offset_source_key": "imu_offset_r",
+    "offset_field_added": "offset_r",
+    "offset_contract": "offset_r is sequence-level r_JS with shape [6,3]: IMU origin relative to mapped joint, expressed in joint-local coordinates. It is copied from processed data and is not repeated per frame."
+  },
+  "cache_files": [
+    {
+      "path": "code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test/acc_curve_cache_shard00000.pt",
+      "num_sequences": 4,
+      "num_frames": 16124
+    }
+  ],
+  "num_sequences": 4,
+  "num_frames": 16124,
+  "valid_frames": 16084,
+  "feature_dim": 108,
+  "target_dim": 18,
+  "dt": 0.016666666666666666,
+  "smooth_window": 9,
+  "smoothing_mode": "centered_moving_average",
+  "trim": 4,
+  "coordinate_contract": {
+    "input_frame": "model/world frame M from GlobalPose aM/wM/RMB cache fields",
+    "target_frame": "same model/world frame M; aFK_smooth is ddot(p_WJ + R_WJ @ r_JS)",
+    "offset": "r_JS is the IMU origin position relative to the mapped joint J, expressed in joint-local coordinates. World prediction: p_WS(t)=p_WJ(t)+R_WJ(t)@r_JS."
+  },
+  "feature_layout": "aM_raw[18] + aM_smooth[18] + raw_minus_smooth[18] + wM[18] + RMB_6d[36]",
+  "target_layout": "aFK_smooth[18], six sensor-site accelerations in m/s^2",
+  "base_layout": "aM_smooth[18], same units and frame as target",
+  "valid_mask": "finite centered-difference FK acceleration frames, with configured trim removed",
+  "created_at_unix": 1781712871.4782872
+}

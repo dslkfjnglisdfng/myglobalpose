@@ -1,0 +1,16 @@
+longrun: starting: /home/lingfeng/.conda/envs/globalpose-gpu/bin/python scripts/eval_acc_curve_v1_totalcapture_20260618.py --output-root data/experiments/acc_curve_v1_totalcapture_eval_20260618 --cache code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test/acc_curve_cache_manifest.json --checkpoint data/experiments/acc_curve_v1_20260617/dip_finetune/best_loss.pt --device cuda
+longrun: notification email sent
+start: 2026-06-18T00:16:32+0800
+checkpoint: data/experiments/acc_curve_v1_20260617/dip_finetune/best_loss.pt
+cache: code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test/acc_curve_cache_manifest.json
+output_root: data/experiments/acc_curve_v1_totalcapture_eval_20260618
+[1/4] s5_freestyle1: frames=3072 valid=3062 ratio=2.295036
+[2/4] s5_freestyle3: frames=3561 valid=3551 ratio=2.495145
+[3/4] s5_rom3: frames=5755 valid=5745 ratio=2.162834
+[4/4] s5_walking2: frames=3736 valid=3726 ratio=2.544956
+| Dataset | Target | Acc source | L2 error | RMSE | pred/base ratio | corr | valid frames |
+|---|---|---|---:|---:|---:|---:|---:|
+| TotalCapture test | smooth(diff_acc(p_WS)) | aM_smooth | 0.873843 | 0.693060 | 1.000000 | 0.974734 | 16084 |
+| TotalCapture test | smooth(diff_acc(p_WS)) | AccCurve v1 pred | 2.091960 | 1.539445 | 2.393977 | 0.866428 | 16084 |
+result: data/experiments/acc_curve_v1_totalcapture_eval_20260618/tc_test_eval.json
+end: 2026-06-18T00:16:50+0800
