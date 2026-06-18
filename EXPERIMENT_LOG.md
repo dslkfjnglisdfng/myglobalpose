@@ -24,7 +24,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | IK-s2 / NewPose | `newpose_ctrl_v1/v2` records and module/full-pipeline evals |
 | IMU offset / r_JS | `footlock_transpose_v1`, smoothed-fit audit, offset-net/solver retired routes |
 | AccCurve / acceleration residual | `EXP-20260617-acc_curve_v2_gtfk`; strict GTFK standalone acceleration-level AMASS -> DIP module eval under `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/`; `EXP-20260617-acc_curve_pl_input_eval` tests v1/v2 acceleration as frozen PL input; `EXP-20260618-acc_curve_v1_totalcapture_eval` tests v1 TC acceleration-level generalization |
-| AccCurve / acceleration residual datacache | `EXP-20260618-acc_invariance_datacache_v2_rebuild`; root-IMU-relative AMASS/DIP/TotalCapture cache rebuild and validation under `data/experiments/acc_invariance_datacache_v2_20260618/` |
+| AccCurve / acceleration residual datacache | `EXP-20260618-acc_invariance_datacache_v2_rebuild`; root-IMU-relative AMASS/DIP/TotalCapture cache rebuild and validation under `data/experiments/acc_invariance_datacache_v2_20260618/`; `EXP-20260618-acc_leaf_relative_residual_v3`; leaf-only residual audit under `data/experiments/acc_leaf_relative_residual_v3_20260618/` |
 | Official GPNet + official/processed IMU | `EXP-20260604-001`, `EXP-20260604-002`; S4 JSONs referenced in `RECENT_REPLACEMENT_VERSIONS.md` |
 | newpl_v1_processed_no_baseline | `data/experiments/pl_curve_v2_processed_no_baseline/tc_finetune_10ep/train_log.jsonl`; S4 JSON in artifact index |
 | newpl_v2_gRdyn | `data/experiments/pl_curve_v2_processed_no_baseline_gRdyn_finetune_v1/tc_finetune_10ep/train_log.jsonl`; S4 JSON not found |
@@ -50,8 +50,108 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617 | `EXP-20260617-acc_curve_v2_gtfk`; root `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617`; cache root `code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617`; module-level only |
 | acc_curve_v1_20260617 | `EXP-20260617-acc_curve_v1`; root `data/experiments/acc_curve_v1_20260617`; cache root `code/outputs/smooth_acc_cache_amass_dip_20260617`; historical diff-pos-style target |
 | acc_invariance_datacache_v2_rebuild_20260618 | `EXP-20260618-acc_invariance_datacache_v2_rebuild`; root `data/experiments/acc_invariance_datacache_v2_20260618`; cache root `data/experiments/acc_invariance_datacache_v2_20260618`; rootIMU-relative acceleration cache rebuild |
+| acc_leaf_relative_residual_v3_20260618 | `EXP-20260618-acc_leaf_relative_residual_v3`; root `data/experiments/acc_leaf_relative_residual_v3_20260618`; cache root `data/experiments/acc_leaf_relative_residual_v3_20260618`; leaf-only residual audit, root reference excluded from metrics |
 
 ## Detailed Records
+
+## EXP-20260618-acc_leaf_relative_residual_v3 - Leaf-Only Acceleration Residual Audit
+
+Question: after fixing the v2 root-channel metric issue, how large is the residual between measured leaf-relative IMU acceleration and zero-translation FK leaf-relative acceleration, and how much does direct smoothing reduce it?
+
+Scope:
+
+```text
+model training: none
+AccCurve training: none
+PL/NewPL training: none
+IK/VR/full pipeline: not evaluated
+S4 metrics: not evaluated
+root index: 5
+leaf indices: 0..4
+root usage: reference acceleration only
+root residual/loss/metric: excluded
+frame: model/world frame M; no sensor-local rotation
+GT FK: tran forced to zero
+diff method: centered second difference, dt=1/60
+smooth method: centered moving average, window=9
+```
+
+Main comparison:
+
+```text
+raw_leaf_relative:
+  aIMU_leaf_rel_raw = aM_leaf - aM_root
+  aGT_leaf_rel_raw = diff_acc(p_leaf_zero_trans) - diff_acc(p_root_zero_trans)
+
+smooth_leaf_relative:
+  smooth_centered(aIMU_leaf_rel_raw, window=9)
+  vs smooth_centered(aGT_leaf_rel_raw, window=9)
+```
+
+Build command:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+export LD_LIBRARY_PATH=/home/lingfeng/.conda/envs/globalpose-gpu/lib:${LD_LIBRARY_PATH:-}
+/home/lingfeng/bin/longrun -- /home/lingfeng/.conda/envs/globalpose-gpu/bin/python scripts/build_acc_leaf_relative_residual_v3_20260618.py \
+  --output-root data/experiments/acc_leaf_relative_residual_v3_20260618 \
+  --fk-batch-size 2048 \
+  --progress-every 50 \
+  --overwrite
+```
+
+Validate command:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+/home/lingfeng/.conda/envs/globalpose-gpu/bin/python scripts/validate_acc_leaf_relative_residual_v3_20260618.py \
+  --root data/experiments/acc_leaf_relative_residual_v3_20260618
+```
+
+Validation summary:
+
+| Dataset | Formulation | L2 | RMSE | Corr | valid frames |
+|---|---|---:|---:|---:|---:|
+| AMASS | smooth_leaf_relative | 0.272780 | 0.389472 | 0.990993 | 1115416 |
+| DIP | smooth_leaf_relative | 0.796990 | 0.791042 | 0.948895 | 317450 |
+| TotalCapture | smooth_leaf_relative | 1.011330 | 0.897591 | 0.945537 | 176159 |
+| ALL | raw_leaf_relative | 1.372700 | 2.269143 | 0.857988 | 1609025 |
+| ALL | smooth_leaf_relative | 0.457061 | 0.562864 | 0.979057 | 1609025 |
+
+Checks:
+
+```text
+sequences: 1404
+valid frames: 1609025
+shape consistency: true
+root excluded from residual metrics: true
+leaf indices: [0, 1, 2, 3, 4]
+```
+
+Conclusion:
+
+```text
+Smoothing strongly reduces the leaf-relative residual: ALL L2 drops by
+0.915639 and RMSE drops by 1.706279, while corr improves by 0.121069.
+Therefore smoothing is necessary before comparing IMU/FK acceleration
+residuals, and root-relative smoothed acceleration is a cleaner explainability
+target. This remains a residual audit only; it is not AccCurve/PL/NewPL
+training, not a full-pipeline evaluation, and does not claim downstream pose
+improvement.
+```
+
+Artifacts:
+
+```text
+script: scripts/build_acc_leaf_relative_residual_v3_20260618.py
+validator: scripts/validate_acc_leaf_relative_residual_v3_20260618.py
+experiment root: data/experiments/acc_leaf_relative_residual_v3_20260618
+cache manifest: data/experiments/acc_leaf_relative_residual_v3_20260618/cache_manifest.json
+metrics: data/experiments/acc_leaf_relative_residual_v3_20260618/metrics.json
+per-sequence csv: data/experiments/acc_leaf_relative_residual_v3_20260618/per_sequence.csv
+debug: data/experiments/acc_leaf_relative_residual_v3_20260618/debug.json
+summary: data/experiments/acc_leaf_relative_residual_v3_20260618/summary.md
+```
 
 ## EXP-20260618-acc_invariance_datacache_v2_rebuild - Root-IMU-Relative Acceleration Cache Rebuild
 

@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: AccCurve v2 root-IMU-relative acceleration datacache rebuild and commit
-Current task: record acc_invariance_datacache_v2_rebuild_20260618 results, keep docs current, and push
+Current stage: acceleration residual audit, leaf-relative/root-reference only
+Current task: record acc_leaf_relative_residual_v3_20260618 results, keep docs current, and push
 Review state: Approved for next step
-Current changed files: scripts/build_acc_invariance_datacache_v2_20260618.py, scripts/validate_acc_invariance_datacache_v2_20260618.py, data/experiments/acc_invariance_datacache_v2_20260618/*, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
-Current module: acc_invariance_datacache_v2_rebuild_20260618
-Current replacement version: cache/rebuild-only, no model retraining
-Current experiment: root-IMU-relative acceleration cache rebuild on AMASS/DIP/TotalCapture with zero-translation FK
-Current result: shape consistency true; root invariance max mean |aM_rel[:,5]| = 0.000000; leakage pass 1251/1404; mean corr(v2 relative) 0.617329 vs raw absolute 0.623005
+Current changed files: scripts/build_acc_leaf_relative_residual_v3_20260618.py, scripts/validate_acc_leaf_relative_residual_v3_20260618.py, data/experiments/acc_leaf_relative_residual_v3_20260618/*, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
+Current module: acc_leaf_relative_residual_v3_20260618
+Current replacement version: residual-audit-only, no model retraining
+Current experiment: leaf-only acceleration residual audit on AMASS/DIP/TotalCapture; root IMU index 5 is reference only and excluded from metrics
+Current result: 1404 sequences / 1609025 valid frames; ALL raw leaf-relative L2/RMSE/corr = 1.372700 / 2.269143 / 0.857988; ALL smooth leaf-relative = 0.457061 / 0.562864 / 0.979057
 Current blocker: none
 Next action: stage docs/code and commit to GitHub
 Git state: dirty worktree with existing unrelated edits plus new AccCurve v1 TC eval files
 CodeGraph state: healthy indexed native backend
-Detailed logs: data/experiments/acc_invariance_datacache_v2_20260618/summary.md and metrics.json
+Detailed logs: data/experiments/acc_leaf_relative_residual_v3_20260618/summary.md and metrics.json
 
 ## 0. Version-Line Reading Guide
 
@@ -43,7 +43,7 @@ Current version-line map:
 | `IK-s2 / NewPose` | IK2/pose-control replacement | rejected so far | `newpose_ctrl_v1/v2` |
 | `IMU offset / r_JS data line` | DIP/TC pseudo offset synthesis and audits | active route is `footlock_transpose_v1` only | `Active r_JS Policy` |
 | `Diagnostic IMU control modules` | neighbor velocity/position and joint q/qdot/velocity control diagnostics | diagnostic only; not connected to PL/IK/full pipeline | `imu_neighbor_vel_ctrl_v1`, `imu_neighbor_pos_from_vel_ctrl_v1`, `imu_joint_euler_qdot_vel_ctrl_v1` |
-| `AccCurve / acceleration residual` | v1 diff-pos, v1 zero-trans TC eval, and v2 strict GTFK acceleration diagnostics | v1 full-trans target fails TC; zero-trans target now beats TC baseline and aligns with DIP-style contract; v2 remains standalone strict GTFK diagnostic; no downstream pipeline claim | `acc_curve_v1_totalcapture_eval_20260618`, `acc_curve_v1_totalcapture_zero_trans_eval_20260618`, `acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617` |
+| `AccCurve / acceleration residual` | v1 diff-pos, v1 zero-trans TC eval, v2 strict GTFK diagnostics, and leaf-relative residual audit | current audit is residual-only: compare `aM_leaf-aM_root` vs `diff_acc(p_leaf_zero_trans)-diff_acc(p_root_zero_trans)` on leaf sensors 0..4; smoothing strongly lowers residual; no downstream pipeline claim | `acc_leaf_relative_residual_v3_20260618`, `acc_curve_v1_totalcapture_eval_20260618`, `acc_curve_v1_totalcapture_zero_trans_eval_20260618`, `acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617` |
 | `Experiment evidence` | commands, logs, JSONs, failures | archive only, not current status | `EXPERIMENT_LOG.md` detailed log index |
 
 Latest PL-s1 full-pipeline eval note on 2026-06-16:
