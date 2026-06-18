@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: acceleration residual audit, leaf-relative/root-reference only
-Current task: record acc_leaf_relative_residual_v3_20260618 results, keep docs current, and push
+Current stage: realtime acceleration residual audit, leaf-relative/root-reference only
+Current task: record acc_leaf_relative_residual_v4_causal_butterworth_20260618 results, keep docs current, and push
 Review state: Approved for next step
-Current changed files: scripts/build_acc_leaf_relative_residual_v3_20260618.py, scripts/validate_acc_leaf_relative_residual_v3_20260618.py, data/experiments/acc_leaf_relative_residual_v3_20260618/*, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
-Current module: acc_leaf_relative_residual_v3_20260618
+Current changed files: scripts/build_acc_leaf_relative_residual_v4_causal_butterworth_20260618.py, scripts/validate_acc_leaf_relative_residual_v4_causal_butterworth_20260618.py, data/experiments/acc_leaf_relative_residual_v4_causal_butterworth_20260618/*, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
+Current module: acc_leaf_relative_residual_v4_causal_butterworth_20260618
 Current replacement version: residual-audit-only, no model retraining
-Current experiment: leaf-only acceleration residual audit on AMASS/DIP/TotalCapture; root IMU index 5 is reference only and excluded from metrics
-Current result: 1404 sequences / 1609025 valid frames; ALL raw leaf-relative L2/RMSE/corr = 1.372700 / 2.269143 / 0.857988; ALL smooth leaf-relative = 0.457061 / 0.562864 / 0.979057
+Current experiment: zero-lookahead causal Butterworth order=2 cutoff=4Hz on leaf-relative acceleration residuals; root IMU index 5 is reference only and excluded from metrics
+Current result: pass on primary real-IMU datasets; 1404 sequences / 1609025 valid frames; DIP raw -> butter L2/RMSE/corr = 2.360895/3.530190/0.610050 -> 0.893481/0.914904/0.943719; TotalCapture raw -> butter = 2.905783/4.418546/0.563076 -> 1.092481/1.050146/0.941474; butter RMSE is within 20% of v3 centered_ma9 oracle on both
 Current blocker: none
 Next action: stage docs/code and commit to GitHub
 Git state: dirty worktree with existing unrelated edits plus new AccCurve v1 TC eval files
 CodeGraph state: healthy indexed native backend
-Detailed logs: data/experiments/acc_leaf_relative_residual_v3_20260618/summary.md and metrics.json
+Detailed logs: data/experiments/acc_leaf_relative_residual_v4_causal_butterworth_20260618/summary.md and metrics.json
 
 ## 0. Version-Line Reading Guide
 
@@ -43,7 +43,7 @@ Current version-line map:
 | `IK-s2 / NewPose` | IK2/pose-control replacement | rejected so far | `newpose_ctrl_v1/v2` |
 | `IMU offset / r_JS data line` | DIP/TC pseudo offset synthesis and audits | active route is `footlock_transpose_v1` only | `Active r_JS Policy` |
 | `Diagnostic IMU control modules` | neighbor velocity/position and joint q/qdot/velocity control diagnostics | diagnostic only; not connected to PL/IK/full pipeline | `imu_neighbor_vel_ctrl_v1`, `imu_neighbor_pos_from_vel_ctrl_v1`, `imu_joint_euler_qdot_vel_ctrl_v1` |
-| `AccCurve / acceleration residual` | v1 diff-pos, v1 zero-trans TC eval, v2 strict GTFK diagnostics, and leaf-relative residual audit | current audit is residual-only: compare `aM_leaf-aM_root` vs `diff_acc(p_leaf_zero_trans)-diff_acc(p_root_zero_trans)` on leaf sensors 0..4; smoothing strongly lowers residual; no downstream pipeline claim | `acc_leaf_relative_residual_v3_20260618`, `acc_curve_v1_totalcapture_eval_20260618`, `acc_curve_v1_totalcapture_zero_trans_eval_20260618`, `acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617` |
+| `AccCurve / acceleration residual` | v1 diff-pos, v1 zero-trans TC eval, v2 strict GTFK diagnostics, leaf-relative centered audit, and realtime Butterworth audit | current audit is residual-only: causal Butterworth order=2 cutoff=4Hz improves DIP/TC leaf-relative residuals over raw and stays within 20% RMSE of v3 centered oracle; no downstream pipeline claim | `acc_leaf_relative_residual_v4_causal_butterworth_20260618`, `acc_leaf_relative_residual_v3_20260618`, `acc_curve_v1_totalcapture_eval_20260618`, `acc_curve_v1_totalcapture_zero_trans_eval_20260618`, `acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617` |
 | `Experiment evidence` | commands, logs, JSONs, failures | archive only, not current status | `EXPERIMENT_LOG.md` detailed log index |
 
 Latest PL-s1 full-pipeline eval note on 2026-06-16:
