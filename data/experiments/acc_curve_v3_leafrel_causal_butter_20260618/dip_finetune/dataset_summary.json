@@ -1,0 +1,15 @@
+{
+  "stage": "dip_finetune",
+  "train_sequences": 36,
+  "val_sequences": 6,
+  "train_windows": 1887,
+  "val_windows": 253,
+  "window": 240,
+  "stride": 120,
+  "batch_size": 64,
+  "steps_per_epoch": 30,
+  "norm_count": 1062602,
+  "feature_normalization": "AMASS train split only",
+  "target_key": "aGT_leaf_rel_butter2_4hz",
+  "base_key": "aIMU_leaf_rel_butter2_4hz"
+}

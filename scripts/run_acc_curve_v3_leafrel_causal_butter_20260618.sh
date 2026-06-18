@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+ENV_PY="${ENV_PY:-/home/lingfeng/.conda/envs/globalpose-gpu/bin/python}"
+export LD_LIBRARY_PATH="/home/lingfeng/.conda/envs/globalpose-gpu/lib:${LD_LIBRARY_PATH:-}"
+
+"$ENV_PY" acc_curve_v3_leafrel_train.py \
+  --mode train_full \
+  --cache-manifest data/dataset_work/AccCurveV3LeafRelCausalButter_20260618/cache_manifest.json \
+  --output-dir data/experiments/acc_curve_v3_leafrel_causal_butter_20260618 \
+  --epochs 30 \
+  --dip-epochs 20 \
+  --window 240 \
+  --stride 120 \
+  --batch-size 64 \
+  --num-workers 8 \
+  --lr 1e-4 \
+  --weight-decay 1e-4 \
+  --hidden-size 512 \
+  --dropout 0.1 \
+  --residual-scale 1.0 \
+  --control-prior-weight 1e-5 \
+  --grad-clip 1.0 \
+  --seed 1234 \
+  "$@"

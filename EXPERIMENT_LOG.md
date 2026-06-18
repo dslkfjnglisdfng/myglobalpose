@@ -23,7 +23,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | IK-s1 | `newik1_v1` through v14 search records, orchestrator logs, and S4/module JSONs |
 | IK-s2 / NewPose | `newpose_ctrl_v1/v2` records and module/full-pipeline evals |
 | IMU offset / r_JS | `footlock_transpose_v1`, smoothed-fit audit, offset-net/solver retired routes |
-| AccCurve / acceleration residual | `EXP-20260617-acc_curve_v2_gtfk`; strict GTFK standalone acceleration-level AMASS -> DIP module eval under `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/`; `EXP-20260617-acc_curve_pl_input_eval` tests v1/v2 acceleration as frozen PL input; `EXP-20260618-acc_curve_v1_totalcapture_eval` tests v1 TC acceleration-level generalization |
+| AccCurve / acceleration residual | `EXP-20260617-acc_curve_v2_gtfk`; strict GTFK standalone acceleration-level AMASS -> DIP module eval under `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/`; `EXP-20260617-acc_curve_pl_input_eval` tests v1/v2 acceleration as frozen PL input; `EXP-20260618-acc_curve_v1_totalcapture_eval` tests v1 TC acceleration-level generalization; `EXP-20260618-acc_curve_v3_leafrel_causal_butter` trains the leaf-relative causal Butterworth AccCurve v3 module |
 | AccCurve / acceleration residual datacache | `EXP-20260618-acc_invariance_datacache_v2_rebuild`; root-IMU-relative AMASS/DIP/TotalCapture cache rebuild and validation under `data/experiments/acc_invariance_datacache_v2_20260618/`; `EXP-20260618-acc_leaf_relative_residual_v3`; leaf-only residual audit under `data/experiments/acc_leaf_relative_residual_v3_20260618/`; `EXP-20260618-acc_leaf_relative_residual_v4_causal_butterworth`; realtime causal Butterworth audit under `data/experiments/acc_leaf_relative_residual_v4_causal_butterworth_20260618/`; `EXP-20260618-acc_leaf_relative_residual_v5_imu_causal_gt_centered`; asymmetric IMU-causal vs GT-centered target audit under `data/experiments/acc_leaf_relative_residual_v5_imu_causal_gt_centered_20260618/` |
 | Official GPNet + official/processed IMU | `EXP-20260604-001`, `EXP-20260604-002`; S4 JSONs referenced in `RECENT_REPLACEMENT_VERSIONS.md` |
 | newpl_v1_processed_no_baseline | `data/experiments/pl_curve_v2_processed_no_baseline/tc_finetune_10ep/train_log.jsonl`; S4 JSON in artifact index |
@@ -53,8 +53,112 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | acc_leaf_relative_residual_v3_20260618 | `EXP-20260618-acc_leaf_relative_residual_v3`; root `data/experiments/acc_leaf_relative_residual_v3_20260618`; cache root `data/experiments/acc_leaf_relative_residual_v3_20260618`; leaf-only residual audit, root reference excluded from metrics |
 | acc_leaf_relative_residual_v4_causal_butterworth_20260618 | `EXP-20260618-acc_leaf_relative_residual_v4_causal_butterworth`; root `data/experiments/acc_leaf_relative_residual_v4_causal_butterworth_20260618`; cache root `data/experiments/acc_leaf_relative_residual_v4_causal_butterworth_20260618`; realtime causal Butterworth leaf-only residual audit |
 | acc_leaf_relative_residual_v5_imu_causal_gt_centered_20260618 | `EXP-20260618-acc_leaf_relative_residual_v5_imu_causal_gt_centered`; root `data/experiments/acc_leaf_relative_residual_v5_imu_causal_gt_centered_20260618`; cache root `data/experiments/acc_leaf_relative_residual_v5_imu_causal_gt_centered_20260618`; asymmetric IMU-causal vs GT-centered target leaf-only residual audit |
+| acc_curve_v3_leafrel_causal_butter_20260618 | `EXP-20260618-acc_curve_v3_leafrel_causal_butter`; root `data/experiments/acc_curve_v3_leafrel_causal_butter_20260618`; reusable cache root `data/dataset_work/AccCurveV3LeafRelCausalButter_20260618`; AccCurve v1-style 99D feature, 5-leaf output, causal Butterworth base/target; fail because DIP improves but TotalCapture worsens |
 
 ## Detailed Records
+
+## EXP-20260618-acc_curve_v3_leafrel_causal_butter - Leaf-Relative Causal Butterworth AccCurve v3
+
+Question: can an AccCurve v1-style residual acceleration module improve the v4 causal Butterworth leaf-relative residual target without including the root sensor in prediction, loss, or metrics?
+
+Scope:
+
+```text
+experiment: acc_curve_v3_leafrel_causal_butter_20260618
+module: AccCurve v1-style residual acceleration curve, 99D input and 15D state
+cache root: data/dataset_work/AccCurveV3LeafRelCausalButter_20260618
+source cache: data/experiments/acc_leaf_relative_residual_v4_causal_butterworth_20260618/cache_manifest.json
+output root: data/experiments/acc_curve_v3_leafrel_causal_butter_20260618
+root index: 5
+leaf indices: 0..4
+root usage: reference acceleration only
+root prediction/loss/metric: excluded
+input smoothing: causal Butterworth order=2 cutoff=4Hz
+target smoothing: causal Butterworth order=2 cutoff=4Hz
+frame: model/world frame M; no sensor-local rotation; no root-frame rotation
+target/output units: m/s^2; no target/output normalization
+normalization: feature z-score from AMASS train split only
+training: AMASS pretrain synthetic sanity -> DIP finetune; no TotalCapture train/val in main training
+not evaluated: PL, NewPL, IK, VR, full pipeline, S4, downstream pose improvement
+```
+
+Reusable project-level cache:
+
+```text
+builder: scripts/build_acc_curve_v3_leafrel_feature_cache_20260618.py
+manifest: data/dataset_work/AccCurveV3LeafRelCausalButter_20260618/cache_manifest.json
+sequences: 1404
+valid frames: 1609025
+failures: 0
+datasets: AMASS train 1298; DIP train/val/test 36/6/19; TotalCapture train/val/test 36/5/4
+feature layout: aIMU_leaf_rel_raw[15] + aIMU_leaf_rel_butter2_4hz[15] + raw_minus_butter[15] + wM[18] + RMB_6d[36]
+base key: aIMU_leaf_rel_butter2_4hz
+target key: aGT_leaf_rel_butter2_4hz
+```
+
+Training command:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0} /home/lingfeng/bin/longrun -- /home/lingfeng/.conda/envs/globalpose-gpu/bin/python acc_curve_v3_leafrel_train.py \
+  --mode train_full \
+  --cache-manifest data/dataset_work/AccCurveV3LeafRelCausalButter_20260618/cache_manifest.json \
+  --output-dir data/experiments/acc_curve_v3_leafrel_causal_butter_20260618 \
+  --epochs 30 \
+  --dip-epochs 20 \
+  --window 240 \
+  --stride 120 \
+  --batch-size 64 \
+  --num-workers 8 \
+  --lr 1e-4 \
+  --weight-decay 1e-4 \
+  --hidden-size 512 \
+  --dropout 0.1 \
+  --residual-scale 1.0 \
+  --control-prior-weight 1e-5 \
+  --grad-clip 1.0 \
+  --seed 1234 \
+  --overwrite
+```
+
+Training selection:
+
+| Stage | Best epoch | Best validation pred/base ratio | Train seq | Val seq | Train windows | Val windows |
+|---|---:|---:|---:|---:|---:|---:|
+| AMASS pretrain | 13 | 0.940240 | 1231 | 67 | 8231 | 407 |
+| DIP finetune | 16 | 0.851720 | 36 | 6 | 1887 | 253 |
+
+Primary test results:
+
+| Dataset | Split | Pred L2 | Base L2 | Pred/Base L2 | Pred RMSE | Base RMSE | Corr | Base Corr | Valid frames |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| DIP | test | 0.990334 | 1.196030 | 0.828017 | 0.750235 | 0.924315 | 0.958276 | 0.943321 | 57956 |
+| TotalCapture | test | 1.365116 | 1.052403 | 1.297142 | 1.065184 | 0.902071 | 0.923813 | 0.946864 | 16116 |
+
+Decision:
+
+```text
+fail
+
+DIP test improves strongly over the causal Butterworth base in L2, RMSE, and corr.
+TotalCapture test worsens sharply: pred/base L2 ratio is 1.297142, RMSE ratio is
+1.180820, and corr drops from 0.946864 to 0.923813. This fails the primary
+cross-dataset gate. AccCurve v3 remains an acceleration-level diagnostic module
+only and is not promoted.
+```
+
+Artifacts:
+
+```text
+module: acc_curve_v3_leafrel.py
+trainer: acc_curve_v3_leafrel_train.py
+cache builder: scripts/build_acc_curve_v3_leafrel_feature_cache_20260618.py
+runner: scripts/run_acc_curve_v3_leafrel_causal_butter_20260618.sh
+cache manifest: data/dataset_work/AccCurveV3LeafRelCausalButter_20260618/cache_manifest.json
+summary: data/experiments/acc_curve_v3_leafrel_causal_butter_20260618/summary.md
+train result: data/experiments/acc_curve_v3_leafrel_causal_butter_20260618/train_result.json
+eval JSONs: data/experiments/acc_curve_v3_leafrel_causal_butter_20260618/eval/*_eval.json
+```
 
 ## EXP-20260618-acc_leaf_relative_residual_v5_imu_causal_gt_centered - Asymmetric IMU-Causal vs GT-Centered Target Audit
 

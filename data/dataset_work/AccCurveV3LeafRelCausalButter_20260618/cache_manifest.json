@@ -1,0 +1,104 @@
+{
+  "experiment": "acc_curve_v3_leafrel_feature_cache_20260618",
+  "source_experiment": "acc_leaf_relative_residual_v4_causal_butterworth_20260618",
+  "source_manifest": "data/experiments/acc_leaf_relative_residual_v4_causal_butterworth_20260618/cache_manifest.json",
+  "output_root": "data/dataset_work/AccCurveV3LeafRelCausalButter_20260618",
+  "created_at_unix": 1781755395.5263488,
+  "elapsed_sec": 87.23682260513306,
+  "cache_files": [
+    {
+      "path": "data/dataset_work/AccCurveV3LeafRelCausalButter_20260618/shards/acc_curve_v3_leafrel_features_shard00000.pt",
+      "num_sequences": 128
+    },
+    {
+      "path": "data/dataset_work/AccCurveV3LeafRelCausalButter_20260618/shards/acc_curve_v3_leafrel_features_shard00001.pt",
+      "num_sequences": 128
+    },
+    {
+      "path": "data/dataset_work/AccCurveV3LeafRelCausalButter_20260618/shards/acc_curve_v3_leafrel_features_shard00002.pt",
+      "num_sequences": 128
+    },
+    {
+      "path": "data/dataset_work/AccCurveV3LeafRelCausalButter_20260618/shards/acc_curve_v3_leafrel_features_shard00003.pt",
+      "num_sequences": 128
+    },
+    {
+      "path": "data/dataset_work/AccCurveV3LeafRelCausalButter_20260618/shards/acc_curve_v3_leafrel_features_shard00004.pt",
+      "num_sequences": 128
+    },
+    {
+      "path": "data/dataset_work/AccCurveV3LeafRelCausalButter_20260618/shards/acc_curve_v3_leafrel_features_shard00005.pt",
+      "num_sequences": 128
+    },
+    {
+      "path": "data/dataset_work/AccCurveV3LeafRelCausalButter_20260618/shards/acc_curve_v3_leafrel_features_shard00006.pt",
+      "num_sequences": 128
+    },
+    {
+      "path": "data/dataset_work/AccCurveV3LeafRelCausalButter_20260618/shards/acc_curve_v3_leafrel_features_shard00007.pt",
+      "num_sequences": 128
+    },
+    {
+      "path": "data/dataset_work/AccCurveV3LeafRelCausalButter_20260618/shards/acc_curve_v3_leafrel_features_shard00008.pt",
+      "num_sequences": 128
+    },
+    {
+      "path": "data/dataset_work/AccCurveV3LeafRelCausalButter_20260618/shards/acc_curve_v3_leafrel_features_shard00009.pt",
+      "num_sequences": 128
+    },
+    {
+      "path": "data/dataset_work/AccCurveV3LeafRelCausalButter_20260618/shards/acc_curve_v3_leafrel_features_shard00010.pt",
+      "num_sequences": 124
+    }
+  ],
+  "num_sequences": 1404,
+  "num_failures": 0,
+  "failures": [],
+  "datasets": {
+    "AMASS": {
+      "train": 1298
+    },
+    "DIP": {
+      "test": 19,
+      "train": 36,
+      "val": 6
+    },
+    "TotalCapture": {
+      "test": 4,
+      "train": 36,
+      "val": 5
+    }
+  },
+  "total_frames": 1611833,
+  "valid_frames": 1609025,
+  "input_size": 99,
+  "state_dim": 15,
+  "root_index": 5,
+  "leaf_indices": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "leaf_sensor_names": [
+    "left_forearm",
+    "right_forearm",
+    "left_lower_leg",
+    "right_lower_leg",
+    "head"
+  ],
+  "root_excluded_from_prediction_loss_metric": true,
+  "frame": "model/world frame M",
+  "smoothing": {
+    "type": "causal_butterworth",
+    "order": 2,
+    "cutoff_hz": 4.0,
+    "fps": 60,
+    "zero_lookahead": true
+  },
+  "feature_layout": "aIMU_leaf_rel_raw[15] + aIMU_leaf_rel_butter2_4hz[15] + raw_minus_butter[15] + wM[18] + RMB_6d[36]",
+  "base_key": "aIMU_leaf_rel_butter2_4hz",
+  "target_key": "aGT_leaf_rel_butter2_4hz",
+  "normalization_policy": "fit feature z-score from AMASS train split only during training"
+}
