@@ -1,0 +1,38 @@
+{
+  "DIP/all__vs__TotalCapture/all": {
+    "cosine_of_mean_rjs": 0.9753153596057439,
+    "diag_gaussian_frechet": 0.015314777845388847,
+    "left_sequences": 61,
+    "mean_difference_norm": 0.09678915143013,
+    "mmd_rbf": 0.21178283410566756,
+    "right_sequences": 45,
+    "std_ratio_mean": 0.7518864870071411
+  },
+  "DIP/train__vs__AMASS/train": {
+    "cosine_of_mean_rjs": 0.9623378649117663,
+    "diag_gaussian_frechet": 0.026844192108781938,
+    "left_sequences": 36,
+    "mean_difference_norm": 0.12104092538356781,
+    "mmd_rbf": 0.4453682529453167,
+    "right_sequences": 1298,
+    "std_ratio_mean": 0.617347002029419
+  },
+  "DIP/train__vs__TotalCapture/test": {
+    "cosine_of_mean_rjs": 0.961810035788318,
+    "diag_gaussian_frechet": 0.03409358862133945,
+    "left_sequences": 36,
+    "mean_difference_norm": 0.1366504430770874,
+    "mmd_rbf": 0.3878225219086704,
+    "right_sequences": 4,
+    "std_ratio_mean": 0.3229341506958008
+  },
+  "DIP/train__vs__TotalCapture/train": {
+    "cosine_of_mean_rjs": 0.9740691686817388,
+    "diag_gaussian_frechet": 0.018770745295325908,
+    "left_sequences": 36,
+    "mean_difference_norm": 0.0991864874958992,
+    "mmd_rbf": 0.22480375993665702,
+    "right_sequences": 36,
+    "std_ratio_mean": 0.6813668012619019
+  }
+}

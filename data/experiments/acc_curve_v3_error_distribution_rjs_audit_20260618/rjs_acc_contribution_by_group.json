@@ -1,0 +1,74 @@
+{
+  "DIP/test": {
+    "corr_joint_site": 0.7776618344932527,
+    "corr_offset_site": 0.011098280546474005,
+    "joint_contribution_ratio": 1.1399428163647067,
+    "joint_l2": 5.663866088302768,
+    "num_sequences": 19.0,
+    "offset_contribution_ratio": 0.7332769536192072,
+    "offset_l2": 3.6478963445670236,
+    "sensor_index": 2.0,
+    "site_l2": 5.177129263335754,
+    "valid_frames": 289780
+  },
+  "DIP/train": {
+    "corr_joint_site": 0.7116507709305161,
+    "corr_offset_site": 0.05678722923308285,
+    "joint_contribution_ratio": 1.13158229477307,
+    "joint_l2": 3.658808662190626,
+    "num_sequences": 36.0,
+    "offset_contribution_ratio": 0.7791405755332131,
+    "offset_l2": 2.3280902519537108,
+    "sensor_index": 2.0,
+    "site_l2": 3.2814655754654893,
+    "valid_frames": 1143675
+  },
+  "DIP/val": {
+    "corr_joint_site": 0.7519421203475722,
+    "corr_offset_site": 0.0198456026721435,
+    "joint_contribution_ratio": 1.147745998235389,
+    "joint_l2": 3.5428546622541335,
+    "num_sequences": 6.0,
+    "offset_contribution_ratio": 0.767855549365376,
+    "offset_l2": 2.386765249650242,
+    "sensor_index": 2.0,
+    "site_l2": 3.224820938004238,
+    "valid_frames": 153795
+  },
+  "TotalCapture/test": {
+    "corr_joint_site": 0.6592454076390312,
+    "corr_offset_site": 0.5143642969541581,
+    "joint_contribution_ratio": 0.8599964197626123,
+    "joint_l2": 3.840787829307446,
+    "num_sequences": 4.0,
+    "offset_contribution_ratio": 0.7563208862506713,
+    "offset_l2": 3.564040545337725,
+    "sensor_index": 2.0,
+    "site_l2": 4.764144586516717,
+    "valid_frames": 80580
+  },
+  "TotalCapture/train": {
+    "corr_joint_site": 0.6691732607111996,
+    "corr_offset_site": 0.3974753202735649,
+    "joint_contribution_ratio": 0.9446847643263323,
+    "joint_l2": 3.576227583186446,
+    "num_sequences": 36.0,
+    "offset_contribution_ratio": 0.7586729205849457,
+    "offset_l2": 3.009157876652562,
+    "sensor_index": 2.0,
+    "site_l2": 3.9153767897957037,
+    "valid_frames": 714150
+  },
+  "TotalCapture/val": {
+    "corr_joint_site": 0.6786931220664089,
+    "corr_offset_site": 0.3424493551355876,
+    "joint_contribution_ratio": 0.9790934446576457,
+    "joint_l2": 6.491354802565801,
+    "num_sequences": 5.0,
+    "offset_contribution_ratio": 0.7611614320183704,
+    "offset_l2": 5.086411616262439,
+    "sensor_index": 2.0,
+    "site_l2": 6.757807719151368,
+    "valid_frames": 86065
+  }
+}

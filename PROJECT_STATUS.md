@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: AccCurve v3 leaf-relative causal Butterworth acceleration module
-Current task: commit/push acc_curve_v3_leafrel_causal_butter_20260618 code, docs, and lightweight results
-Review state: Trained/evaluated; failed cross-dataset primary gate
-Current changed files: acc_curve_v3_leafrel.py, acc_curve_v3_leafrel_train.py, scripts/build_acc_curve_v3_leafrel_feature_cache_20260618.py, scripts/run_acc_curve_v3_leafrel_causal_butter_20260618.sh, data/dataset_work/AccCurveV3LeafRelCausalButter_20260618/{README.md,cache_manifest.json}, data/experiments/acc_curve_v3_leafrel_causal_butter_20260618 lightweight results, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
-Current module: acc_curve_v3_leafrel_causal_butter_20260618
-Current replacement version: acceleration-level AccCurve v1-style residual module, leaf-relative causal Butterworth v3
-Current experiment: train AccCurve v3 from project-level reusable cache `data/dataset_work/AccCurveV3LeafRelCausalButter_20260618`; feature layout is AccCurve v1-style 99D `acc_raw[15]+acc_smooth[15]+raw_minus_smooth[15]+wM[18]+RMB_6d[36]`; base/target both use causal Butterworth order=2 cutoff=4Hz; output predicts only 5 leaf-relative accelerations; root IMU index 5 is reference only and excluded from prediction/loss/metric
-Current result: fail on primary real-IMU gate; cache has 1404 sequences / 1609025 valid frames; AMASS pretrain best epoch 13 ratio 0.940240; DIP finetune best epoch 16 DIP-val ratio 0.851720; DIP test improves from base L2/RMSE/corr 1.196030/0.924315/0.943321 to pred 0.990334/0.750235/0.958276; TotalCapture test worsens from base 1.052403/0.902071/0.946864 to pred 1.365116/1.065184/0.923813
+Current stage: AccCurve v3 generalization-failure diagnostics
+Current task: commit/push acc_curve_v3_error_distribution_rjs_audit_20260618 script, docs, and lightweight results
+Review state: Diagnostic complete; likely model overfit / TC overcorrection, not clear rJS target mismatch
+Current changed files: scripts/audit_acc_curve_v3_error_distribution_rjs_20260618.py, data/experiments/acc_curve_v3_error_distribution_rjs_audit_20260618/*, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
+Current module: acc_curve_v3_error_distribution_rjs_audit_20260618
+Current replacement version: diagnostic-only AccCurve v3 error/rJS/correction transfer audit
+Current experiment: diagnose why `acc_curve_v3_leafrel_causal_butter_20260618` improves DIP test but worsens TotalCapture test; root IMU index 5 remains reference only and excluded from residual/correction metrics; frame is model/world M; base/target use causal Butterworth order=2 cutoff=4Hz
+Current result: likely_model_overfit; DIP train vs TC test base/correction distribution distance has mean diff norm 0.809654, diagonal Gaussian FD 2.173161, MMD 0.061301, mean-vector cosine 0.268100; largest shifted TC test sensors are right_forearm L2 1.354584, left_lower_leg 1.212403, right_lower_leg 1.204943; rJS DIP train vs TC test distance is small/moderate (mean diff norm 0.136650, FD 0.034094, mean cosine 0.961810); rJS acceleration offset contribution is similar on DIP test 0.733277 vs TC test 0.756321; correction transfer shows TC harmful_rate 0.564954 and overcorrection 0.304232 vs DIP harmful_rate 0.442142; recommendation: use base only for TC-like distribution, then test smaller residual_scale or sensor-specific residual gate
 Current blocker: none
-Next action: push commit to GitHub; do not commit project-level cache shards or checkpoint `.pt` files unless explicitly requested
+Next action: push commit to GitHub; do not commit large checkpoints or dataset shards unless explicitly requested
 Git state: dirty worktree with existing unrelated edits plus new AccCurve v1 TC eval files
 CodeGraph state: healthy indexed native backend
-Detailed logs: data/experiments/acc_curve_v3_leafrel_causal_butter_20260618/summary.md, train_result.json, and eval/*.json
+Detailed logs: data/experiments/acc_curve_v3_error_distribution_rjs_audit_20260618/summary.md and JSON/CSV audit artifacts
 
 ## 0. Version-Line Reading Guide
 
@@ -43,7 +43,7 @@ Current version-line map:
 | `IK-s2 / NewPose` | IK2/pose-control replacement | rejected so far | `newpose_ctrl_v1/v2` |
 | `IMU offset / r_JS data line` | DIP/TC pseudo offset synthesis and audits | active route is `footlock_transpose_v1` only | `Active r_JS Policy` |
 | `Diagnostic IMU control modules` | neighbor velocity/position and joint q/qdot/velocity control diagnostics | diagnostic only; not connected to PL/IK/full pipeline | `imu_neighbor_vel_ctrl_v1`, `imu_neighbor_pos_from_vel_ctrl_v1`, `imu_joint_euler_qdot_vel_ctrl_v1` |
-| `AccCurve / acceleration residual` | v1 diff-pos, v1 zero-trans TC eval, v2 strict GTFK diagnostics, leaf-relative centered audit, realtime Butterworth audit, asymmetric target audit, and v3 leaf-relative causal module training | current module is `acc_curve_v3_leafrel_causal_butter_20260618`: DIP test improves over base but TotalCapture test degrades sharply, so the primary gate fails; no PL/NewPL/full-pipeline/S4/downstream pose claim | `acc_curve_v3_leafrel_causal_butter_20260618`, `acc_leaf_relative_residual_v5_imu_causal_gt_centered_20260618`, `acc_leaf_relative_residual_v4_causal_butterworth_20260618`, `acc_leaf_relative_residual_v3_20260618`, `acc_curve_v1_totalcapture_eval_20260618`, `acc_curve_v1_totalcapture_zero_trans_eval_20260618`, `acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617` |
+| `AccCurve / acceleration residual` | v1 diff-pos, v1 zero-trans TC eval, v2 strict GTFK diagnostics, leaf-relative centered audit, realtime Butterworth audit, asymmetric target audit, v3 leaf-relative causal module training, and v3 failure diagnostics | current diagnostic `acc_curve_v3_error_distribution_rjs_audit_20260618` points to model overfit / TC overcorrection: DIP improves but TC correction cosine/corr are low and harmful_rate is 0.565; rJS contribution ratios are similar across DIP/TC, so rJS mismatch is not the primary explanation | `acc_curve_v3_error_distribution_rjs_audit_20260618`, `acc_curve_v3_leafrel_causal_butter_20260618`, `acc_leaf_relative_residual_v5_imu_causal_gt_centered_20260618`, `acc_leaf_relative_residual_v4_causal_butterworth_20260618`, `acc_leaf_relative_residual_v3_20260618`, `acc_curve_v1_totalcapture_eval_20260618`, `acc_curve_v1_totalcapture_zero_trans_eval_20260618`, `acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617` |
 | `Experiment evidence` | commands, logs, JSONs, failures | archive only, not current status | `EXPERIMENT_LOG.md` detailed log index |
 
 Latest PL-s1 full-pipeline eval note on 2026-06-16:

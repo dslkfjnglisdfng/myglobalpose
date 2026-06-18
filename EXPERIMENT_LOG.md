@@ -23,7 +23,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | IK-s1 | `newik1_v1` through v14 search records, orchestrator logs, and S4/module JSONs |
 | IK-s2 / NewPose | `newpose_ctrl_v1/v2` records and module/full-pipeline evals |
 | IMU offset / r_JS | `footlock_transpose_v1`, smoothed-fit audit, offset-net/solver retired routes |
-| AccCurve / acceleration residual | `EXP-20260617-acc_curve_v2_gtfk`; strict GTFK standalone acceleration-level AMASS -> DIP module eval under `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/`; `EXP-20260617-acc_curve_pl_input_eval` tests v1/v2 acceleration as frozen PL input; `EXP-20260618-acc_curve_v1_totalcapture_eval` tests v1 TC acceleration-level generalization; `EXP-20260618-acc_curve_v3_leafrel_causal_butter` trains the leaf-relative causal Butterworth AccCurve v3 module |
+| AccCurve / acceleration residual | `EXP-20260617-acc_curve_v2_gtfk`; strict GTFK standalone acceleration-level AMASS -> DIP module eval under `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/`; `EXP-20260617-acc_curve_pl_input_eval` tests v1/v2 acceleration as frozen PL input; `EXP-20260618-acc_curve_v1_totalcapture_eval` tests v1 TC acceleration-level generalization; `EXP-20260618-acc_curve_v3_leafrel_causal_butter` trains the leaf-relative causal Butterworth AccCurve v3 module; `EXP-20260618-acc_curve_v3_error_distribution_rjs_audit` diagnoses the v3 TC failure |
 | AccCurve / acceleration residual datacache | `EXP-20260618-acc_invariance_datacache_v2_rebuild`; root-IMU-relative AMASS/DIP/TotalCapture cache rebuild and validation under `data/experiments/acc_invariance_datacache_v2_20260618/`; `EXP-20260618-acc_leaf_relative_residual_v3`; leaf-only residual audit under `data/experiments/acc_leaf_relative_residual_v3_20260618/`; `EXP-20260618-acc_leaf_relative_residual_v4_causal_butterworth`; realtime causal Butterworth audit under `data/experiments/acc_leaf_relative_residual_v4_causal_butterworth_20260618/`; `EXP-20260618-acc_leaf_relative_residual_v5_imu_causal_gt_centered`; asymmetric IMU-causal vs GT-centered target audit under `data/experiments/acc_leaf_relative_residual_v5_imu_causal_gt_centered_20260618/` |
 | Official GPNet + official/processed IMU | `EXP-20260604-001`, `EXP-20260604-002`; S4 JSONs referenced in `RECENT_REPLACEMENT_VERSIONS.md` |
 | newpl_v1_processed_no_baseline | `data/experiments/pl_curve_v2_processed_no_baseline/tc_finetune_10ep/train_log.jsonl`; S4 JSON in artifact index |
@@ -54,8 +54,113 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | acc_leaf_relative_residual_v4_causal_butterworth_20260618 | `EXP-20260618-acc_leaf_relative_residual_v4_causal_butterworth`; root `data/experiments/acc_leaf_relative_residual_v4_causal_butterworth_20260618`; cache root `data/experiments/acc_leaf_relative_residual_v4_causal_butterworth_20260618`; realtime causal Butterworth leaf-only residual audit |
 | acc_leaf_relative_residual_v5_imu_causal_gt_centered_20260618 | `EXP-20260618-acc_leaf_relative_residual_v5_imu_causal_gt_centered`; root `data/experiments/acc_leaf_relative_residual_v5_imu_causal_gt_centered_20260618`; cache root `data/experiments/acc_leaf_relative_residual_v5_imu_causal_gt_centered_20260618`; asymmetric IMU-causal vs GT-centered target leaf-only residual audit |
 | acc_curve_v3_leafrel_causal_butter_20260618 | `EXP-20260618-acc_curve_v3_leafrel_causal_butter`; root `data/experiments/acc_curve_v3_leafrel_causal_butter_20260618`; reusable cache root `data/dataset_work/AccCurveV3LeafRelCausalButter_20260618`; AccCurve v1-style 99D feature, 5-leaf output, causal Butterworth base/target; fail because DIP improves but TotalCapture worsens |
+| acc_curve_v3_error_distribution_rjs_audit_20260618 | `EXP-20260618-acc_curve_v3_error_distribution_rjs_audit`; root `data/experiments/acc_curve_v3_error_distribution_rjs_audit_20260618`; diagnostic-only audit of residual distributions, rJS distributions/contribution, and correction transfer; diagnosis `likely_model_overfit` |
 
 ## Detailed Records
+
+## EXP-20260618-acc_curve_v3_error_distribution_rjs_audit - AccCurve v3 Error Distribution and rJS Audit
+
+Question: why does `acc_curve_v3_leafrel_causal_butter_20260618` improve DIP test but worsen TotalCapture test?
+
+Scope:
+
+```text
+experiment: acc_curve_v3_error_distribution_rjs_audit_20260618
+v4 cache: data/experiments/acc_leaf_relative_residual_v4_causal_butterworth_20260618/cache_manifest.json
+v3 checkpoint: data/experiments/acc_curve_v3_leafrel_causal_butter_20260618/dip_finetune/best_loss.pt
+output root: data/experiments/acc_curve_v3_error_distribution_rjs_audit_20260618
+root index: 5
+leaf indices: 0..4
+root usage: reference acceleration only
+root residual/correction metric: excluded
+frame: model/world frame M
+smoothing: causal Butterworth order=2 cutoff=4Hz on both IMU base and GT target
+training: none
+PL/NewPL/IK/VR/full pipeline/S4: not evaluated
+AMASS: synthetic sanity only
+```
+
+Command:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0} /home/lingfeng/bin/longrun -- /home/lingfeng/.conda/envs/globalpose-gpu/bin/python scripts/audit_acc_curve_v3_error_distribution_rjs_20260618.py \
+  --v4-cache-manifest data/experiments/acc_leaf_relative_residual_v4_causal_butterworth_20260618/cache_manifest.json \
+  --acc-curve-v3-checkpoint data/experiments/acc_curve_v3_leafrel_causal_butter_20260618/dip_finetune/best_loss.pt \
+  --output-root data/experiments/acc_curve_v3_error_distribution_rjs_audit_20260618 \
+  --sample-frames-per-group 200000 \
+  --overwrite
+```
+
+Runtime:
+
+```text
+elapsed_sec: 923.440347
+checkpoint_epoch: 16
+checkpoint_selection: 0.8517200946807861
+```
+
+Primary diagnostics:
+
+| Comparison | Metric | Value |
+|---|---|---:|
+| DIP train vs TC test residual | mean diff norm | 0.809654 |
+| DIP train vs TC test residual | diagonal Gaussian FD | 2.173161 |
+| DIP train vs TC test residual | MMD RBF | 0.061301 |
+| DIP train vs TC test residual | mean-vector cosine | 0.268100 |
+| DIP train vs TC test rJS | mean diff norm | 0.136650 |
+| DIP train vs TC test rJS | diagonal Gaussian FD | 0.034094 |
+| DIP train vs TC test rJS | mean rJS cosine | 0.961810 |
+| DIP test rJS acceleration | offset contribution ratio | 0.733277 |
+| TC test rJS acceleration | offset contribution ratio | 0.756321 |
+| DIP test correction transfer | harmful rate | 0.442142 |
+| TC test correction transfer | harmful rate | 0.564954 |
+| TC test correction transfer | overcorrection rate | 0.304232 |
+| TC test correction transfer | correction corr | 0.227905 |
+
+Largest TC test shifted sensors by base residual L2:
+
+| Sensor | L2 |
+|---|---:|
+| right_forearm | 1.354584 |
+| left_lower_leg | 1.212403 |
+| right_lower_leg | 1.204943 |
+
+Conclusion:
+
+```text
+final diagnosis: likely_model_overfit
+
+The audit does show a DIP-train to TC-test residual distribution shift, but the
+rJS distribution difference is much smaller and rJS acceleration contribution
+ratios are similar across DIP and TC.  The strongest failure signal is correction
+transfer: TC test correction cosine/corr are low, harmful_rate is 0.564954, and
+overcorrection_rate is 0.304232.  The AccCurve v3 residual appears DIP-specific
+and often harmful on TC-like distributions.
+
+Recommended next experiment:
+  use base only for TC-like distribution; then test residual_scale smaller or a
+  sensor-specific residual gate.
+```
+
+Artifacts:
+
+```text
+script: scripts/audit_acc_curve_v3_error_distribution_rjs_20260618.py
+summary: data/experiments/acc_curve_v3_error_distribution_rjs_audit_20260618/summary.md
+residual_distribution_by_group.json
+residual_distribution_by_sensor.csv
+residual_distribution_distance.json
+rjs_stats_by_group.json
+rjs_stats_by_sensor.csv
+rjs_outlier_sequences.csv
+rjs_dataset_distance.json
+rjs_acc_contribution_by_group.json
+rjs_acc_contribution_by_sensor.csv
+correction_transfer_by_group.json
+correction_transfer_by_sensor.csv
+harmful_sequences.csv
+```
 
 ## EXP-20260618-acc_curve_v3_leafrel_causal_butter - Leaf-Relative Causal Butterworth AccCurve v3
 
