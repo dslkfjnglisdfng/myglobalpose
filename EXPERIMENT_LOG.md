@@ -23,7 +23,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | IK-s1 | `newik1_v1` through v14 search records, orchestrator logs, and S4/module JSONs |
 | IK-s2 / NewPose | `newpose_ctrl_v1/v2` records and module/full-pipeline evals |
 | IMU offset / r_JS | `footlock_transpose_v1`, smoothed-fit audit, offset-net/solver retired routes |
-| AccCurve / acceleration residual | `EXP-20260617-acc_curve_v2_gtfk`; strict GTFK standalone acceleration-level AMASS -> DIP module eval under `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/`; `EXP-20260617-acc_curve_pl_input_eval` tests v1/v2 acceleration as frozen PL input; `EXP-20260618-acc_curve_v1_totalcapture_eval` tests v1 TC acceleration-level generalization; `EXP-20260618-acc_curve_v3_leafrel_causal_butter` trains the leaf-relative causal Butterworth AccCurve v3 module; `EXP-20260618-acc_curve_v3_error_distribution_rjs_audit` diagnoses the v3 TC failure |
+| AccCurve / acceleration residual | `EXP-20260617-acc_curve_v2_gtfk`; strict GTFK standalone acceleration-level AMASS -> DIP module eval under `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617/`; `EXP-20260617-acc_curve_pl_input_eval` tests v1/v2 acceleration as frozen PL input; `EXP-20260618-acc_curve_v1_totalcapture_eval` is retained as wrong pred_zero-vs-GT_full historical reference; `EXP-20260618-acc_curve_v1_fulltrans_rootacc_reconstruction_eval` corrects v1 full-trans eval by adding root translational acceleration back; `EXP-20260618-acc_curve_v3_leafrel_causal_butter` trains the leaf-relative causal Butterworth AccCurve v3 module; `EXP-20260618-acc_curve_v3_error_distribution_rjs_audit` diagnoses the v3 TC failure |
 | AccCurve / acceleration residual datacache | `EXP-20260618-acc_invariance_datacache_v2_rebuild`; root-IMU-relative AMASS/DIP/TotalCapture cache rebuild and validation under `data/experiments/acc_invariance_datacache_v2_20260618/`; `EXP-20260618-acc_leaf_relative_residual_v3`; leaf-only residual audit under `data/experiments/acc_leaf_relative_residual_v3_20260618/`; `EXP-20260618-acc_leaf_relative_residual_v4_causal_butterworth`; realtime causal Butterworth audit under `data/experiments/acc_leaf_relative_residual_v4_causal_butterworth_20260618/`; `EXP-20260618-acc_leaf_relative_residual_v5_imu_causal_gt_centered`; asymmetric IMU-causal vs GT-centered target audit under `data/experiments/acc_leaf_relative_residual_v5_imu_causal_gt_centered_20260618/` |
 | Official GPNet + official/processed IMU | `EXP-20260604-001`, `EXP-20260604-002`; S4 JSONs referenced in `RECENT_REPLACEMENT_VERSIONS.md` |
 | newpl_v1_processed_no_baseline | `data/experiments/pl_curve_v2_processed_no_baseline/tc_finetune_10ep/train_log.jsonl`; S4 JSON in artifact index |
@@ -47,6 +47,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | footlock-only smoothed-acc rJS cleanup | `EXP-20260609-footlock_only_smoothacc_rjs`; active route is `footlock_transpose_v1` only; old offset-route artifacts deleted |
 | acc_curve_pl_input_eval_20260617 | `EXP-20260617-acc_curve_pl_input_eval`; root `data/experiments/acc_curve_pl_input_eval_20260617`; frozen official `GPNet.plnet` input-only evaluation on DIP test |
 | acc_curve_v1_totalcapture_eval_20260618 | `EXP-20260618-acc_curve_v1_totalcapture_eval`; root `data/experiments/acc_curve_v1_totalcapture_eval_20260618`; cache root `code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test`; v1 diff-pos acceleration-level TC test only |
+| acc_curve_v1_fulltrans_rootacc_reconstruction_eval_20260618 | `EXP-20260618-acc_curve_v1_fulltrans_rootacc_reconstruction_eval`; root `data/experiments/acc_curve_v1_fulltrans_rootacc_reconstruction_eval_20260618`; corrected v1 full-trans reconstruction with GT root translational acceleration; no training or downstream claim |
 | acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617 | `EXP-20260617-acc_curve_v2_gtfk`; root `data/experiments/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617`; cache root `code/outputs/acc_curve_v2_gtfk_q_qdot_qddot_rjs_20260617`; module-level only |
 | acc_curve_v1_20260617 | `EXP-20260617-acc_curve_v1`; root `data/experiments/acc_curve_v1_20260617`; cache root `code/outputs/smooth_acc_cache_amass_dip_20260617`; historical diff-pos-style target |
 | acc_invariance_datacache_v2_rebuild_20260618 | `EXP-20260618-acc_invariance_datacache_v2_rebuild`; root `data/experiments/acc_invariance_datacache_v2_20260618`; cache root `data/experiments/acc_invariance_datacache_v2_20260618`; rootIMU-relative acceleration cache rebuild |
@@ -679,6 +680,99 @@ debug root leakage: data/experiments/acc_invariance_datacache_v2_20260618/debug_
 summary: data/experiments/acc_invariance_datacache_v2_20260618/summary.md
 ```
 
+## EXP-20260618-acc_curve_v1_fulltrans_rootacc_reconstruction_eval - v1 Full-Trans Reconstruction with Root Acceleration
+
+Question: was the old TotalCapture full-trans failure caused by comparing the zero-trans AccCurve v1 prediction against full-trans ground truth, and does adding root translational acceleration back beat the full-trans `aM_smooth` baseline?
+
+Scope:
+
+```text
+model training: none
+PL/NewPL training: none
+IK/VR/full pipeline: not evaluated
+S4 metrics: not evaluated
+target namespace: AccCurve v1 historical target only; not strict GTFK v2 and not leaf-relative causal Butterworth v3
+primary corrected eval: pred_zero + a_root_trans_smooth vs GT_full
+baseline: v1 historical spline-decoded aM_smooth vs GT_full
+frame: model/world frame M for input/base/pred/target
+```
+
+Run command:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+mkdir -p data/experiments/acc_curve_v1_fulltrans_rootacc_reconstruction_eval_20260618/logs
+export LD_LIBRARY_PATH=/home/lingfeng/.conda/envs/globalpose-gpu/lib:${LD_LIBRARY_PATH:-}
+/home/lingfeng/bin/longrun -- bash -lc 'export LD_LIBRARY_PATH=/home/lingfeng/.conda/envs/globalpose-gpu/lib:${LD_LIBRARY_PATH:-}; /home/lingfeng/.conda/envs/globalpose-gpu/bin/python scripts/eval_acc_curve_v1_fulltrans_rootacc_reconstruction_20260618.py --zero-trans-cache code/outputs/smooth_acc_cache_totalcapture_v1_zero_trans_20260618/tc_test/acc_curve_cache_manifest.json --full-trans-cache code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test/acc_curve_cache_manifest.json --source-cache data/experiments/newpl_v5_official_protocol_20260607/caches/tc_test_official_with_offset_r/baseline_cache_manifest.json --checkpoint data/experiments/acc_curve_v1_20260617/dip_finetune/best_loss.pt --output-root data/experiments/acc_curve_v1_fulltrans_rootacc_reconstruction_eval_20260618 --device cuda --overwrite 2>&1 | tee data/experiments/acc_curve_v1_fulltrans_rootacc_reconstruction_eval_20260618/logs/run.log'
+```
+
+Input contracts:
+
+```text
+checkpoint: data/experiments/acc_curve_v1_20260617/dip_finetune/best_loss.pt
+full-trans cache: code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test/acc_curve_cache_manifest.json
+zero-trans cache: code/outputs/smooth_acc_cache_totalcapture_v1_zero_trans_20260618/tc_test/acc_curve_cache_manifest.json
+source TC cache: data/experiments/newpl_v5_official_protocol_20260607/caches/tc_test_official_with_offset_r/baseline_cache_manifest.json
+feature_zero/full max abs diff: 0
+aM_smooth_zero/full max abs diff: 0
+valid mask xor frames: 0
+```
+
+Decomposition sanity:
+
+| Check | max abs | mean abs | RMSE |
+|---|---:|---:|---:|
+| `GT_full - (GT_zero + cache_root_acc)` | `0.000366449` | `0.000013115` | `0.000026308` |
+| `cache_root_acc - smooth(diff_acc(tran_gt))` | `0.000267982` | `0.000010596` | `0.000021218` |
+
+All-6-sensor primary results on TotalCapture test:
+
+| Row | L2 | RMSE | MAE | Corr | Cosine | Mag MAE | Pred/Base ratio |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| baseline_full: decoded `aM_smooth` vs GT_full | `0.873843` | `0.693060` | `0.429852` | `0.974734` | `0.774869` | `0.456501` | `1.000000` |
+| wrong_pred_zero_vs_full | `2.091960` | `1.539445` | `1.029687` | `0.866428` | `0.442708` | `1.125138` | `2.393977` |
+| correct_pred_zero_plus_gt_root_trans | `1.415560` | `0.977232` | `0.709856` | `0.949590` | `0.659106` | `0.798133` | `1.619925` |
+| optional_pred_zero_plus_imu_root_est | `1.204596` | `0.886916` | `0.597049` | `0.958057` | `0.699401` | `0.636703` | `1.378504` |
+| zero_trans_sanity | `1.415560` | `0.977232` | `0.709856` | `0.945382` | `0.552023` | `0.786097` | `0.772415` |
+
+Leaf-only secondary results:
+
+| Row | L2 | RMSE | Corr | Pred/Base ratio |
+|---|---:|---:|---:|---:|
+| baseline_full | `0.899489` | `0.719889` | `0.976317` | `1.000000` |
+| wrong_pred_zero_vs_full | `2.143246` | `1.565493` | `0.881801` | `2.382737` |
+| correct_pred_zero_plus_gt_root_trans | `1.492559` | `1.024714` | `0.952284` | `1.659341` |
+| optional_pred_zero_plus_imu_root_est | `1.296393` | `0.941162` | `0.959565` | `1.441255` |
+| zero_trans_sanity | `1.492558` | `1.024714` | `0.950637` | `0.820339` |
+
+Conclusion:
+
+```text
+AccCurve v1 predicts root-translation-free sensor-site acceleration, not full
+absolute acceleration. The old TC full-trans result was an unfair
+pred_zero-vs-GT_full target-mismatched evaluation and is reproduced here as the
+wrong row. However, adding cache-consistent GT root translational acceleration
+back gives pred/base ratio 1.619925, still worse than the full-trans aM_smooth
+baseline. Therefore target mismatch explains part, but not all, of the old
+full-trans failure. This is an acceleration-level historical correction only:
+no PL/NewPL/full-pipeline/S4 claim and no retraining.
+```
+
+Artifacts:
+
+```text
+script: scripts/eval_acc_curve_v1_fulltrans_rootacc_reconstruction_20260618.py
+experiment root: data/experiments/acc_curve_v1_fulltrans_rootacc_reconstruction_eval_20260618
+summary: data/experiments/acc_curve_v1_fulltrans_rootacc_reconstruction_eval_20260618/summary.md
+eval JSON: data/experiments/acc_curve_v1_fulltrans_rootacc_reconstruction_eval_20260618/fulltrans_reconstruction_eval.json
+eval CSV: data/experiments/acc_curve_v1_fulltrans_rootacc_reconstruction_eval_20260618/fulltrans_reconstruction_eval.csv
+per-sequence CSV: data/experiments/acc_curve_v1_fulltrans_rootacc_reconstruction_eval_20260618/per_sequence_metrics.csv
+per-sensor CSV: data/experiments/acc_curve_v1_fulltrans_rootacc_reconstruction_eval_20260618/per_sensor_metrics.csv
+sanity JSON: data/experiments/acc_curve_v1_fulltrans_rootacc_reconstruction_eval_20260618/decomposition_sanity.json
+run log: data/experiments/acc_curve_v1_fulltrans_rootacc_reconstruction_eval_20260618/logs/run.log
+exact command: data/experiments/acc_curve_v1_fulltrans_rootacc_reconstruction_eval_20260618/exact_command.txt
+```
+
 ## EXP-20260618-acc_curve_v1_totalcapture_zero_trans_eval - v1 Zero-Translation Acceleration Target on TotalCapture Test
 
 Question: after forcing TotalCapture translation to zero, does the existing AccCurve v1 checkpoint still fail on the DIP-style acceleration target?
@@ -765,12 +859,12 @@ TC full-trans historical reference:
 Conclusion:
 
 ```text
-Forcing TC tran to zero removes the previous TC failure: v1 now beats aM_smooth
-on TotalCapture zero-trans with pred/base ratio 0.772415 and corr 0.945382.
-This strongly suggests the earlier TC full-trans failure was driven mainly by
-target translation mismatch, not by a complete loss of v1 residual structure.
-Zero-trans v1 remains a candidate for NewPL retrain input, but should still be
-gated with same-cache PL metrics before any downstream claim.
+Forcing TC tran to zero confirms that v1 is a root-translation-free
+sensor-site acceleration predictor: it beats the zero-trans target with
+pred/base ratio 0.772415 and corr 0.945382. This is not a full-trans success
+claim. The corrected full-trans reconstruction experiment shows that adding
+root translational acceleration back still does not beat the full-trans
+aM_smooth baseline.
 ```
 
 Artifacts:
@@ -868,11 +962,11 @@ DIP v1 historical reference:
 Conclusion:
 
 ```text
-TotalCapture pred/base ratio = 2.393977, so v1 is worse than aM_smooth on TC.
-DIP historical pred/base ratio = 0.622049; TC-DIP ratio gap = +1.771928.
-This is a cross-dataset generalization failure for v1 diff-pos acceleration.
-Do not proceed with v1 acceleration as a direct NewPL retrain input unless the
-acceleration module is revised or a stronger same-cache gate is added.
+TotalCapture pred/base ratio = 2.393977 for this direct pred_zero-vs-GT_full
+comparison. This is now retained as the wrong target-mismatched full-trans
+reference, not as the corrected v1 full-trans conclusion. Use
+EXP-20260618-acc_curve_v1_fulltrans_rootacc_reconstruction_eval for the
+corrected full-trans result.
 ```
 
 Artifacts:

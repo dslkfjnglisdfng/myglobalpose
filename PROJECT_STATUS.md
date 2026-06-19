@@ -165,7 +165,38 @@ Decision:
   PL module-output gain. Do not connect AccCurve to PL as-is.
 ```
 
-Latest AccCurve v1 TotalCapture acceleration-level eval note on 2026-06-18:
+Latest AccCurve v1 TotalCapture full-trans/root-acceleration reconstruction eval note on 2026-06-18:
+
+```text
+Experiment:
+  data/experiments/acc_curve_v1_fulltrans_rootacc_reconstruction_eval_20260618
+Evaluator:
+  scripts/eval_acc_curve_v1_fulltrans_rootacc_reconstruction_20260618.py
+Checkpoint:
+  data/experiments/acc_curve_v1_20260617/dip_finetune/best_loss.pt
+Caches:
+  full-trans: code/outputs/smooth_acc_cache_totalcapture_v1_20260618/tc_test
+  zero-trans: code/outputs/smooth_acc_cache_totalcapture_v1_zero_trans_20260618/tc_test
+Question:
+  Does AccCurve v1 beat the full-trans TC baseline after adding root
+  translational acceleration back to its zero-trans prediction?
+Sanity:
+  GT_full ~= GT_zero + root_trans_acc:
+  max_abs/mean_abs/rmse = 0.000366449 / 0.000013115 / 0.000026308
+Result on TotalCapture test, all 6 sensors:
+  baseline_full aM_smooth L2/RMSE/corr = 0.873843 / 0.693060 / 0.974734
+  wrong pred_zero vs GT_full L2/RMSE/corr = 2.091960 / 1.539445 / 0.866428
+  corrected pred_zero + GT root acc L2/RMSE/corr = 1.415560 / 0.977232 / 0.949590
+  corrected pred/base ratio = 1.619925
+Decision:
+  AccCurve v1 predicts root-translation-free sensor-site acceleration, not
+  full absolute acceleration. The old full-trans TC evaluation was target
+  mismatched, but adding root translational acceleration back still does not
+  beat the aM_smooth full-trans baseline. Target mismatch explains part, not
+  all, of the full-trans failure. No PL/NewPL/full-pipeline/S4 claim.
+```
+
+Historical AccCurve v1 TotalCapture acceleration-level eval note on 2026-06-18:
 
 ```text
 Experiment:
@@ -191,9 +222,10 @@ Result on TotalCapture test:
 DIP v1 historical:
   pred/base ratio = 0.622049, pred L2 = 1.202067, base L2 = 2.368697, corr = 0.940837
 Decision:
-  v1 does not beat aM_smooth on TotalCapture and the ratio gap versus DIP is
-  +1.771928. Do not proceed with v1 acceleration as a cross-dataset NewPL
-  retrain input without revising the acceleration module or adding a stronger gate.
+  This direct full-trans comparison is now treated as an unfair target-mismatched
+  evaluation because AccCurve v1 was trained as a root-translation-free predictor.
+  Keep the number only as the wrong pred_zero-vs-GT_full reference; use the
+  root-acceleration reconstruction eval above for the corrected full-trans check.
 ```
 
 Latest AccCurve v1 TotalCapture zero-trans acceleration-level eval note on 2026-06-18:
@@ -224,10 +256,10 @@ DIP v1 historical:
 TC full-trans previous:
   pred/base ratio = 2.393977, pred L2 = 2.091960, base L2 = 0.873843, corr = 0.866428
 Decision:
-  zero-trans alignment removes the TC failure seen in the source-translation eval.
-  The TC target-definition mismatch was the main issue, not a complete collapse
-  of v1 residual structure on TotalCapture. Continue considering zero-trans v1
-  acceleration as a NewPL retrain input candidate, but keep same-cache PL gates.
+  zero-trans alignment confirms that v1 is a root-translation-free acceleration
+  predictor and can improve the zero-trans target. It does not by itself prove
+  full-trans TC success; the corrected full-trans reconstruction eval above still
+  fails to beat the aM_smooth full-trans baseline.
 ```
 
 ## 0.4 AccCurve / absolute acceleration residual module

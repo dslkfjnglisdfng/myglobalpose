@@ -1,0 +1,17 @@
+{
+  "cache_consistent_root": {
+    "max_abs": 0.00036644935607910156,
+    "mean_abs": 1.3115475667291321e-05,
+    "rmse": 2.630825292726513e-05
+  },
+  "source_tran_vs_cache_root": {
+    "max_abs": 0.00026798248291015625,
+    "mean_abs": 1.0596100764814764e-05,
+    "rmse": 2.121814941347111e-05
+  },
+  "max_abs_feature_zero_minus_full": 0.0,
+  "max_abs_aM_smooth_zero_minus_full": 0.0,
+  "valid_mask_xor_frames": 0,
+  "root_acc_primary_for_correct_eval": "cache_consistent_gt_root = aFK_full_smooth - aFK_zero_smooth",
+  "source_tran_root_acc_contract": "finite_difference_second(tran_gt, fps=60) then centered_moving_average window=9"
+}
