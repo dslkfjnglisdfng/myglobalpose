@@ -1,0 +1,600 @@
+{
+  "status": "ok",
+  "cache": "data/experiments/newpl_joint_leaf_acc_20260619/full/caches/baseline_jointtarget_84D/dip_test/pl_curve_cache_manifest.json",
+  "checkpoint": "data/experiments/newpl_joint_leaf_acc_20260619/full/baseline_jointtarget_84D/amass_pretrain/best_loss.pt",
+  "feature_mode": "baseline_jointtarget_84D",
+  "manifest_type": "pl_curve_joint_leaf_acc_cache_v1",
+  "model_config": {
+    "train_cache": "data/experiments/newpl_joint_leaf_acc_20260619/full/caches/baseline_jointtarget_84D/amass/pl_curve_cache_manifest.json",
+    "val_cache": "data/experiments/newpl_joint_leaf_acc_20260619/full/caches/baseline_jointtarget_84D/amass/pl_curve_cache_manifest.json",
+    "output_dir": "data/experiments/newpl_joint_leaf_acc_20260619/full/baseline_jointtarget_84D/amass_pretrain",
+    "experiment_name": "baseline_jointtarget_84D_amass_pretrain",
+    "epochs": 80,
+    "window": 61,
+    "lr": 0.0001,
+    "hidden_size": 512,
+    "tail_length": 4,
+    "residual_scale": 0.005,
+    "dropout": 0.4,
+    "model_variant": "base",
+    "input_size": 84,
+    "condition_scale": 1.0,
+    "offset_embed_size": 128,
+    "film_scale": 0.1,
+    "bone_aux_dim": 0,
+    "bone_residual_scale": 0.05,
+    "grad_clip": 1.0,
+    "init_checkpoint": "",
+    "init_size": 36,
+    "early_stop_min_delta": 5e-08,
+    "early_stop_patience": 12,
+    "selection_metric": "control_physical",
+    "max_train_sequences": 0,
+    "max_val_sequences": 20,
+    "val_window_length": 61,
+    "batch_size": 256,
+    "disable_ik_distill": true,
+    "pRB_weight": null,
+    "gR1_weight": null,
+    "baseline_pRB_weight": 0.0,
+    "baseline_gR1_weight": 0.0,
+    "gt_control_pRB_weight": 0.3,
+    "gt_control_gR1_weight": 0.1,
+    "control_point_prior_weight": null,
+    "tail_update_prior_weight": null,
+    "pRB_dot_weight": null,
+    "pRB_ddot_weight": null,
+    "pRB_ddot_smooth_weight": 1e-06,
+    "gR1_dot_weight": 0.03,
+    "gR1_ddot_weight": 0.001,
+    "gR_smooth_weight": null,
+    "ik_distill_weight": null,
+    "bone6d_weight": null,
+    "bone_geo_weight": null,
+    "gt_control_bone6d_weight": null,
+    "gt_control_bone_geo_weight": null,
+    "bone6d_dot_weight": null,
+    "bone6d_ddot_weight": null,
+    "bone_control_point_prior_weight": null,
+    "bone_tail_update_prior_weight": null,
+    "offset_contrast_weight": 0.0,
+    "offset_contrast_margin": 0.001,
+    "offset_contrast_mode": "roll_random",
+    "offset_contrast_target": "full_pl",
+    "offset_consistency_weight": 0.0,
+    "offset_consistency_target": "full_pl",
+    "offset_init_dropout_prob": 0.0,
+    "offset_init_noise_std": 0.0,
+    "imu_proxy_offset_acc_weight": 0.0,
+    "imu_proxy_acc_scale": 30.0,
+    "train_gt_control_cache": "",
+    "val_gt_control_cache": ""
+  },
+  "checkpoint_epoch": 7,
+  "checkpoint_validation_loss": 0.12504839265066542,
+  "contract": "module-level joint-leaf PL only; no IK/full-pipeline evaluation",
+  "legacy_loss_key_pRB_means": "p_leaf_joint_R",
+  "summary": {
+    "p_leaf_joint_R_l1_cm": 2.7185467316916117,
+    "p_leaf_joint_R_l2_cm": 5.702977176559599,
+    "base_p_leaf_joint_R_l2_cm": 5.689491821747077,
+    "control_p_leaf_joint_R_l1_cm": 2.7179743506406484,
+    "control_p_leaf_joint_R_l2_cm": 5.700045177026799,
+    "gR1_angle_deg": 2.343298962241725,
+    "base_gR1_angle_deg": 2.3419864993346367,
+    "control_gR1_angle_deg": 2.343164563179016,
+    "per_leaf_l2_cm": {
+      "left_forearm": 8.225951010459347,
+      "right_forearm": 7.961069302339303,
+      "left_lower_leg": 3.587858614168669,
+      "right_lower_leg": 4.4439865864421195,
+      "head": 4.2960198694153835
+    },
+    "base_per_leaf_l2_cm": {
+      "left_forearm": 8.191435039043427,
+      "right_forearm": 7.939157654580317,
+      "left_lower_leg": 3.599231871531198,
+      "right_lower_leg": 4.433802828976982,
+      "head": 4.283832013607025
+    },
+    "num_sequences": 19,
+    "num_frames": 57994
+  },
+  "rows": [
+    {
+      "name": "s09_01_a",
+      "num_frames": 4757,
+      "p_leaf_joint_R_l1_cm": 3.154497593641281,
+      "p_leaf_joint_R_l2_cm": 6.911978125572205,
+      "base_p_leaf_joint_R_l2_cm": 6.910085678100586,
+      "control_p_leaf_joint_R_l1_cm": 3.1507637351751328,
+      "control_p_leaf_joint_R_l2_cm": 6.905382126569748,
+      "gR1_angle_deg": 2.9352540969848633,
+      "base_gR1_angle_deg": 2.9304163455963135,
+      "control_gR1_angle_deg": 2.935769557952881,
+      "per_leaf_l2_cm": {
+        "left_forearm": 12.418699264526367,
+        "right_forearm": 9.104513376951218,
+        "left_lower_leg": 3.1823642551898956,
+        "right_lower_leg": 4.55840528011322,
+        "head": 5.295909196138382
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 12.406378984451294,
+        "right_forearm": 9.11128968000412,
+        "left_lower_leg": 3.189440444111824,
+        "right_lower_leg": 4.543004557490349,
+        "head": 5.300319939851761
+      }
+    },
+    {
+      "name": "s09_01_b",
+      "num_frames": 2641,
+      "p_leaf_joint_R_l1_cm": 2.2124752402305603,
+      "p_leaf_joint_R_l2_cm": 4.6532269567251205,
+      "base_p_leaf_joint_R_l2_cm": 4.696980118751526,
+      "control_p_leaf_joint_R_l1_cm": 2.22930870950222,
+      "control_p_leaf_joint_R_l2_cm": 4.687228798866272,
+      "gR1_angle_deg": 1.9003710746765137,
+      "base_gR1_angle_deg": 1.9046140909194946,
+      "control_gR1_angle_deg": 1.901447057723999,
+      "per_leaf_l2_cm": {
+        "left_forearm": 6.90445676445961,
+        "right_forearm": 8.536364883184433,
+        "left_lower_leg": 1.4992410317063332,
+        "right_lower_leg": 2.5511519983410835,
+        "head": 3.7749171257019043
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 6.984440982341766,
+        "right_forearm": 8.676591515541077,
+        "left_lower_leg": 1.4943993650376797,
+        "right_lower_leg": 2.5503063574433327,
+        "head": 3.7791624665260315
+      }
+    },
+    {
+      "name": "s09_01_c",
+      "num_frames": 2136,
+      "p_leaf_joint_R_l1_cm": 2.6305261999368668,
+      "p_leaf_joint_R_l2_cm": 5.865084752440453,
+      "base_p_leaf_joint_R_l2_cm": 5.850937590003014,
+      "control_p_leaf_joint_R_l1_cm": 2.6313520967960358,
+      "control_p_leaf_joint_R_l2_cm": 5.8610498905181885,
+      "gR1_angle_deg": 1.9097516536712646,
+      "base_gR1_angle_deg": 1.9124990701675415,
+      "control_gR1_angle_deg": 1.9096252918243408,
+      "per_leaf_l2_cm": {
+        "left_forearm": 11.750200390815735,
+        "right_forearm": 7.952147722244263,
+        "left_lower_leg": 1.4377584680914879,
+        "right_lower_leg": 3.2372862100601196,
+        "head": 4.948030784726143
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 11.722119897603989,
+        "right_forearm": 7.886102050542831,
+        "left_lower_leg": 1.450088620185852,
+        "right_lower_leg": 3.236859291791916,
+        "head": 4.959520697593689
+      }
+    },
+    {
+      "name": "s09_02_a",
+      "num_frames": 2767,
+      "p_leaf_joint_R_l1_cm": 2.1737515926361084,
+      "p_leaf_joint_R_l2_cm": 4.668037220835686,
+      "base_p_leaf_joint_R_l2_cm": 4.651064798235893,
+      "control_p_leaf_joint_R_l1_cm": 2.1667469292879105,
+      "control_p_leaf_joint_R_l2_cm": 4.653993621468544,
+      "gR1_angle_deg": 1.7020397186279297,
+      "base_gR1_angle_deg": 1.6973023414611816,
+      "control_gR1_angle_deg": 1.6953113079071045,
+      "per_leaf_l2_cm": {
+        "left_forearm": 6.1551593244075775,
+        "right_forearm": 4.855522513389587,
+        "left_lower_leg": 4.421671852469444,
+        "right_lower_leg": 4.042890295386314,
+        "head": 3.8649413734674454
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 6.153946742415428,
+        "right_forearm": 4.836370050907135,
+        "left_lower_leg": 4.371533915400505,
+        "right_lower_leg": 4.016462713479996,
+        "head": 3.8770094513893127
+      }
+    },
+    {
+      "name": "s09_02_b",
+      "num_frames": 2559,
+      "p_leaf_joint_R_l1_cm": 2.3590918630361557,
+      "p_leaf_joint_R_l2_cm": 4.94849756360054,
+      "base_p_leaf_joint_R_l2_cm": 4.936441406607628,
+      "control_p_leaf_joint_R_l1_cm": 2.356751076877117,
+      "control_p_leaf_joint_R_l2_cm": 4.944438859820366,
+      "gR1_angle_deg": 1.914099931716919,
+      "base_gR1_angle_deg": 1.9109519720077515,
+      "control_gR1_angle_deg": 1.9193328619003296,
+      "per_leaf_l2_cm": {
+        "left_forearm": 7.456337660551071,
+        "right_forearm": 5.321591719985008,
+        "left_lower_leg": 4.167766869068146,
+        "right_lower_leg": 4.046192392706871,
+        "head": 3.7506014108657837
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 7.439248263835907,
+        "right_forearm": 5.2426837384700775,
+        "left_lower_leg": 4.177350178360939,
+        "right_lower_leg": 4.033342003822327,
+        "head": 3.789582848548889
+      }
+    },
+    {
+      "name": "s09_03_a",
+      "num_frames": 2907,
+      "p_leaf_joint_R_l1_cm": 2.471468225121498,
+      "p_leaf_joint_R_l2_cm": 5.117093026638031,
+      "base_p_leaf_joint_R_l2_cm": 5.117639899253845,
+      "control_p_leaf_joint_R_l1_cm": 2.4819543585181236,
+      "control_p_leaf_joint_R_l2_cm": 5.136556550860405,
+      "gR1_angle_deg": 2.0550663471221924,
+      "base_gR1_angle_deg": 2.068756341934204,
+      "control_gR1_angle_deg": 2.069852828979492,
+      "per_leaf_l2_cm": {
+        "left_forearm": 7.929364591836929,
+        "right_forearm": 4.750946536660194,
+        "left_lower_leg": 4.098543897271156,
+        "right_lower_leg": 4.2662546038627625,
+        "head": 4.540351033210754
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 7.852552086114883,
+        "right_forearm": 4.764406383037567,
+        "left_lower_leg": 4.135814309120178,
+        "right_lower_leg": 4.280560463666916,
+        "head": 4.554866626858711
+      }
+    },
+    {
+      "name": "s09_03_b",
+      "num_frames": 3015,
+      "p_leaf_joint_R_l1_cm": 3.4150779247283936,
+      "p_leaf_joint_R_l2_cm": 7.228340208530426,
+      "base_p_leaf_joint_R_l2_cm": 7.211292535066605,
+      "control_p_leaf_joint_R_l1_cm": 3.4114673733711243,
+      "control_p_leaf_joint_R_l2_cm": 7.220632582902908,
+      "gR1_angle_deg": 3.0113093852996826,
+      "base_gR1_angle_deg": 3.0001237392425537,
+      "control_gR1_angle_deg": 3.003584384918213,
+      "per_leaf_l2_cm": {
+        "left_forearm": 13.716576993465424,
+        "right_forearm": 7.903209328651428,
+        "left_lower_leg": 5.04029281437397,
+        "right_lower_leg": 4.832103848457336,
+        "head": 4.6495165675878525
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 13.613665103912354,
+        "right_forearm": 7.946415990591049,
+        "left_lower_leg": 5.052066966891289,
+        "right_lower_leg": 4.800080880522728,
+        "head": 4.644228890538216
+      }
+    },
+    {
+      "name": "s09_04",
+      "num_frames": 1188,
+      "p_leaf_joint_R_l1_cm": 2.917477674782276,
+      "p_leaf_joint_R_l2_cm": 6.056550517678261,
+      "base_p_leaf_joint_R_l2_cm": 6.020965054631233,
+      "control_p_leaf_joint_R_l1_cm": 2.915959060192108,
+      "control_p_leaf_joint_R_l2_cm": 6.04863241314888,
+      "gR1_angle_deg": 3.1673364639282227,
+      "base_gR1_angle_deg": 3.1640214920043945,
+      "control_gR1_angle_deg": 3.164705753326416,
+      "per_leaf_l2_cm": {
+        "left_forearm": 7.1326181292533875,
+        "right_forearm": 7.3573775589466095,
+        "left_lower_leg": 5.401385203003883,
+        "right_lower_leg": 4.4669512659311295,
+        "head": 5.924418196082115
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 7.037166506052017,
+        "right_forearm": 7.284670323133469,
+        "left_lower_leg": 5.432293191552162,
+        "right_lower_leg": 4.435513541102409,
+        "head": 5.915182456374168
+      }
+    },
+    {
+      "name": "s09_05",
+      "num_frames": 4539,
+      "p_leaf_joint_R_l1_cm": 4.539310187101364,
+      "p_leaf_joint_R_l2_cm": 9.280528873205185,
+      "base_p_leaf_joint_R_l2_cm": 9.277117997407913,
+      "control_p_leaf_joint_R_l1_cm": 4.5395661145448685,
+      "control_p_leaf_joint_R_l2_cm": 9.281299263238907,
+      "gR1_angle_deg": 2.023041009902954,
+      "base_gR1_angle_deg": 2.02575421333313,
+      "control_gR1_angle_deg": 2.0236616134643555,
+      "per_leaf_l2_cm": {
+        "left_forearm": 11.538391560316086,
+        "right_forearm": 12.099814414978027,
+        "left_lower_leg": 3.794598951935768,
+        "right_lower_leg": 11.284486204385757,
+        "head": 7.685353606939316
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 11.561544239521027,
+        "right_forearm": 12.079953402280807,
+        "left_lower_leg": 3.779018670320511,
+        "right_lower_leg": 11.304258555173874,
+        "head": 7.660812139511108
+      }
+    },
+    {
+      "name": "s10_01_a",
+      "num_frames": 5609,
+      "p_leaf_joint_R_l1_cm": 2.054511569440365,
+      "p_leaf_joint_R_l2_cm": 4.308182001113892,
+      "base_p_leaf_joint_R_l2_cm": 4.314367473125458,
+      "control_p_leaf_joint_R_l1_cm": 2.0532501861453056,
+      "control_p_leaf_joint_R_l2_cm": 4.304434359073639,
+      "gR1_angle_deg": 1.3130468130111694,
+      "base_gR1_angle_deg": 1.3140770196914673,
+      "control_gR1_angle_deg": 1.313042163848877,
+      "per_leaf_l2_cm": {
+        "left_forearm": 6.3619256019592285,
+        "right_forearm": 6.0304757207632065,
+        "left_lower_leg": 2.698289230465889,
+        "right_lower_leg": 2.6446281000971794,
+        "head": 3.8055893033742905
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 6.381522119045258,
+        "right_forearm": 6.040550768375397,
+        "left_lower_leg": 2.714810147881508,
+        "right_lower_leg": 2.6453811675310135,
+        "head": 3.789573535323143
+      }
+    },
+    {
+      "name": "s10_01_b",
+      "num_frames": 3330,
+      "p_leaf_joint_R_l1_cm": 1.8550969660282135,
+      "p_leaf_joint_R_l2_cm": 3.8353972136974335,
+      "base_p_leaf_joint_R_l2_cm": 3.814302757382393,
+      "control_p_leaf_joint_R_l1_cm": 1.8512001261115074,
+      "control_p_leaf_joint_R_l2_cm": 3.824605420231819,
+      "gR1_angle_deg": 1.1498593091964722,
+      "base_gR1_angle_deg": 1.1504888534545898,
+      "control_gR1_angle_deg": 1.1500978469848633,
+      "per_leaf_l2_cm": {
+        "left_forearm": 6.291823834180832,
+        "right_forearm": 5.252302438020706,
+        "left_lower_leg": 2.166184037923813,
+        "right_lower_leg": 3.0220193788409233,
+        "head": 2.444656938314438
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 6.266957521438599,
+        "right_forearm": 5.191217362880707,
+        "left_lower_leg": 2.1879183128476143,
+        "right_lower_leg": 3.0201585963368416,
+        "head": 2.4052614346146584
+      }
+    },
+    {
+      "name": "s10_01_c",
+      "num_frames": 2284,
+      "p_leaf_joint_R_l1_cm": 2.0564692094922066,
+      "p_leaf_joint_R_l2_cm": 4.532687738537788,
+      "base_p_leaf_joint_R_l2_cm": 4.531586170196533,
+      "control_p_leaf_joint_R_l1_cm": 2.0551731809973717,
+      "control_p_leaf_joint_R_l2_cm": 4.528846591711044,
+      "gR1_angle_deg": 1.7332412004470825,
+      "base_gR1_angle_deg": 1.736783504486084,
+      "control_gR1_angle_deg": 1.7343605756759644,
+      "per_leaf_l2_cm": {
+        "left_forearm": 8.781053870916367,
+        "right_forearm": 6.592870503664017,
+        "left_lower_leg": 1.7611300572752953,
+        "right_lower_leg": 3.0367258936166763,
+        "head": 2.4916574358940125
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 8.811759948730469,
+        "right_forearm": 6.514357030391693,
+        "left_lower_leg": 1.7914457246661186,
+        "right_lower_leg": 3.035956248641014,
+        "head": 2.5044092908501625
+      }
+    },
+    {
+      "name": "s10_02",
+      "num_frames": 3619,
+      "p_leaf_joint_R_l1_cm": 2.5216616690158844,
+      "p_leaf_joint_R_l2_cm": 5.157899856567383,
+      "base_p_leaf_joint_R_l2_cm": 5.129792168736458,
+      "control_p_leaf_joint_R_l1_cm": 2.515094541013241,
+      "control_p_leaf_joint_R_l2_cm": 5.142619460821152,
+      "gR1_angle_deg": 3.333836078643799,
+      "base_gR1_angle_deg": 3.32454252243042,
+      "control_gR1_angle_deg": 3.3270423412323,
+      "per_leaf_l2_cm": {
+        "left_forearm": 6.050314754247665,
+        "right_forearm": 8.188512921333313,
+        "left_lower_leg": 4.209420457482338,
+        "right_lower_leg": 3.742322325706482,
+        "head": 3.5989273339509964
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 6.000322476029396,
+        "right_forearm": 8.19668099284172,
+        "left_lower_leg": 4.190219193696976,
+        "right_lower_leg": 3.7178844213485718,
+        "head": 3.5438556224107742
+      }
+    },
+    {
+      "name": "s10_03_a",
+      "num_frames": 3038,
+      "p_leaf_joint_R_l1_cm": 2.193942666053772,
+      "p_leaf_joint_R_l2_cm": 4.517792537808418,
+      "base_p_leaf_joint_R_l2_cm": 4.534327983856201,
+      "control_p_leaf_joint_R_l1_cm": 2.2056473419070244,
+      "control_p_leaf_joint_R_l2_cm": 4.541086032986641,
+      "gR1_angle_deg": 2.351865291595459,
+      "base_gR1_angle_deg": 2.348414659500122,
+      "control_gR1_angle_deg": 2.35282039642334,
+      "per_leaf_l2_cm": {
+        "left_forearm": 4.742269963026047,
+        "right_forearm": 6.062090024352074,
+        "left_lower_leg": 3.4472208470106125,
+        "right_lower_leg": 3.8226742297410965,
+        "head": 4.514707624912262
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 4.764029383659363,
+        "right_forearm": 6.057319790124893,
+        "left_lower_leg": 3.545474633574486,
+        "right_lower_leg": 3.801412135362625,
+        "head": 4.5034050941467285
+      }
+    },
+    {
+      "name": "s10_03_b",
+      "num_frames": 3751,
+      "p_leaf_joint_R_l1_cm": 2.5891464203596115,
+      "p_leaf_joint_R_l2_cm": 5.39945587515831,
+      "base_p_leaf_joint_R_l2_cm": 5.3832221776247025,
+      "control_p_leaf_joint_R_l1_cm": 2.58492361754179,
+      "control_p_leaf_joint_R_l2_cm": 5.388777703046799,
+      "gR1_angle_deg": 3.0990023612976074,
+      "base_gR1_angle_deg": 3.097013235092163,
+      "control_gR1_angle_deg": 3.098010301589966,
+      "per_leaf_l2_cm": {
+        "left_forearm": 9.6363365650177,
+        "right_forearm": 5.813266709446907,
+        "left_lower_leg": 3.6303211003541946,
+        "right_lower_leg": 3.565738722681999,
+        "head": 4.351617395877838
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 9.535733610391617,
+        "right_forearm": 5.898706987500191,
+        "left_lower_leg": 3.597509115934372,
+        "right_lower_leg": 3.55265773832798,
+        "head": 4.331503808498383
+      }
+    },
+    {
+      "name": "s10_04_a",
+      "num_frames": 865,
+      "p_leaf_joint_R_l1_cm": 1.8663538619875908,
+      "p_leaf_joint_R_l2_cm": 3.9472904056310654,
+      "base_p_leaf_joint_R_l2_cm": 3.850032389163971,
+      "control_p_leaf_joint_R_l1_cm": 1.8500957638025284,
+      "control_p_leaf_joint_R_l2_cm": 3.908853977918625,
+      "gR1_angle_deg": 2.526702404022217,
+      "base_gR1_angle_deg": 2.5178604125976562,
+      "control_gR1_angle_deg": 2.5224175453186035,
+      "per_leaf_l2_cm": {
+        "left_forearm": 4.586284980177879,
+        "right_forearm": 4.75039929151535,
+        "left_lower_leg": 2.8742508962750435,
+        "right_lower_leg": 4.28704246878624,
+        "head": 3.23847234249115
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 4.42114844918251,
+        "right_forearm": 4.48395162820816,
+        "left_lower_leg": 2.878204919397831,
+        "right_lower_leg": 4.263518750667572,
+        "head": 3.203337639570236
+      }
+    },
+    {
+      "name": "s10_04_b",
+      "num_frames": 1511,
+      "p_leaf_joint_R_l1_cm": 3.192412108182907,
+      "p_leaf_joint_R_l2_cm": 6.595797091722488,
+      "base_p_leaf_joint_R_l2_cm": 6.523922830820084,
+      "control_p_leaf_joint_R_l1_cm": 3.194880858063698,
+      "control_p_leaf_joint_R_l2_cm": 6.5932974219322205,
+      "gR1_angle_deg": 3.584259271621704,
+      "base_gR1_angle_deg": 3.58239483833313,
+      "control_gR1_angle_deg": 3.5855326652526855,
+      "per_leaf_l2_cm": {
+        "left_forearm": 7.694812119007111,
+        "right_forearm": 13.13939094543457,
+        "left_lower_leg": 4.353910312056541,
+        "right_lower_leg": 3.8747668266296387,
+        "head": 3.9161071181297302
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 7.547116279602051,
+        "right_forearm": 13.03948163986206,
+        "left_lower_leg": 4.331692680716515,
+        "right_lower_leg": 3.8490965962409973,
+        "head": 3.8522280752658844
+      }
+    },
+    {
+      "name": "s10_04_c",
+      "num_frames": 2051,
+      "p_leaf_joint_R_l1_cm": 3.897317498922348,
+      "p_leaf_joint_R_l2_cm": 8.022880554199219,
+      "base_p_leaf_joint_R_l2_cm": 8.030407130718231,
+      "control_p_leaf_joint_R_l1_cm": 3.8967009633779526,
+      "control_p_leaf_joint_R_l2_cm": 8.020325750112534,
+      "gR1_angle_deg": 2.8225479125976562,
+      "base_gR1_angle_deg": 2.825485944747925,
+      "control_gR1_angle_deg": 2.8265798091888428,
+      "per_leaf_l2_cm": {
+        "left_forearm": 7.833857089281082,
+        "right_forearm": 17.309431731700897,
+        "left_lower_leg": 6.200890243053436,
+        "right_lower_leg": 4.483921825885773,
+        "head": 4.2863063514232635
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 7.8186944127082825,
+        "right_forearm": 17.36486256122589,
+        "left_lower_leg": 6.250146776437759,
+        "right_lower_leg": 4.464327916502953,
+        "head": 4.2540062218904495
+      }
+    },
+    {
+      "name": "s10_05",
+      "num_frames": 5427,
+      "p_leaf_joint_R_l1_cm": 3.5517994314432144,
+      "p_leaf_joint_R_l2_cm": 7.309845834970474,
+      "base_p_leaf_joint_R_l2_cm": 7.315858453512192,
+      "control_p_leaf_joint_R_l1_cm": 3.550676628947258,
+      "control_p_leaf_joint_R_l2_cm": 7.308797538280487,
+      "gR1_angle_deg": 1.990049958229065,
+      "base_gR1_angle_deg": 1.9862428903579712,
+      "control_gR1_angle_deg": 1.986932396888733,
+      "per_leaf_l2_cm": {
+        "left_forearm": 9.31258574128151,
+        "right_forearm": 10.240088403224945,
+        "left_lower_leg": 3.784073144197464,
+        "right_lower_leg": 8.670183271169662,
+        "head": 4.542296379804611
+      },
+      "base_per_leaf_l2_cm": {
+        "left_forearm": 9.318918734788895,
+        "right_forearm": 10.228383541107178,
+        "left_lower_leg": 3.815978392958641,
+        "right_lower_leg": 8.691471815109253,
+        "head": 4.524542018771172
+      }
+    }
+  ],
+  "command": "scripts/eval_newpl_joint_leaf_acc.py --cache data/experiments/newpl_joint_leaf_acc_20260619/full/caches/baseline_jointtarget_84D/dip_test/pl_curve_cache_manifest.json --checkpoint data/experiments/newpl_joint_leaf_acc_20260619/full/baseline_jointtarget_84D/amass_pretrain/best_loss.pt --output-json data/experiments/newpl_joint_leaf_acc_20260619/full/eval/baseline_jointtarget_84D_dip_test_after_amass.json --output-summary data/experiments/newpl_joint_leaf_acc_20260619/full/eval/baseline_jointtarget_84D_dip_test_after_amass.md"
+}

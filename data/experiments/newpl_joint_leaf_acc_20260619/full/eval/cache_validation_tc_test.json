@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "modes": {
+    "baseline_jointtarget_84D": {
+      "path": "data/experiments/newpl_joint_leaf_acc_20260619/full/caches/baseline_jointtarget_84D/tc_test/pl_curve_cache_manifest.json",
+      "num_sequences": 4,
+      "feature_dim": 84
+    },
+    "acc_root_102D": {
+      "path": "data/experiments/newpl_joint_leaf_acc_20260619/full/caches/acc_root_102D/tc_test/pl_curve_cache_manifest.json",
+      "num_sequences": 4,
+      "feature_dim": 102
+    },
+    "acc_mixed_102D": {
+      "path": "data/experiments/newpl_joint_leaf_acc_20260619/full/caches/acc_mixed_102D/tc_test/pl_curve_cache_manifest.json",
+      "num_sequences": 4,
+      "feature_dim": 102
+    }
+  },
+  "invariants": {
+    "shared_sequences": 4,
+    "max_abs_pl_target_diff": 0.0,
+    "max_abs_pl_base_diff": 0.0,
+    "max_abs_first84_input_diff": 0.0,
+    "max_abs_acc_root_vs_mixed_last18_diff": 52.04293441772461,
+    "passes_same_target_base_first84_lt_1e-6": true
+  }
+}

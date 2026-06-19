@@ -7,6 +7,7 @@ from l4_tail_update_qstate import UniformCubicBSpline
 
 
 PL_LEGACY_INPUT_SIZE = 84
+PL_JOINT_LEAF_ACC_INPUT_SIZE = 102
 PL_SMOOTH_RESIDUAL_INPUT_SIZE = 102
 PL_OFFSET_AWARE_INPUT_SIZE = 156
 PL_BONE_AUX_DIM = 30
@@ -564,6 +565,37 @@ def pl_init_feature_from_pose(offset_r, pose, body_model):
     pRL = (verts[0, :5] - verts[0, 5:]).mm(pose[0, 0]).ravel()
     gR0 = -pose[0, 0, 1]
     return pl_init_feature(offset_r.to(device=ref.device, dtype=ref.dtype), pRL, gR0).cpu()
+
+
+def pl_joint_leaf_target_from_pose(pose, body_model):
+    """Return SMPL joint-leaf PL target: p_leaf_joint_R[15] + gR1[3]."""
+    if pose.dim() == 3:
+        pose = pose.unsqueeze(0)
+        squeeze = True
+    else:
+        squeeze = False
+    ref = body_model._J
+    pose = pose.to(device=ref.device, dtype=ref.dtype)
+    _, joints = body_model.forward_kinematics(pose, calc_mesh=False)
+    leaf_ids = torch.as_tensor(PL_BONE_LEAF_JOINT_IDS, device=joints.device, dtype=torch.long)
+    leaf = joints.index_select(1, leaf_ids)
+    p_leaf = (leaf - joints[:, 0:1]).bmm(pose[:, 0]).reshape(pose.shape[0], 15)
+    gR = -pose[:, 0, :, 1]
+    target = torch.cat((p_leaf, gR), dim=-1)
+    return target[0] if squeeze else target
+
+
+def pl_joint_leaf_init_feature(offset_r, pl0, init_size=36):
+    """Build NewPL init feature for joint-leaf caches."""
+    pl0 = normalize_gravity(pl0.float())
+    if int(init_size) == 18:
+        return pl0.cpu()
+    if int(init_size) != 36:
+        raise ValueError(f'Unsupported joint-leaf init_size={init_size}; expected 18 or 36.')
+    offset = offset_r.float().reshape(-1)
+    if offset.numel() != 18:
+        raise ValueError(f'Expected offset_r with 18 values, got {offset.numel()}.')
+    return torch.cat((offset.cpu(), pl0[..., :15].cpu(), pl0[..., 15:].cpu()), dim=-1)
 
 
 def normalize_gravity(pl_output):

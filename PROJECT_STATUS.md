@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: AccCurve v3 generalization-failure diagnostics
-Current task: commit/push acc_curve_v3_error_distribution_rjs_audit_20260618 script, docs, and lightweight results
-Review state: Diagnostic complete; likely model overfit / TC overcorrection, not clear rJS target mismatch
-Current changed files: scripts/audit_acc_curve_v3_error_distribution_rjs_20260618.py, data/experiments/acc_curve_v3_error_distribution_rjs_audit_20260618/*, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
-Current module: acc_curve_v3_error_distribution_rjs_audit_20260618
-Current replacement version: diagnostic-only AccCurve v3 error/rJS/correction transfer audit
-Current experiment: diagnose why `acc_curve_v3_leafrel_causal_butter_20260618` improves DIP test but worsens TotalCapture test; root IMU index 5 remains reference only and excluded from residual/correction metrics; frame is model/world M; base/target use causal Butterworth order=2 cutoff=4Hz
-Current result: likely_model_overfit; DIP train vs TC test base/correction distribution distance has mean diff norm 0.809654, diagonal Gaussian FD 2.173161, MMD 0.061301, mean-vector cosine 0.268100; largest shifted TC test sensors are right_forearm L2 1.354584, left_lower_leg 1.212403, right_lower_leg 1.204943; rJS DIP train vs TC test distance is small/moderate (mean diff norm 0.136650, FD 0.034094, mean cosine 0.961810); rJS acceleration offset contribution is similar on DIP test 0.733277 vs TC test 0.756321; correction transfer shows TC harmful_rate 0.564954 and overcorrection 0.304232 vs DIP harmful_rate 0.442142; recommendation: use base only for TC-like distribution, then test smaller residual_scale or sensor-specific residual gate
+Current stage: Joint-leaf acceleration NewPL formal run complete
+Current task: record final `newpl_joint_leaf_acc_20260619/full` module-only results
+Review state: formal AMASS -> DIP training/eval completed; acceleration features are not effective by the planned module criterion
+Current changed files: pl_curve.py, pl_curve_train.py, pl_joint_leaf_acc_cache.py, scripts/eval_newpl_joint_leaf_acc.py, data/experiments/newpl_joint_leaf_acc_20260619/smoke/*, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
+Current module: newpl_joint_leaf_acc_20260619
+Current replacement version: PL-s1 / joint-leaf acceleration route with `baseline_jointtarget_84D`, `acc_root_102D`, `acc_mixed_102D`
+Current experiment: preserve `PLCurveModule.forward_sequence -> step(feature_t, base_pl_t) -> base+delta -> spline decode -> pl_curve_loss`, but reinterpret the 18D PL state as `p_leaf_joint_R[15]+gR1[3]`; target/control come from `/home/lingfeng/projects/data/dataset_work/*/gt_control/*/joint_pos_R(_control)` leaf joints plus `pl_pRB_gR1(_control)` gravity; base is `pose_prephysics` FK in the same joint-leaf space; no old IK/full-pipeline eval.
+Current result: full module eval negative. After DIP fine-tune, DIP test p_leaf L2 is baseline `5.702842 cm`, acc_root `5.703787` (+0.000945), acc_mixed `5.703366` (+0.000524); TC test p_leaf L2 is baseline `5.174598 cm`, acc_root `5.176143` (+0.001545), acc_mixed `5.176165` (+0.001567). gR1 improves only by `0.000014-0.000170 deg`. This fails the planned effective criterion: lower p_leaf_joint_R L2 without worse gR1.
 Current blocker: none
-Next action: push commit to GitHub; do not commit large checkpoints or dataset shards unless explicitly requested
-Git state: dirty worktree with existing unrelated edits plus new AccCurve v1 TC eval files
+Next action: do not promote this acceleration-feature route; inspect why training stays near pose_prephysics base, or try a stronger residual/gating design only if a new hypothesis is documented
+Git state: dirty worktree with existing unrelated edits; do not revert unrelated files
 CodeGraph state: healthy indexed native backend
-Detailed logs: data/experiments/acc_curve_v3_error_distribution_rjs_audit_20260618/summary.md and JSON/CSV audit artifacts
+Detailed logs: data/experiments/newpl_joint_leaf_acc_20260619/full/summary.json, summary.md, eval/*.json, and EXPERIMENT_LOG.md `EXP-20260619-newpl_joint_leaf_acc`
 
 ## 0. Version-Line Reading Guide
 

@@ -19,6 +19,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | PL-s1 / historical processed | `newpl_v1` through `newpl_v4_init36`; details in `EXP-20260604-*` and `EXP-20260605-001` |
 | PL-s1 / official-route v5 | `EXP-20260607-newpl_v5_official_protocol`; root `data/experiments/newpl_v5_official_protocol_20260607_tuned/` |
 | PL-s1 / acceleration input filters | `EXP-20260612-newpl_v5_smoothacc`, `EXP-20260612-newpl_v5_butteracc`, `EXP-20260612-newpl_v5_realtime_smooth_residual` |
+| PL-s1 / joint-leaf acceleration | `EXP-20260619-newpl_joint_leaf_acc`; root `data/experiments/newpl_joint_leaf_acc_20260619/`; smoke cache/train/eval only so far |
 | PL-s1 / predictive/root/offset | NewPL-root, next-control, offset-v6, v7/v7b acc-aux records in later detailed sections |
 | IK-s1 | `newik1_v1` through v14 search records, orchestrator logs, and S4/module JSONs |
 | IK-s2 / NewPose | `newpose_ctrl_v1/v2` records and module/full-pipeline evals |
@@ -33,6 +34,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | newpl_v5_official_protocol | `EXP-20260607-newpl_v5_official_protocol`; AMASS pretrain -> DIP fine-tune module-level JSONs under `data/experiments/newpl_v5_official_protocol_20260607_tuned/` |
 | newpl_v5_smoothacc | `EXP-20260612-newpl_v5_smoothacc`; smooth-aM caches, AMASS -> DIP training, module-level JSONs under `data/experiments/newpl_v5_smoothacc_20260612_fastval2_b256/` |
 | newpl_v5_butteracc | `EXP-20260612-newpl_v5_butteracc`; causal Butterworth aM input-only gate under `data/experiments/newpl_v5_butteracc_20260612_full/`, plus forced fc12 longtrain under `data/experiments/newpl_v5_butteracc_20260612_forced_fc12_longtrain/` |
+| newpl_joint_leaf_acc_20260619 | `EXP-20260619-newpl_joint_leaf_acc`; joint-leaf NewPL cache/training/eval route and smoke artifacts under `data/experiments/newpl_joint_leaf_acc_20260619/smoke/` |
 | newpl_v5_realtime_smooth_residual | `EXP-20260612-newpl_v5_realtime_smooth_residual`; root `data/experiments/newpl_v5_realtime_residual_20260612_full_causal_iir20/`; raw v5 rows are historical references unless same-cache re-eval is run |
 | newpl_v6_next_control_smoothacc_gR1 | `EXP-20260613-newpl_v6_next_control_smoothacc_gR1`; root `/tmp/globalpose_newpl_v6_next_control_smoothacc_gR1_20260613/full`; smooth-aM cache reuse, AMASS 80 -> DIP 40, module eval only |
 | newpl_v6_next_p_pdot_pddot_strong | `EXP-20260616-newpl_v6_next_p_pdot_pddot_strong`; root `data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full`; decoded next p/pd/pdd strong supervision, full AMASS->DIP current/next-frame module eval, diagnostic only |
@@ -15368,3 +15370,167 @@ run log: data/experiments/newpl_v4_init36_dip_fullpipeline_11metrics_20260616/lo
 exact command: data/experiments/newpl_v4_init36_dip_fullpipeline_11metrics_20260616/exact_command.txt
 ```
 <!-- END newpl-v4-init36-dip-fullpipeline-11metrics--2026-06-16 -->
+
+<!-- BEGIN newpl-joint-leaf-acc--2026-06-19 -->
+## EXP-20260619-newpl_joint_leaf_acc
+
+Line: `PL-s1 / joint-leaf acceleration`
+
+Purpose: add a joint-leaf semantic NewPL cache/training/eval route while preserving the existing PLCurve forward/loss structure. This experiment intentionally does not run old IK/full-pipeline evaluation because those consumers interpret the first 15D as vertex `pRB`, while this cache uses joint-leaf `p_leaf_joint_R`.
+
+Implementation:
+
+```text
+helpers: pl_curve.py
+  PL_JOINT_LEAF_ACC_INPUT_SIZE = 102
+  pl_joint_leaf_target_from_pose(pose, body_model)
+  pl_joint_leaf_init_feature(offset_r, pl0, init_size)
+
+cache builder: pl_joint_leaf_acc_cache.py
+  manifest type: pl_curve_joint_leaf_acc_cache_v1
+  fields: pl_input, pl_target, pl_base, pl_init_feature, pl_target_control
+  target/control source: /home/lingfeng/projects/data/dataset_work/*/gt_control/*/joint_pos_R(_control)
+  gravity/control source: pl_pRB_gR1(_control) gravity block
+  base source: pose_prephysics FK in the same joint-leaf semantic space
+  frozen acceleration checkpoint:
+    /home/lingfeng/projects/imu_acc_explainability/code/outputs/imu_leaf_acc_predictor_v1/full_world_leaf5_no_trans_smoothed_gtacc_centered_ma_w9_20260619_155137/dip_finetune/best.pt
+
+training compatibility: pl_curve_train.py accepts pl_curve_joint_leaf_acc_cache_v1
+module eval: scripts/eval_newpl_joint_leaf_acc.py
+```
+
+Feature modes:
+
+| Mode | Dim | Layout |
+|---|---:|---|
+| baseline_jointtarget_84D | 84 | `aRB[18]+wRB[18]+RRB[45]+gR0[3]` |
+| acc_root_102D | 102 | baseline 84D + `a_smoothed_R[3]+a_output_R[15]` |
+| acc_mixed_102D | 102 | baseline 84D + `a_smoothed_W[3]+a_output_W[15]` |
+
+Smoke commands:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+
+/home/lingfeng/.conda/envs/globalpose-gpu/bin/python pl_joint_leaf_acc_cache.py build \
+  --input-cache data/experiments/newpl_v5_official_protocol_20260607/caches/dip_val_with_offset_r/baseline_cache_manifest.json \
+  --gt-control-cache /home/lingfeng/projects/data/dataset_work/dip/gt_control/val/manifest.json \
+  --output-dir data/experiments/newpl_joint_leaf_acc_20260619/smoke/caches/dip_val_baseline_jointtarget_84D \
+  --feature-mode baseline_jointtarget_84D --max-sequences 2 --max-frames 120 --shard-size 2 --device cpu
+
+/home/lingfeng/.conda/envs/globalpose-gpu/bin/python pl_joint_leaf_acc_cache.py build \
+  --input-cache data/experiments/newpl_v5_official_protocol_20260607/caches/dip_val_with_offset_r/baseline_cache_manifest.json \
+  --gt-control-cache /home/lingfeng/projects/data/dataset_work/dip/gt_control/val/manifest.json \
+  --output-dir data/experiments/newpl_joint_leaf_acc_20260619/smoke/caches/dip_val_acc_root_102D \
+  --feature-mode acc_root_102D --max-sequences 2 --max-frames 120 --shard-size 2 --device cpu
+
+/home/lingfeng/.conda/envs/globalpose-gpu/bin/python pl_joint_leaf_acc_cache.py build \
+  --input-cache data/experiments/newpl_v5_official_protocol_20260607/caches/dip_val_with_offset_r/baseline_cache_manifest.json \
+  --gt-control-cache /home/lingfeng/projects/data/dataset_work/dip/gt_control/val/manifest.json \
+  --output-dir data/experiments/newpl_joint_leaf_acc_20260619/smoke/caches/dip_val_acc_mixed_102D \
+  --feature-mode acc_mixed_102D --max-sequences 2 --max-frames 120 --shard-size 2 --device cpu
+
+/home/lingfeng/.conda/envs/globalpose-gpu/bin/python pl_joint_leaf_acc_cache.py validate \
+  --manifests \
+  data/experiments/newpl_joint_leaf_acc_20260619/smoke/caches/dip_val_baseline_jointtarget_84D/pl_curve_cache_manifest.json \
+  data/experiments/newpl_joint_leaf_acc_20260619/smoke/caches/dip_val_acc_root_102D/pl_curve_cache_manifest.json \
+  data/experiments/newpl_joint_leaf_acc_20260619/smoke/caches/dip_val_acc_mixed_102D/pl_curve_cache_manifest.json \
+  --output-json data/experiments/newpl_joint_leaf_acc_20260619/smoke/cache_validation.json
+
+/home/lingfeng/.conda/envs/globalpose-gpu/bin/python pl_curve_train.py \
+  --train-cache data/experiments/newpl_joint_leaf_acc_20260619/smoke/caches/dip_val_baseline_jointtarget_84D/pl_curve_cache_manifest.json \
+  --val-cache data/experiments/newpl_joint_leaf_acc_20260619/smoke/caches/dip_val_baseline_jointtarget_84D/pl_curve_cache_manifest.json \
+  --output-dir data/experiments/newpl_joint_leaf_acc_20260619/smoke/train_baseline_jointtarget_84D \
+  --experiment-name smoke_baseline_jointtarget_84D --epochs 1 --window 61 --lr 1e-4 \
+  --hidden-size 64 --tail-length 4 --residual-scale 0.005 --dropout 0.1 --grad-clip 1.0 \
+  --init-size 36 --batch-size 2 --max-train-sequences 2 --max-val-sequences 2 \
+  --disable-ik-distill --baseline-pRB-weight 0.0 --baseline-gR1-weight 0.0 \
+  --gt-control-pRB-weight 0.3 --gt-control-gR1-weight 0.1 \
+  --pRB-ddot-smooth-weight 0.000001 --gR1-dot-weight 0.03 --gR1-ddot-weight 0.001 \
+  --selection-metric control_physical
+
+/home/lingfeng/.conda/envs/globalpose-gpu/bin/python scripts/eval_newpl_joint_leaf_acc.py \
+  --cache data/experiments/newpl_joint_leaf_acc_20260619/smoke/caches/dip_val_baseline_jointtarget_84D/pl_curve_cache_manifest.json \
+  --checkpoint data/experiments/newpl_joint_leaf_acc_20260619/smoke/train_baseline_jointtarget_84D/best_loss.pt \
+  --output-json data/experiments/newpl_joint_leaf_acc_20260619/smoke/eval_baseline_jointtarget_84D.json \
+  --output-summary data/experiments/newpl_joint_leaf_acc_20260619/smoke/eval_baseline_jointtarget_84D.md
+```
+
+Smoke validation:
+
+| Check | Value |
+|---|---:|
+| shared sequences | `2` |
+| frames per mode | `240` |
+| baseline feature dim | `84` |
+| acc_root/acc_mixed feature dim | `102` |
+| max target diff across modes | `0.0` |
+| max base diff across modes | `0.0` |
+| max first84 input diff across modes | `0.0` |
+| max acc_root-vs-acc_mixed last18 diff | `0.1592593193` |
+| same target/base/first84 invariant | pass |
+
+Smoke train result:
+
+| Epoch | train loss | val selection loss | weighted val loss |
+|---:|---:|---:|---:|
+| 1 | `0.0000731783` | `0.0000374396` | `0.0000806001` |
+
+Smoke module eval:
+
+| Metric | Value |
+|---|---:|
+| p_leaf_joint_R L1 cm | `0.447489` |
+| p_leaf_joint_R L2 cm | `1.008317` |
+| base p_leaf_joint_R L2 cm | `1.008697` |
+| control p_leaf_joint_R L2 cm | `1.020434` |
+| gR1 angle deg | `0.456831` |
+| base gR1 angle deg | `0.454811` |
+| control gR1 angle deg | `0.459057` |
+
+Artifacts:
+
+```text
+full summary: data/experiments/newpl_joint_leaf_acc_20260619/full/summary.json
+full summary md: data/experiments/newpl_joint_leaf_acc_20260619/full/summary.md
+full eval JSONs: data/experiments/newpl_joint_leaf_acc_20260619/full/eval/*.json
+full logs: data/experiments/newpl_joint_leaf_acc_20260619/full/logs/run.log
+data/experiments/newpl_joint_leaf_acc_20260619/smoke/cache_validation.json
+data/experiments/newpl_joint_leaf_acc_20260619/smoke/caches/dip_val_baseline_jointtarget_84D/pl_curve_cache_manifest.json
+data/experiments/newpl_joint_leaf_acc_20260619/smoke/caches/dip_val_acc_root_102D/pl_curve_cache_manifest.json
+data/experiments/newpl_joint_leaf_acc_20260619/smoke/caches/dip_val_acc_mixed_102D/pl_curve_cache_manifest.json
+data/experiments/newpl_joint_leaf_acc_20260619/smoke/train_baseline_jointtarget_84D/best_loss.pt
+data/experiments/newpl_joint_leaf_acc_20260619/smoke/train_baseline_jointtarget_84D/train_result.json
+data/experiments/newpl_joint_leaf_acc_20260619/smoke/eval_baseline_jointtarget_84D.json
+data/experiments/newpl_joint_leaf_acc_20260619/smoke/eval_baseline_jointtarget_84D.md
+```
+
+Decision:
+
+```text
+Implementation/smoke gate passed, then the full AMASS -> DIP module-only run
+completed under data/experiments/newpl_joint_leaf_acc_20260619/full.
+Final conclusion is negative: the acceleration modes do not reduce
+p_leaf_joint_R L2 on DIP test or TotalCapture test. They improve gR1 by a
+negligible amount only, so they fail the planned effective criterion.
+No IK/full-pipeline run should be attached to this result because the 15D
+semantic is joint-leaf, not legacy vertex pRB.
+```
+
+Full-run final same-cache module metrics:
+
+| Stage | Mode | p_leaf_joint_R L2 cm | gR1 deg | Delta p_leaf L2 vs baseline | Delta gR1 vs baseline |
+|---|---|---:|---:|---:|---:|
+| DIP test after AMASS | baseline_jointtarget_84D | `5.702977` | `2.343299` | `0.000000` | `0.000000` |
+| DIP test after AMASS | acc_root_102D | `5.703926` | `2.343206` | `+0.000949` | `-0.000093` |
+| DIP test after AMASS | acc_mixed_102D | `5.703530` | `2.343286` | `+0.000553` | `-0.000013` |
+| TC test after AMASS | baseline_jointtarget_84D | `5.174403` | `4.200520` | `0.000000` | `0.000000` |
+| TC test after AMASS | acc_root_102D | `5.176007` | `4.200364` | `+0.001604` | `-0.000157` |
+| TC test after AMASS | acc_mixed_102D | `5.176037` | `4.200342` | `+0.001634` | `-0.000178` |
+| DIP test after DIP FT | baseline_jointtarget_84D | `5.702842` | `2.343188` | `0.000000` | `0.000000` |
+| DIP test after DIP FT | acc_root_102D | `5.703787` | `2.343102` | `+0.000945` | `-0.000086` |
+| DIP test after DIP FT | acc_mixed_102D | `5.703366` | `2.343174` | `+0.000524` | `-0.000014` |
+| TC test after DIP FT | baseline_jointtarget_84D | `5.174598` | `4.200546` | `0.000000` | `0.000000` |
+| TC test after DIP FT | acc_root_102D | `5.176143` | `4.200393` | `+0.001545` | `-0.000153` |
+| TC test after DIP FT | acc_mixed_102D | `5.176165` | `4.200376` | `+0.001567` | `-0.000170` |
+<!-- END newpl-joint-leaf-acc--2026-06-19 -->
