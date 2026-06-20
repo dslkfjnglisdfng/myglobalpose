@@ -1,0 +1,529 @@
+{
+  "experiment_name": "pl_joint_control_acc_aug102_v1_smoke",
+  "status": "ok",
+  "config": {
+    "train_cache": "data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/cache/dip_val/pl_curve_cache_manifest.json",
+    "val_cache": "data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/cache/dip_val/pl_curve_cache_manifest.json",
+    "output_dir": "data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/train",
+    "experiment_name": "pl_joint_control_acc_aug102_v1_smoke",
+    "epochs": 1,
+    "window": 61,
+    "lr": 0.0001,
+    "hidden_size": 128,
+    "tail_length": 4,
+    "residual_scale": 0.005,
+    "dropout": 0.0,
+    "model_variant": "base",
+    "input_size": 102,
+    "condition_scale": 1.0,
+    "offset_embed_size": 128,
+    "film_scale": 0.1,
+    "bone_aux_dim": 0,
+    "bone_residual_scale": 0.05,
+    "grad_clip": 1.0,
+    "init_checkpoint": "",
+    "init_size": 36,
+    "early_stop_min_delta": 0.0,
+    "early_stop_patience": 0,
+    "selection_metric": "pl_and_control_physical",
+    "max_train_sequences": 1,
+    "max_val_sequences": 1,
+    "val_window_length": 61,
+    "batch_size": 1,
+    "disable_ik_distill": true,
+    "pRB_weight": 1.0,
+    "gR1_weight": 0.3,
+    "baseline_pRB_weight": 0.0,
+    "baseline_gR1_weight": 0.0,
+    "gt_control_pRB_weight": 0.5,
+    "gt_control_gR1_weight": 0.1,
+    "control_point_prior_weight": 0.001,
+    "tail_update_prior_weight": 0.001,
+    "pRB_dot_weight": 0.5,
+    "pRB_ddot_weight": 0.1,
+    "pRB_ddot_smooth_weight": 0.001,
+    "gR1_dot_weight": 0.0,
+    "gR1_ddot_weight": 0.0,
+    "gR_smooth_weight": 0.001,
+    "ik_distill_weight": null,
+    "bone6d_weight": null,
+    "bone_geo_weight": null,
+    "gt_control_bone6d_weight": null,
+    "gt_control_bone_geo_weight": null,
+    "bone6d_dot_weight": null,
+    "bone6d_ddot_weight": null,
+    "bone_control_point_prior_weight": null,
+    "bone_tail_update_prior_weight": null,
+    "offset_contrast_weight": 0.0,
+    "offset_contrast_margin": 0.001,
+    "offset_contrast_mode": "roll_random",
+    "offset_contrast_target": "full_pl",
+    "offset_consistency_weight": 0.0,
+    "offset_consistency_target": "full_pl",
+    "offset_init_dropout_prob": 0.0,
+    "offset_init_noise_std": 0.0,
+    "imu_proxy_offset_acc_weight": 0.0,
+    "imu_proxy_acc_scale": 30.0,
+    "train_gt_control_cache": "",
+    "val_gt_control_cache": ""
+  },
+  "weights": {
+    "pRB": 1.0,
+    "gR1": 0.3,
+    "baseline_pRB": 0.0,
+    "baseline_gR1": 0.0,
+    "gt_control_pRB": 0.5,
+    "gt_control_gR1": 0.1,
+    "control_point_prior": 0.001,
+    "tail_update_prior": 0.001,
+    "pRB_dot": 0.5,
+    "pRB_ddot": 0.1,
+    "pRB_ddot_smooth": 0.001,
+    "gR1_dot": 0.0,
+    "gR1_ddot": 0.0,
+    "gR_smooth": 0.001,
+    "ik1_pRJ": 0.05,
+    "ik1_gR2": 0.05,
+    "ik2_r6d": 0.05,
+    "bone6d": 0.0,
+    "bone_geo": 0.0,
+    "gt_control_bone6d": 0.0,
+    "gt_control_bone_geo": 0.0,
+    "bone6d_dot": 0.0,
+    "bone6d_ddot": 0.0,
+    "bone_control_point_prior": 0.0,
+    "bone_tail_update_prior": 0.0
+  },
+  "train_cache_manifest": {
+    "type": "pl_joint_control_acc_aug102_cache_v1",
+    "compatible_train_cache_type": "pl_curve_joint_leaf_acc_cache_v1",
+    "experiment": "pl_joint_control_acc_aug102_v1",
+    "target_mode": "joint_pRB",
+    "target_contract": "SMPL joint-based root-frame pRB target. joint_pRB = (joints[:, [18,19,4,5,15]] - joints[:, 0:1]) @ root_R. This is not the legacy IMU-vertex pRB target.",
+    "feature_mode": "frozen_joint_acc_aug102",
+    "feature_dim": 102,
+    "feature_layout": "aRB[18] + wRB[18] + RRB[45] + gR0[3] + frozen_joint_acc_R[15] + root_acc_smooth_R[3]",
+    "feature_indices": {
+      "aRB": [
+        0,
+        18
+      ],
+      "wRB": [
+        18,
+        36
+      ],
+      "RRB": [
+        36,
+        81
+      ],
+      "gR0": [
+        81,
+        84
+      ],
+      "frozen_joint_acc_R": [
+        84,
+        99
+      ],
+      "root_acc_smooth_R": [
+        99,
+        102
+      ]
+    },
+    "source_cache": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_val_with_offset_r/baseline_cache_manifest.json",
+    "source_manifest": {
+      "source_input": "data/dataset_work/DIP_IMU_globalpose/val.pt",
+      "source_manifest": null,
+      "device": "cuda",
+      "euler_seq": "XYZ",
+      "max_frames": 0,
+      "max_sequences": 0,
+      "save_prephysics": true,
+      "neural_only_prephysics": true,
+      "cache_files": [
+        {
+          "path": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_val_with_offset_r/baseline_cache_shard00000.pt",
+          "source_path": "data/dataset_work/L4Cache/prephysics_pose_velocity_dip_val_globalpose_neural_only/baseline_cache_shard00000.pt",
+          "num_sequences": 6,
+          "num_frames": 30771,
+          "failures": [],
+          "offset_r_shape": [
+            6,
+            6,
+            3
+          ]
+        }
+      ],
+      "num_sequences": 6,
+      "num_frames": 30771,
+      "source_cache_manifest": "data/dataset_work/L4Cache/prephysics_pose_velocity_dip_val_globalpose_neural_only/baseline_cache_manifest.json",
+      "offset_source_path": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_val_offset_alias.pt",
+      "offset_source_key": "imu_offset_r",
+      "offset_field_added": "offset_r",
+      "offset_contract": "offset_r is sequence-level r_JS with shape [6,3]: IMU origin relative to mapped joint, expressed in joint-local coordinates. It is copied from processed data and is not repeated per frame."
+    },
+    "pl_base_source": "official_pl_s1",
+    "pl_base_source_detail": "GPNet.plnet official PL-s1 RNN on legacy 84D IMU input; base is diagnostic only.",
+    "target_control_fit_contract": {
+      "mode": "derivative_aware_v1",
+      "dt": 0.016666666666666666,
+      "weights": {
+        "position": 1.0,
+        "velocity": 0.03,
+        "acceleration": 0.0003,
+        "ridge": 1e-06
+      },
+      "objective": "min_C wp||S C - x||^2 + wv||D1 C - fd_dot(x)||^2 + wa||D2 C - fd_ddot(x)||^2 + wr||C||^2",
+      "finite_difference": {
+        "velocity": "central difference with one-sided endpoints, divided by dt",
+        "acceleration": "three-point second difference with endpoint copy, divided by dt^2"
+      },
+      "note": "Use fit_uniform_cubic_spline_controls_position_only for historical exact sample reconstruction."
+    },
+    "init_size": 36,
+    "init_layout": "offset_r[18] + initial_joint_pRB[15] + gR0[3]",
+    "frozen_acc_source": {
+      "network": "imu_leaf_acc_predictor_v1",
+      "checkpoint_path": "/home/lingfeng/projects/imu_acc_explainability/code/outputs/imu_leaf_acc_predictor_v1/full_world_leaf5_no_trans_smoothed_gtacc_centered_ma_w9_20260619_155137/dip_finetune/best.pt",
+      "model_config": {
+        "input_size": 126,
+        "hidden_size": 256,
+        "num_layers": 2,
+        "dropout": 0.2,
+        "output_size": 15
+      },
+      "normalization_keys": [
+        "input_mean",
+        "input_std"
+      ],
+      "input_contract": "RMB[54]+wM[18]+aM_smoothed[18]+aM[18]+a_residual[18]=126D",
+      "output_original_frame": "world/model frame",
+      "converted_frame": "PL/root frame",
+      "conversion": "a_joint_pred_R = a_joint_pred_W @ RMB[:,5]",
+      "leaf_joints": [
+        18,
+        19,
+        4,
+        5,
+        15
+      ],
+      "eval_only": true
+    },
+    "root_acc_smooth_contract": {
+      "source": "selected root/pelvis IMU acceleration aM[:,5]",
+      "smoothing": "centered_ma window=9",
+      "conversion": "a_root_smooth_R = a_root_smooth_W @ RMB[:,5]",
+      "not_smpl_fk_root_acceleration": true
+    },
+    "notices": [
+      "legacy vertex pRB target is not used as training target.",
+      "PL output target changed to SMPL joint pRB.",
+      "frozen acceleration predictor is eval-only and not trained.",
+      "no acceleration target output; acceleration is an auxiliary input and decoded trajectory evaluation target.",
+      "102D frozen_joint_acc_aug102 is not smooth_residual 102D."
+    ],
+    "sanity": {
+      "frozen_joint_acc_W_l2_norm_mean": 0.12346813082695007,
+      "frozen_joint_acc_R_l2_norm_mean": 0.12346813082695007,
+      "root_acc_smooth_W_l2_norm_mean": 0.0630120187997818,
+      "root_acc_smooth_R_l2_norm_mean": 0.0630120187997818,
+      "joint_minus_vertex_l2_mean_m": 0.2615535259246826,
+      "feature_dim": 102,
+      "target_dim": 18
+    },
+    "cache_files": [
+      {
+        "path": "data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/cache/dip_val/pl_joint_control_acc_aug102_shard00000.pt",
+        "num_sequences": 1,
+        "num_frames": 120
+      }
+    ],
+    "num_sequences": 1,
+    "num_frames": 120,
+    "command": "pl_joint_control_acc_aug102_cache.py build --input-cache data/experiments/newpl_v5_official_protocol_20260607/caches/dip_val_with_offset_r/baseline_cache_manifest.json --gt-control-cache /home/lingfeng/projects/data/dataset_work/dip/gt_control/val/manifest.json --output-dir data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/cache/dip_val --max-sequences 1 --max-frames 120 --shard-size 10 --device cuda:0"
+  },
+  "val_cache_manifest": {
+    "type": "pl_joint_control_acc_aug102_cache_v1",
+    "compatible_train_cache_type": "pl_curve_joint_leaf_acc_cache_v1",
+    "experiment": "pl_joint_control_acc_aug102_v1",
+    "target_mode": "joint_pRB",
+    "target_contract": "SMPL joint-based root-frame pRB target. joint_pRB = (joints[:, [18,19,4,5,15]] - joints[:, 0:1]) @ root_R. This is not the legacy IMU-vertex pRB target.",
+    "feature_mode": "frozen_joint_acc_aug102",
+    "feature_dim": 102,
+    "feature_layout": "aRB[18] + wRB[18] + RRB[45] + gR0[3] + frozen_joint_acc_R[15] + root_acc_smooth_R[3]",
+    "feature_indices": {
+      "aRB": [
+        0,
+        18
+      ],
+      "wRB": [
+        18,
+        36
+      ],
+      "RRB": [
+        36,
+        81
+      ],
+      "gR0": [
+        81,
+        84
+      ],
+      "frozen_joint_acc_R": [
+        84,
+        99
+      ],
+      "root_acc_smooth_R": [
+        99,
+        102
+      ]
+    },
+    "source_cache": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_val_with_offset_r/baseline_cache_manifest.json",
+    "source_manifest": {
+      "source_input": "data/dataset_work/DIP_IMU_globalpose/val.pt",
+      "source_manifest": null,
+      "device": "cuda",
+      "euler_seq": "XYZ",
+      "max_frames": 0,
+      "max_sequences": 0,
+      "save_prephysics": true,
+      "neural_only_prephysics": true,
+      "cache_files": [
+        {
+          "path": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_val_with_offset_r/baseline_cache_shard00000.pt",
+          "source_path": "data/dataset_work/L4Cache/prephysics_pose_velocity_dip_val_globalpose_neural_only/baseline_cache_shard00000.pt",
+          "num_sequences": 6,
+          "num_frames": 30771,
+          "failures": [],
+          "offset_r_shape": [
+            6,
+            6,
+            3
+          ]
+        }
+      ],
+      "num_sequences": 6,
+      "num_frames": 30771,
+      "source_cache_manifest": "data/dataset_work/L4Cache/prephysics_pose_velocity_dip_val_globalpose_neural_only/baseline_cache_manifest.json",
+      "offset_source_path": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_val_offset_alias.pt",
+      "offset_source_key": "imu_offset_r",
+      "offset_field_added": "offset_r",
+      "offset_contract": "offset_r is sequence-level r_JS with shape [6,3]: IMU origin relative to mapped joint, expressed in joint-local coordinates. It is copied from processed data and is not repeated per frame."
+    },
+    "pl_base_source": "official_pl_s1",
+    "pl_base_source_detail": "GPNet.plnet official PL-s1 RNN on legacy 84D IMU input; base is diagnostic only.",
+    "target_control_fit_contract": {
+      "mode": "derivative_aware_v1",
+      "dt": 0.016666666666666666,
+      "weights": {
+        "position": 1.0,
+        "velocity": 0.03,
+        "acceleration": 0.0003,
+        "ridge": 1e-06
+      },
+      "objective": "min_C wp||S C - x||^2 + wv||D1 C - fd_dot(x)||^2 + wa||D2 C - fd_ddot(x)||^2 + wr||C||^2",
+      "finite_difference": {
+        "velocity": "central difference with one-sided endpoints, divided by dt",
+        "acceleration": "three-point second difference with endpoint copy, divided by dt^2"
+      },
+      "note": "Use fit_uniform_cubic_spline_controls_position_only for historical exact sample reconstruction."
+    },
+    "init_size": 36,
+    "init_layout": "offset_r[18] + initial_joint_pRB[15] + gR0[3]",
+    "frozen_acc_source": {
+      "network": "imu_leaf_acc_predictor_v1",
+      "checkpoint_path": "/home/lingfeng/projects/imu_acc_explainability/code/outputs/imu_leaf_acc_predictor_v1/full_world_leaf5_no_trans_smoothed_gtacc_centered_ma_w9_20260619_155137/dip_finetune/best.pt",
+      "model_config": {
+        "input_size": 126,
+        "hidden_size": 256,
+        "num_layers": 2,
+        "dropout": 0.2,
+        "output_size": 15
+      },
+      "normalization_keys": [
+        "input_mean",
+        "input_std"
+      ],
+      "input_contract": "RMB[54]+wM[18]+aM_smoothed[18]+aM[18]+a_residual[18]=126D",
+      "output_original_frame": "world/model frame",
+      "converted_frame": "PL/root frame",
+      "conversion": "a_joint_pred_R = a_joint_pred_W @ RMB[:,5]",
+      "leaf_joints": [
+        18,
+        19,
+        4,
+        5,
+        15
+      ],
+      "eval_only": true
+    },
+    "root_acc_smooth_contract": {
+      "source": "selected root/pelvis IMU acceleration aM[:,5]",
+      "smoothing": "centered_ma window=9",
+      "conversion": "a_root_smooth_R = a_root_smooth_W @ RMB[:,5]",
+      "not_smpl_fk_root_acceleration": true
+    },
+    "notices": [
+      "legacy vertex pRB target is not used as training target.",
+      "PL output target changed to SMPL joint pRB.",
+      "frozen acceleration predictor is eval-only and not trained.",
+      "no acceleration target output; acceleration is an auxiliary input and decoded trajectory evaluation target.",
+      "102D frozen_joint_acc_aug102 is not smooth_residual 102D."
+    ],
+    "sanity": {
+      "frozen_joint_acc_W_l2_norm_mean": 0.12346813082695007,
+      "frozen_joint_acc_R_l2_norm_mean": 0.12346813082695007,
+      "root_acc_smooth_W_l2_norm_mean": 0.0630120187997818,
+      "root_acc_smooth_R_l2_norm_mean": 0.0630120187997818,
+      "joint_minus_vertex_l2_mean_m": 0.2615535259246826,
+      "feature_dim": 102,
+      "target_dim": 18
+    },
+    "cache_files": [
+      {
+        "path": "data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/cache/dip_val/pl_joint_control_acc_aug102_shard00000.pt",
+        "num_sequences": 1,
+        "num_frames": 120
+      }
+    ],
+    "num_sequences": 1,
+    "num_frames": 120,
+    "command": "pl_joint_control_acc_aug102_cache.py build --input-cache data/experiments/newpl_v5_official_protocol_20260607/caches/dip_val_with_offset_r/baseline_cache_manifest.json --gt-control-cache /home/lingfeng/projects/data/dataset_work/dip/gt_control/val/manifest.json --output-dir data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/cache/dip_val --max-sequences 1 --max-frames 120 --shard-size 10 --device cuda:0"
+  },
+  "train_gt_control_cache": {
+    "enabled": false,
+    "attached": 0,
+    "path": ""
+  },
+  "val_gt_control_cache": {
+    "enabled": false,
+    "attached": 0,
+    "path": ""
+  },
+  "num_train_sequences": 1,
+  "num_val_sequences": 1,
+  "best_loss": 0.02633477109066007,
+  "best_epoch": 1,
+  "selection_metric": "pl_and_control_physical",
+  "stopped_early": false,
+  "stop_epoch": 0,
+  "early_stop_min_delta": 0.0,
+  "early_stop_patience": 0,
+  "init_checkpoint_load": null,
+  "history": [
+    {
+      "epoch": 1,
+      "step": 1,
+      "train_loss": {
+        "epoch": 1.0,
+        "step": 1.0,
+        "seq_idx": 1.0,
+        "loss": 0.026675697416067123,
+        "pRB": 0.013136323541402817,
+        "gR1": 4.199879913358018e-05,
+        "baseline_pRB": 0.0,
+        "baseline_gR1": 3.908501078342397e-09,
+        "gt_control_pRB": 0.013143077492713928,
+        "gt_control_gR1": 1.4192671187629458e-05,
+        "control_point_prior": 0.0,
+        "tail_update_prior": 0.0,
+        "pRB_dot": 1.360910175662866e-07,
+        "gR1_dot": 1.433530201211397e-07,
+        "gR_smooth": 3.053629171745342e-08,
+        "pRB_ddot": 2.924767272816098e-07,
+        "gR1_ddot": 2.5803601033658197e-08,
+        "pRB_ddot_smooth": 6.953718662261963,
+        "bone6d": 0.0,
+        "bone_geo": 0.0,
+        "gt_control_bone6d": 0.0,
+        "gt_control_bone_geo": 0.0,
+        "bone6d_dot": 0.0,
+        "bone6d_ddot": 0.0,
+        "bone_control_point_prior": 0.0,
+        "bone_tail_update_prior": 0.0,
+        "bone_aux_available": 0.0,
+        "ik1_pRJ": 0.0,
+        "ik1_gR2": 0.0,
+        "ik2_r6d": 0.0,
+        "new_delta_norm": 0.0,
+        "pl_residual_norm_mean": 0.0,
+        "gR_norm_mean": 0.9999999403953552
+      },
+      "validation": {
+        "num_sequences": 1,
+        "loss": {
+          "loss": 0.02665620669722557,
+          "pRB": 0.013135973364114761,
+          "gR1": 4.195287328911945e-05,
+          "baseline_pRB": 1.000543831813916e-11,
+          "baseline_gR1": 3.908501078342397e-09,
+          "gt_control_pRB": 0.013142663985490799,
+          "gt_control_gR1": 1.4180867765389849e-05,
+          "control_point_prior": 9.977805040528587e-12,
+          "tail_update_prior": 5.69185112908599e-06,
+          "pRB_dot": 1.359409651513488e-07,
+          "gR1_dot": 1.4329361874843016e-07,
+          "gR_smooth": 3.05699465741327e-08,
+          "pRB_ddot": 2.9172269933042116e-07,
+          "gR1_ddot": 2.579997726570582e-08,
+          "pRB_ddot_smooth": 6.934795379638672,
+          "bone6d": 0.0,
+          "bone_geo": 0.0,
+          "gt_control_bone6d": 0.0,
+          "gt_control_bone_geo": 0.0,
+          "bone6d_dot": 0.0,
+          "bone6d_ddot": 0.0,
+          "bone_control_point_prior": 0.0,
+          "bone_tail_update_prior": 0.0,
+          "bone_aux_available": 0.0,
+          "ik1_pRJ": 0.0,
+          "ik1_gR2": 0.0,
+          "ik2_r6d": 0.0,
+          "new_delta_norm": 2.1830606783623807e-05,
+          "pl_residual_norm_mean": 1.8994724086951464e-05,
+          "gR_norm_mean": 0.9999999403953552
+        },
+        "rows": [
+          {
+            "name": "s08_01_a[1:62]",
+            "loss": 0.02665620669722557,
+            "pRB": 0.013135973364114761,
+            "gR1": 4.195287328911945e-05,
+            "baseline_pRB": 1.000543831813916e-11,
+            "baseline_gR1": 3.908501078342397e-09,
+            "gt_control_pRB": 0.013142663985490799,
+            "gt_control_gR1": 1.4180867765389849e-05,
+            "control_point_prior": 9.977805040528587e-12,
+            "tail_update_prior": 5.69185112908599e-06,
+            "pRB_dot": 1.359409651513488e-07,
+            "gR1_dot": 1.4329361874843016e-07,
+            "gR_smooth": 3.05699465741327e-08,
+            "pRB_ddot": 2.9172269933042116e-07,
+            "gR1_ddot": 2.579997726570582e-08,
+            "pRB_ddot_smooth": 6.934795379638672,
+            "bone6d": 0.0,
+            "bone_geo": 0.0,
+            "gt_control_bone6d": 0.0,
+            "gt_control_bone_geo": 0.0,
+            "bone6d_dot": 0.0,
+            "bone6d_ddot": 0.0,
+            "bone_control_point_prior": 0.0,
+            "bone_tail_update_prior": 0.0,
+            "bone_aux_available": 0.0,
+            "ik1_pRJ": 0.0,
+            "ik1_gR2": 0.0,
+            "ik2_r6d": 0.0,
+            "new_delta_norm": 2.1830606783623807e-05,
+            "pl_residual_norm_mean": 1.8994724086951464e-05,
+            "gR_norm_mean": 0.9999999403953552
+          }
+        ]
+      },
+      "weighted_val_loss": 0.02665620669722557,
+      "selection_metric": "pl_and_control_physical",
+      "selection_value": 0.02633477109066007,
+      "best_loss": 0.02633477109066007,
+      "best_epoch": 1,
+      "improved": true,
+      "stale_epochs": 0
+    }
+  ]
+}

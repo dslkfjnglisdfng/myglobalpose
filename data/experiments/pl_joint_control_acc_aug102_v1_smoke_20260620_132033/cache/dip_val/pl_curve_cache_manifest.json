@@ -1,0 +1,147 @@
+{
+  "type": "pl_joint_control_acc_aug102_cache_v1",
+  "compatible_train_cache_type": "pl_curve_joint_leaf_acc_cache_v1",
+  "experiment": "pl_joint_control_acc_aug102_v1",
+  "target_mode": "joint_pRB",
+  "target_contract": "SMPL joint-based root-frame pRB target. joint_pRB = (joints[:, [18,19,4,5,15]] - joints[:, 0:1]) @ root_R. This is not the legacy IMU-vertex pRB target.",
+  "feature_mode": "frozen_joint_acc_aug102",
+  "feature_dim": 102,
+  "feature_layout": "aRB[18] + wRB[18] + RRB[45] + gR0[3] + frozen_joint_acc_R[15] + root_acc_smooth_R[3]",
+  "feature_indices": {
+    "aRB": [
+      0,
+      18
+    ],
+    "wRB": [
+      18,
+      36
+    ],
+    "RRB": [
+      36,
+      81
+    ],
+    "gR0": [
+      81,
+      84
+    ],
+    "frozen_joint_acc_R": [
+      84,
+      99
+    ],
+    "root_acc_smooth_R": [
+      99,
+      102
+    ]
+  },
+  "source_cache": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_val_with_offset_r/baseline_cache_manifest.json",
+  "source_manifest": {
+    "source_input": "data/dataset_work/DIP_IMU_globalpose/val.pt",
+    "source_manifest": null,
+    "device": "cuda",
+    "euler_seq": "XYZ",
+    "max_frames": 0,
+    "max_sequences": 0,
+    "save_prephysics": true,
+    "neural_only_prephysics": true,
+    "cache_files": [
+      {
+        "path": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_val_with_offset_r/baseline_cache_shard00000.pt",
+        "source_path": "data/dataset_work/L4Cache/prephysics_pose_velocity_dip_val_globalpose_neural_only/baseline_cache_shard00000.pt",
+        "num_sequences": 6,
+        "num_frames": 30771,
+        "failures": [],
+        "offset_r_shape": [
+          6,
+          6,
+          3
+        ]
+      }
+    ],
+    "num_sequences": 6,
+    "num_frames": 30771,
+    "source_cache_manifest": "data/dataset_work/L4Cache/prephysics_pose_velocity_dip_val_globalpose_neural_only/baseline_cache_manifest.json",
+    "offset_source_path": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_val_offset_alias.pt",
+    "offset_source_key": "imu_offset_r",
+    "offset_field_added": "offset_r",
+    "offset_contract": "offset_r is sequence-level r_JS with shape [6,3]: IMU origin relative to mapped joint, expressed in joint-local coordinates. It is copied from processed data and is not repeated per frame."
+  },
+  "pl_base_source": "official_pl_s1",
+  "pl_base_source_detail": "GPNet.plnet official PL-s1 RNN on legacy 84D IMU input; base is diagnostic only.",
+  "target_control_fit_contract": {
+    "mode": "derivative_aware_v1",
+    "dt": 0.016666666666666666,
+    "weights": {
+      "position": 1.0,
+      "velocity": 0.03,
+      "acceleration": 0.0003,
+      "ridge": 1e-06
+    },
+    "objective": "min_C wp||S C - x||^2 + wv||D1 C - fd_dot(x)||^2 + wa||D2 C - fd_ddot(x)||^2 + wr||C||^2",
+    "finite_difference": {
+      "velocity": "central difference with one-sided endpoints, divided by dt",
+      "acceleration": "three-point second difference with endpoint copy, divided by dt^2"
+    },
+    "note": "Use fit_uniform_cubic_spline_controls_position_only for historical exact sample reconstruction."
+  },
+  "init_size": 36,
+  "init_layout": "offset_r[18] + initial_joint_pRB[15] + gR0[3]",
+  "frozen_acc_source": {
+    "network": "imu_leaf_acc_predictor_v1",
+    "checkpoint_path": "/home/lingfeng/projects/imu_acc_explainability/code/outputs/imu_leaf_acc_predictor_v1/full_world_leaf5_no_trans_smoothed_gtacc_centered_ma_w9_20260619_155137/dip_finetune/best.pt",
+    "model_config": {
+      "input_size": 126,
+      "hidden_size": 256,
+      "num_layers": 2,
+      "dropout": 0.2,
+      "output_size": 15
+    },
+    "normalization_keys": [
+      "input_mean",
+      "input_std"
+    ],
+    "input_contract": "RMB[54]+wM[18]+aM_smoothed[18]+aM[18]+a_residual[18]=126D",
+    "output_original_frame": "world/model frame",
+    "converted_frame": "PL/root frame",
+    "conversion": "a_joint_pred_R = a_joint_pred_W @ RMB[:,5]",
+    "leaf_joints": [
+      18,
+      19,
+      4,
+      5,
+      15
+    ],
+    "eval_only": true
+  },
+  "root_acc_smooth_contract": {
+    "source": "selected root/pelvis IMU acceleration aM[:,5]",
+    "smoothing": "centered_ma window=9",
+    "conversion": "a_root_smooth_R = a_root_smooth_W @ RMB[:,5]",
+    "not_smpl_fk_root_acceleration": true
+  },
+  "notices": [
+    "legacy vertex pRB target is not used as training target.",
+    "PL output target changed to SMPL joint pRB.",
+    "frozen acceleration predictor is eval-only and not trained.",
+    "no acceleration target output; acceleration is an auxiliary input and decoded trajectory evaluation target.",
+    "102D frozen_joint_acc_aug102 is not smooth_residual 102D."
+  ],
+  "sanity": {
+    "frozen_joint_acc_W_l2_norm_mean": 0.12346813082695007,
+    "frozen_joint_acc_R_l2_norm_mean": 0.12346813082695007,
+    "root_acc_smooth_W_l2_norm_mean": 0.0630120187997818,
+    "root_acc_smooth_R_l2_norm_mean": 0.0630120187997818,
+    "joint_minus_vertex_l2_mean_m": 0.2615535259246826,
+    "feature_dim": 102,
+    "target_dim": 18
+  },
+  "cache_files": [
+    {
+      "path": "data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/cache/dip_val/pl_joint_control_acc_aug102_shard00000.pt",
+      "num_sequences": 1,
+      "num_frames": 120
+    }
+  ],
+  "num_sequences": 1,
+  "num_frames": 120,
+  "command": "pl_joint_control_acc_aug102_cache.py build --input-cache data/experiments/newpl_v5_official_protocol_20260607/caches/dip_val_with_offset_r/baseline_cache_manifest.json --gt-control-cache /home/lingfeng/projects/data/dataset_work/dip/gt_control/val/manifest.json --output-dir data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/cache/dip_val --max-sequences 1 --max-frames 120 --shard-size 10 --device cuda:0"
+}

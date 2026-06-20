@@ -1,0 +1,20 @@
+{
+  "status": "ok",
+  "manifest": "data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/cache/dip_val/pl_curve_cache_manifest.json",
+  "rows": [
+    {
+      "name": "s08_01_a",
+      "feature_84_99_abs_mean": 0.0566282644867897,
+      "feature_99_102_abs_mean": 0.033728357404470444
+    }
+  ],
+  "sanity": {
+    "frozen_joint_acc_W_l2_norm_mean": 0.12346813082695007,
+    "frozen_joint_acc_R_l2_norm_mean": 0.12346813082695007,
+    "root_acc_smooth_W_l2_norm_mean": 0.0630120187997818,
+    "root_acc_smooth_R_l2_norm_mean": 0.0630120187997818,
+    "joint_minus_vertex_l2_mean_m": 0.2615535259246826,
+    "feature_dim": 102,
+    "target_dim": 18
+  }
+}

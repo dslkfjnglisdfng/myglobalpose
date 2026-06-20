@@ -1,0 +1,170 @@
+{
+  "status": "ok",
+  "cache": "data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/cache/dip_val/pl_curve_cache_manifest.json",
+  "checkpoint": "data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/train/best_loss.pt",
+  "split": "smoke",
+  "feature_mode": "frozen_joint_acc_aug102",
+  "target_mode": "joint_pRB",
+  "target_contract": "SMPL joint-based root-frame pRB target. joint_pRB = (joints[:, [18,19,4,5,15]] - joints[:, 0:1]) @ root_R. This is not the legacy IMU-vertex pRB target.",
+  "checkpoint_epoch": 1,
+  "checkpoint_validation_loss": 0.02633477109066007,
+  "model_config": {
+    "train_cache": "data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/cache/dip_val/pl_curve_cache_manifest.json",
+    "val_cache": "data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/cache/dip_val/pl_curve_cache_manifest.json",
+    "output_dir": "data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/train",
+    "experiment_name": "pl_joint_control_acc_aug102_v1_smoke",
+    "epochs": 1,
+    "window": 61,
+    "lr": 0.0001,
+    "hidden_size": 128,
+    "tail_length": 4,
+    "residual_scale": 0.005,
+    "dropout": 0.0,
+    "model_variant": "base",
+    "input_size": 102,
+    "condition_scale": 1.0,
+    "offset_embed_size": 128,
+    "film_scale": 0.1,
+    "bone_aux_dim": 0,
+    "bone_residual_scale": 0.05,
+    "grad_clip": 1.0,
+    "init_checkpoint": "",
+    "init_size": 36,
+    "early_stop_min_delta": 0.0,
+    "early_stop_patience": 0,
+    "selection_metric": "pl_and_control_physical",
+    "max_train_sequences": 1,
+    "max_val_sequences": 1,
+    "val_window_length": 61,
+    "batch_size": 1,
+    "disable_ik_distill": true,
+    "pRB_weight": 1.0,
+    "gR1_weight": 0.3,
+    "baseline_pRB_weight": 0.0,
+    "baseline_gR1_weight": 0.0,
+    "gt_control_pRB_weight": 0.5,
+    "gt_control_gR1_weight": 0.1,
+    "control_point_prior_weight": 0.001,
+    "tail_update_prior_weight": 0.001,
+    "pRB_dot_weight": 0.5,
+    "pRB_ddot_weight": 0.1,
+    "pRB_ddot_smooth_weight": 0.001,
+    "gR1_dot_weight": 0.0,
+    "gR1_ddot_weight": 0.0,
+    "gR_smooth_weight": 0.001,
+    "ik_distill_weight": null,
+    "bone6d_weight": null,
+    "bone_geo_weight": null,
+    "gt_control_bone6d_weight": null,
+    "gt_control_bone_geo_weight": null,
+    "bone6d_dot_weight": null,
+    "bone6d_ddot_weight": null,
+    "bone_control_point_prior_weight": null,
+    "bone_tail_update_prior_weight": null,
+    "offset_contrast_weight": 0.0,
+    "offset_contrast_margin": 0.001,
+    "offset_contrast_mode": "roll_random",
+    "offset_contrast_target": "full_pl",
+    "offset_consistency_weight": 0.0,
+    "offset_consistency_target": "full_pl",
+    "offset_init_dropout_prob": 0.0,
+    "offset_init_noise_std": 0.0,
+    "imu_proxy_offset_acc_weight": 0.0,
+    "imu_proxy_acc_scale": 30.0,
+    "train_gt_control_cache": "",
+    "val_gt_control_cache": ""
+  },
+  "summary": {
+    "split": "smoke",
+    "joint_pos_l2_m": 0.2675285041332245,
+    "joint_vel_l2_mps": 0.022014940157532692,
+    "joint_acc_l2_mps2": 1.9208428859710693,
+    "gravity_angle_deg": 0.5822457671165466,
+    "sequence_mean": {
+      "joint_pos_l2_m": 0.2675285041332245,
+      "joint_vel_l2_mps": 0.022014940157532692,
+      "joint_acc_l2_mps2": 1.9208428859710693,
+      "gravity_angle_deg": 0.5822457671165466
+    },
+    "frame_leaf_mean": {
+      "joint_pos_l2_m": 0.2675285041332245,
+      "joint_vel_l2_mps": 0.022014940157532692,
+      "joint_acc_l2_mps2": 1.9208428859710693
+    },
+    "frame_mean_gravity_angle_deg": 0.5822457671165466,
+    "sequence_mean_gravity_angle_deg": 0.5822457671165466,
+    "per_leaf": {
+      "left_forearm": {
+        "joint_pos_l2_m": 0.36545583605766296,
+        "joint_vel_l2_mps": 0.016575241461396217,
+        "joint_acc_l2_mps2": 1.6363000869750977
+      },
+      "right_forearm": {
+        "joint_pos_l2_m": 0.3536636531352997,
+        "joint_vel_l2_mps": 0.024817846715450287,
+        "joint_acc_l2_mps2": 2.5525574684143066
+      },
+      "left_lower_leg": {
+        "joint_pos_l2_m": 0.2376452088356018,
+        "joint_vel_l2_mps": 0.014232962392270565,
+        "joint_acc_l2_mps2": 1.305673360824585
+      },
+      "right_lower_leg": {
+        "joint_pos_l2_m": 0.2573542296886444,
+        "joint_vel_l2_mps": 0.020694606006145477,
+        "joint_acc_l2_mps2": 1.647564172744751
+      },
+      "head": {
+        "joint_pos_l2_m": 0.12352366000413895,
+        "joint_vel_l2_mps": 0.03375403955578804,
+        "joint_acc_l2_mps2": 2.4621191024780273
+      }
+    },
+    "num_sequences": 1,
+    "num_frames": 120
+  },
+  "rows": [
+    {
+      "name": "s08_01_a",
+      "num_frames": 120,
+      "joint_pos_l2_m": 0.2675285041332245,
+      "joint_vel_l2_mps": 0.022014940157532692,
+      "joint_acc_l2_mps2": 1.9208428859710693,
+      "gravity_angle_deg": 0.5822457671165466,
+      "frame_leaf_mean": {
+        "joint_pos_l2_m": 0.2675285041332245,
+        "joint_vel_l2_mps": 0.022014940157532692,
+        "joint_acc_l2_mps2": 1.9208428859710693
+      },
+      "frame_mean_gravity_angle_deg": 0.5822457671165466,
+      "per_leaf": {
+        "left_forearm": {
+          "joint_pos_l2_m": 0.36545583605766296,
+          "joint_vel_l2_mps": 0.016575241461396217,
+          "joint_acc_l2_mps2": 1.6363000869750977
+        },
+        "right_forearm": {
+          "joint_pos_l2_m": 0.3536636531352997,
+          "joint_vel_l2_mps": 0.024817846715450287,
+          "joint_acc_l2_mps2": 2.5525574684143066
+        },
+        "left_lower_leg": {
+          "joint_pos_l2_m": 0.2376452088356018,
+          "joint_vel_l2_mps": 0.014232962392270565,
+          "joint_acc_l2_mps2": 1.305673360824585
+        },
+        "right_lower_leg": {
+          "joint_pos_l2_m": 0.2573542296886444,
+          "joint_vel_l2_mps": 0.020694606006145477,
+          "joint_acc_l2_mps2": 1.647564172744751
+        },
+        "head": {
+          "joint_pos_l2_m": 0.12352366000413895,
+          "joint_vel_l2_mps": 0.03375403955578804,
+          "joint_acc_l2_mps2": 2.4621191024780273
+        }
+      }
+    }
+  ],
+  "command": "pl_joint_control_acc_aug102_eval.py --cache data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/cache/dip_val/pl_curve_cache_manifest.json --checkpoint data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/train/best_loss.pt --output-json data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/eval/metrics.json --output-summary data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/eval/metrics.md --split smoke --max-sequences 1"
+}

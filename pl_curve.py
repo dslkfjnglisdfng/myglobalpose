@@ -7,11 +7,18 @@ from l4_tail_update_qstate import UniformCubicBSpline
 
 
 PL_LEGACY_INPUT_SIZE = 84
+PL_FROZEN_JOINT_ACC_AUG_INPUT_SIZE = 102
 PL_JOINT_LEAF_ACC_INPUT_SIZE = 102
 PL_SMOOTH_RESIDUAL_INPUT_SIZE = 102
 PL_OFFSET_AWARE_INPUT_SIZE = 156
 PL_BONE_AUX_DIM = 30
 PL_BONE_LEAF_JOINT_IDS = (18, 19, 4, 5, 15)
+PL_FROZEN_JOINT_ACC_AUG102_CONTRACT = (
+    'pl_joint_control_acc_aug102_v1 uses a 102D feature layout: '
+    'aRB[18]+wRB[18]+RRB[45]+gR0[3]+frozen_joint_acc_R[15]+'
+    'root_acc_smooth_R[3]. It must not be interpreted as the older '
+    'smooth_residual 102D layout.'
+)
 PL_LEARNED_OFFSET_ACC_CONTRACT = (
     'newpl_v7_learned_offset_accaux keeps the official 84D PL frame input and '
     '18D pRB[15]+gR1[3] output. learned_offset is r_BS[6,3]: sensor origin '
@@ -276,8 +283,31 @@ def replace_offset_aware_feature_offset(feature, offset_r, dt=1.0 / 60.0):
     return out[:, 0] if squeeze_batch else out
 
 
-def split_pl_feature(feature):
-    if feature.shape[-1] == PL_OFFSET_AWARE_INPUT_SIZE:
+def split_pl_feature(feature, feature_mode=None):
+    if feature_mode in ('frozen_joint_acc_aug102', 'joint_control_acc_aug102'):
+        if feature.shape[-1] != PL_FROZEN_JOINT_ACC_AUG_INPUT_SIZE:
+            raise ValueError(
+                f'{feature_mode} expects feature dim {PL_FROZEN_JOINT_ACC_AUG_INPUT_SIZE}, '
+                f'got {feature.shape[-1]}.'
+            )
+        RRB = feature[..., 36:81].reshape(feature.shape[:-1] + (5, 3, 3))
+        gR0 = feature[..., 81:84]
+    elif feature_mode in ('smooth_residual_102D', 'realtime_smooth_residual'):
+        if feature.shape[-1] != PL_SMOOTH_RESIDUAL_INPUT_SIZE:
+            raise ValueError(
+                f'{feature_mode} expects feature dim {PL_SMOOTH_RESIDUAL_INPUT_SIZE}, '
+                f'got {feature.shape[-1]}.'
+            )
+        RRB = feature[..., 54:99].reshape(feature.shape[:-1] + (5, 3, 3))
+        gR0 = feature[..., 99:102]
+    elif feature_mode in ('legacy84', 'legacy_pl_84D', 'baseline_jointtarget_84D'):
+        if feature.shape[-1] != PL_LEGACY_INPUT_SIZE:
+            raise ValueError(
+                f'{feature_mode} expects feature dim {PL_LEGACY_INPUT_SIZE}, got {feature.shape[-1]}.'
+            )
+        RRB = feature[..., 36:81].reshape(feature.shape[:-1] + (5, 3, 3))
+        gR0 = feature[..., 81:84]
+    elif feature.shape[-1] == PL_OFFSET_AWARE_INPUT_SIZE:
         RRB = feature[..., 108:153].reshape(feature.shape[:-1] + (5, 3, 3))
         gR0 = feature[..., 153:156]
     elif feature.shape[-1] == PL_SMOOTH_RESIDUAL_INPUT_SIZE:
@@ -297,6 +327,21 @@ def split_legacy_pl_imu_feature(feature):
     RRB = feature[..., 36:81].reshape(feature.shape[:-1] + (5, 3, 3))
     gR0 = feature[..., 81:84]
     return aRB, wRB, RRB, gR0
+
+
+def split_frozen_joint_acc_aug102_feature(feature):
+    if feature.shape[-1] != PL_FROZEN_JOINT_ACC_AUG_INPUT_SIZE:
+        raise ValueError(
+            f'Expected frozen_joint_acc_aug102 dim {PL_FROZEN_JOINT_ACC_AUG_INPUT_SIZE}, '
+            f'got {feature.shape[-1]}.'
+        )
+    aRB = feature[..., 0:18].reshape(feature.shape[:-1] + (6, 3))
+    wRB = feature[..., 18:36].reshape(feature.shape[:-1] + (6, 3))
+    RRB = feature[..., 36:81].reshape(feature.shape[:-1] + (5, 3, 3))
+    gR0 = feature[..., 81:84]
+    frozen_joint_acc_R = feature[..., 84:99].reshape(feature.shape[:-1] + (5, 3))
+    root_acc_smooth_R = feature[..., 99:102]
+    return aRB, wRB, RRB, gR0, frozen_joint_acc_R, root_acc_smooth_R
 
 
 def _atanh_clamped(x, eps=1e-6):
@@ -732,6 +777,35 @@ def pl_target_from_pose(pose, body_model):
     pRB = (verts[:, :5] - verts[:, 5:]).bmm(pose[:, 0]).reshape(pose.shape[0], 15)
     gR = -pose[:, 0, :, 1]
     target = torch.cat((pRB, gR), dim=-1)
+    return target[0] if squeeze else target
+
+
+def joint_pRB_target_from_pose(pose, body_model, beta=None, leaf_joints=PL_BONE_LEAF_JOINT_IDS):
+    """Return SMPL joint-based root-frame PL target: joint_pRB[15] + gR[3].
+
+    Contract: row-vector convention matching legacy PL,
+      joint_pRB = (joints[:, leaf_joints] - joints[:, 0:1]) @ root_R.
+    This is not the legacy IMU-vertex pRB target.
+    """
+    if pose.dim() == 3:
+        pose = pose.unsqueeze(0)
+        squeeze = True
+    else:
+        squeeze = False
+    ref = body_model._J
+    pose = pose.to(device=ref.device, dtype=ref.dtype).view(-1, 24, 3, 3)
+    shape = None if beta is None else beta.to(device=ref.device, dtype=ref.dtype)
+    try:
+        fk = body_model.forward_kinematics(pose, shape=shape, calc_mesh=False)
+    except TypeError:
+        fk = body_model.forward_kinematics(pose, calc_mesh=False)
+    joints = fk[1]
+    leaf_ids = torch.as_tensor(list(leaf_joints), device=joints.device, dtype=torch.long)
+    leaf = joints.index_select(1, leaf_ids)
+    root_R = pose[:, 0]
+    joint_pRB = (leaf - joints[:, 0:1]).bmm(root_R).reshape(pose.shape[0], 15)
+    gR = -root_R[:, :, 1]
+    target = torch.cat((joint_pRB, gR), dim=-1)
     return target[0] if squeeze else target
 
 

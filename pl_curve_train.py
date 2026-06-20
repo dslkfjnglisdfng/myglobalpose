@@ -193,6 +193,7 @@ def load_pl_curve_records(cache_path, max_sequences=0):
         'pl_curve_cache_v3',
         'pl_curve_cache_v4',
         'pl_curve_joint_leaf_acc_cache_v1',
+        'pl_joint_control_acc_aug102_cache_v1',
     )
     if manifest is not None and manifest.get('type') in pl_cache_types:
         records = []
@@ -201,6 +202,7 @@ def load_pl_curve_records(cache_path, max_sequences=0):
             'pl_curve_cache_v3',
             'pl_curve_cache_v4',
             'pl_curve_joint_leaf_acc_cache_v1',
+            'pl_joint_control_acc_aug102_cache_v1',
         )
         for cache_file in files:
             data = torch.load(cache_file, map_location='cpu')
@@ -844,7 +846,14 @@ def main():
     val_records, val_manifest = load_pl_curve_records(args.val_cache, max_sequences=args.max_val_sequences)
     train_control_attach = attach_pl_target_controls(train_records, args.train_gt_control_cache)
     val_control_attach = attach_pl_target_controls(val_records, args.val_gt_control_cache)
-    pl_cache_types = ('pl_curve_cache_v1', 'pl_curve_cache_v2', 'pl_curve_cache_v3', 'pl_curve_cache_v4', 'pl_curve_joint_leaf_acc_cache_v1')
+    pl_cache_types = (
+        'pl_curve_cache_v1',
+        'pl_curve_cache_v2',
+        'pl_curve_cache_v3',
+        'pl_curve_cache_v4',
+        'pl_curve_joint_leaf_acc_cache_v1',
+        'pl_joint_control_acc_aug102_cache_v1',
+    )
     using_pl_cache = bool(train_manifest and train_manifest.get('type') in pl_cache_types)
     if args.input_size <= 0:
         if train_manifest and train_manifest.get('feature_dim'):
@@ -857,8 +866,16 @@ def main():
         raise RuntimeError(f'offset_aware model requires input_size={PL_OFFSET_AWARE_INPUT_SIZE}, got {args.input_size}.')
     if args.bone_aux_dim not in (0, PL_BONE_AUX_DIM):
         raise RuntimeError(f'Unsupported bone_aux_dim={args.bone_aux_dim}; expected 0 or {PL_BONE_AUX_DIM}.')
-    if args.init_size != 18 and train_manifest and train_manifest.get('type') not in ('pl_curve_cache_v2', 'pl_curve_cache_v3', 'pl_curve_cache_v4', 'pl_curve_joint_leaf_acc_cache_v1'):
-        raise RuntimeError(f'init_size={args.init_size} requires pl_curve_cache_v2/v3/v4 or pl_curve_joint_leaf_acc_cache_v1 with pl_init_feature.')
+    if args.init_size != 18 and train_manifest and train_manifest.get('type') not in (
+        'pl_curve_cache_v2',
+        'pl_curve_cache_v3',
+        'pl_curve_cache_v4',
+        'pl_curve_joint_leaf_acc_cache_v1',
+        'pl_joint_control_acc_aug102_cache_v1',
+    ):
+        raise RuntimeError(
+            f'init_size={args.init_size} requires a PL cache with pl_init_feature.'
+        )
     if using_pl_cache and args.batch_size > 1:
         train_records = [record for record in train_records if record['pl_input'].shape[0] >= args.window]
         if not train_records:

@@ -19,7 +19,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | PL-s1 / historical processed | `newpl_v1` through `newpl_v4_init36`; details in `EXP-20260604-*` and `EXP-20260605-001` |
 | PL-s1 / official-route v5 | `EXP-20260607-newpl_v5_official_protocol`; root `data/experiments/newpl_v5_official_protocol_20260607_tuned/` |
 | PL-s1 / acceleration input filters | `EXP-20260612-newpl_v5_smoothacc`, `EXP-20260612-newpl_v5_butteracc`, `EXP-20260612-newpl_v5_realtime_smooth_residual` |
-| PL-s1 / joint-leaf acceleration | `EXP-20260619-newpl_joint_leaf_acc`; root `data/experiments/newpl_joint_leaf_acc_20260619/`; smoke cache/train/eval only so far |
+| PL-s1 / joint-leaf acceleration | `EXP-20260619-newpl_joint_leaf_acc`; root `data/experiments/newpl_joint_leaf_acc_20260619/`; `EXP-20260620-pl_joint_control_acc_aug102_v1_smoke`; root `data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/` |
 | PL-s1 / predictive/root/offset | NewPL-root, next-control, offset-v6, v7/v7b acc-aux records in later detailed sections |
 | IK-s1 | `newik1_v1` through v14 search records, orchestrator logs, and S4/module JSONs |
 | IK-s2 / NewPose | `newpose_ctrl_v1/v2` records and module/full-pipeline evals |
@@ -35,6 +35,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | newpl_v5_smoothacc | `EXP-20260612-newpl_v5_smoothacc`; smooth-aM caches, AMASS -> DIP training, module-level JSONs under `data/experiments/newpl_v5_smoothacc_20260612_fastval2_b256/` |
 | newpl_v5_butteracc | `EXP-20260612-newpl_v5_butteracc`; causal Butterworth aM input-only gate under `data/experiments/newpl_v5_butteracc_20260612_full/`, plus forced fc12 longtrain under `data/experiments/newpl_v5_butteracc_20260612_forced_fc12_longtrain/` |
 | newpl_joint_leaf_acc_20260619 | `EXP-20260619-newpl_joint_leaf_acc`; joint-leaf NewPL cache/training/eval route and smoke artifacts under `data/experiments/newpl_joint_leaf_acc_20260619/smoke/` |
+| pl_joint_control_acc_aug102_v1 | `EXP-20260620-pl_joint_control_acc_aug102_v1_smoke`; joint-target NewPL control smoke with frozen joint-acc 102D input under `data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/` |
 | newpl_v5_realtime_smooth_residual | `EXP-20260612-newpl_v5_realtime_smooth_residual`; root `data/experiments/newpl_v5_realtime_residual_20260612_full_causal_iir20/`; raw v5 rows are historical references unless same-cache re-eval is run |
 | newpl_v6_next_control_smoothacc_gR1 | `EXP-20260613-newpl_v6_next_control_smoothacc_gR1`; root `/tmp/globalpose_newpl_v6_next_control_smoothacc_gR1_20260613/full`; smooth-aM cache reuse, AMASS 80 -> DIP 40, module eval only |
 | newpl_v6_next_p_pdot_pddot_strong | `EXP-20260616-newpl_v6_next_p_pdot_pddot_strong`; root `data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full`; decoded next p/pd/pdd strong supervision, full AMASS->DIP current/next-frame module eval, diagnostic only |
@@ -60,6 +61,88 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | acc_curve_v3_error_distribution_rjs_audit_20260618 | `EXP-20260618-acc_curve_v3_error_distribution_rjs_audit`; root `data/experiments/acc_curve_v3_error_distribution_rjs_audit_20260618`; diagnostic-only audit of residual distributions, rJS distributions/contribution, and correction transfer; diagnosis `likely_model_overfit` |
 
 ## Detailed Records
+
+## EXP-20260620-pl_joint_control_acc_aug102_v1_smoke - Joint-Target PL Control Acc-Aug102 Smoke
+
+Question: can a new PL/NewPL control module use SMPL joint-based pRB targets and frozen joint-acceleration augmented 102D input without falling back to the legacy IMU-vertex pRB target?
+
+Scope:
+
+```text
+experiment: pl_joint_control_acc_aug102_v1
+root: data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033
+target_mode: joint_pRB
+target_contract: joint_pRB[15]+gR[3], joint_pRB=(SMPL joints [18,19,4,5,15]-root joint) @ root_R
+feature_mode: frozen_joint_acc_aug102
+feature_layout: aRB[18]+wRB[18]+RRB[45]+gR0[3]+frozen_joint_acc_R[15]+root_acc_smooth_R[3]
+frozen predictor: imu_leaf_acc_predictor_v1, eval-only
+frozen checkpoint: /home/lingfeng/projects/imu_acc_explainability/code/outputs/imu_leaf_acc_predictor_v1/full_world_leaf5_no_trans_smoothed_gtacc_centered_ma_w9_20260619_155137/dip_finetune/best.pt
+conversion: a_joint_pred_R = a_joint_pred_W @ RMB[:,5]
+root_acc_smooth: selected root/pelvis IMU aM[:,5], centered_ma window=9, then @ RMB[:,5]
+training: smoke only, DIP val 1 sequence, 120 frames, 1 epoch
+not evaluated: full AMASS -> DIP training, IK/full-pipeline/S4
+```
+
+Commands:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+/home/lingfeng/.conda/envs/globalpose-gpu/bin/python -m py_compile \
+  pl_curve.py pl_joint_target.py pl_joint_control_acc_aug102_cache.py \
+  pl_joint_control_acc_aug102_train.py pl_joint_control_acc_aug102_eval.py
+
+/home/lingfeng/bin/longrun -- bash scripts/run_pl_joint_control_acc_aug102_smoke.sh
+```
+
+Smoke cache sanity:
+
+| Check | Value |
+|---|---:|
+| feature_dim | 102 |
+| target_dim | 18 |
+| joint-vs-legacy-vertex diagnostic L2 m | 0.261554 |
+| frozen_joint_acc_world_l2_norm_mean | 0.123468 |
+| frozen_joint_acc_root_l2_norm_mean | 0.123468 |
+| root_acc_smooth_world_l2_norm_mean | 0.063012 |
+| root_acc_smooth_root_l2_norm_mean | 0.063012 |
+| feature[84:99] abs mean | 0.056628 |
+| feature[99:102] abs mean | 0.033728 |
+
+Smoke training:
+
+| Item | Value |
+|---|---:|
+| status | ok |
+| epoch | 1 |
+| train_loss | 0.026675697 |
+| selection_metric | pl_and_control_physical |
+| best_loss | 0.026334771 |
+
+Smoke module eval:
+
+| split | joint_pos_l2_m | joint_vel_l2_mps | joint_acc_l2_mps2 | gravity_angle_deg |
+|---|---:|---:|---:|---:|
+| smoke | 0.267529 | 0.022015 | 1.920843 | 0.582246 |
+
+Artifacts:
+
+```text
+summary: data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/SUMMARY.md
+cache manifest: data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/cache/dip_val/pl_curve_cache_manifest.json
+cache validation: data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/cache_validation.json
+train result: data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/train/train_result.json
+eval metrics: data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/eval/metrics.json
+```
+
+Conclusion:
+
+```text
+Smoke passed. The implementation now has an explicit joint-target target mode,
+an explicit frozen_joint_acc_aug102 layout, frozen predictor normalization from
+checkpoint, world-to-root acceleration conversion, spline-decoded derivative
+metrics, and four required eval metrics. This is not a full training result and
+must not be mixed with old vertex-target PL comparisons.
+```
 
 ## EXP-20260618-acc_curve_v3_error_distribution_rjs_audit - AccCurve v3 Error Distribution and rJS Audit
 
