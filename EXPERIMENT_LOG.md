@@ -19,7 +19,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | PL-s1 / historical processed | `newpl_v1` through `newpl_v4_init36`; details in `EXP-20260604-*` and `EXP-20260605-001` |
 | PL-s1 / official-route v5 | `EXP-20260607-newpl_v5_official_protocol`; root `data/experiments/newpl_v5_official_protocol_20260607_tuned/` |
 | PL-s1 / acceleration input filters | `EXP-20260612-newpl_v5_smoothacc`, `EXP-20260612-newpl_v5_butteracc`, `EXP-20260612-newpl_v5_realtime_smooth_residual` |
-| PL-s1 / joint-leaf acceleration | `EXP-20260619-newpl_joint_leaf_acc`; root `data/experiments/newpl_joint_leaf_acc_20260619/`; `EXP-20260620-pl_joint_control_acc_aug102_v1_smoke`; root `data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/` |
+| PL-s1 / joint-leaf acceleration | `EXP-20260619-newpl_joint_leaf_acc`; root `data/experiments/newpl_joint_leaf_acc_20260619/`; `EXP-20260620-pl_joint_control_acc_aug102_v1_smoke`; root `data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/`; `EXP-20260620-pl_joint_control_acc_aug102_v1_full`; root `data/experiments/pl_joint_control_acc_aug102_v1_full_20260620_134805/` |
 | PL-s1 / predictive/root/offset | NewPL-root, next-control, offset-v6, v7/v7b acc-aux records in later detailed sections |
 | IK-s1 | `newik1_v1` through v14 search records, orchestrator logs, and S4/module JSONs |
 | IK-s2 / NewPose | `newpose_ctrl_v1/v2` records and module/full-pipeline evals |
@@ -36,6 +36,7 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | newpl_v5_butteracc | `EXP-20260612-newpl_v5_butteracc`; causal Butterworth aM input-only gate under `data/experiments/newpl_v5_butteracc_20260612_full/`, plus forced fc12 longtrain under `data/experiments/newpl_v5_butteracc_20260612_forced_fc12_longtrain/` |
 | newpl_joint_leaf_acc_20260619 | `EXP-20260619-newpl_joint_leaf_acc`; joint-leaf NewPL cache/training/eval route and smoke artifacts under `data/experiments/newpl_joint_leaf_acc_20260619/smoke/` |
 | pl_joint_control_acc_aug102_v1 | `EXP-20260620-pl_joint_control_acc_aug102_v1_smoke`; joint-target NewPL control smoke with frozen joint-acc 102D input under `data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/` |
+| pl_joint_control_acc_aug102_v1_full | `EXP-20260620-pl_joint_control_acc_aug102_v1_full`; AMASS -> DIP full module run under `data/experiments/pl_joint_control_acc_aug102_v1_full_20260620_134805/` |
 | newpl_v5_realtime_smooth_residual | `EXP-20260612-newpl_v5_realtime_smooth_residual`; root `data/experiments/newpl_v5_realtime_residual_20260612_full_causal_iir20/`; raw v5 rows are historical references unless same-cache re-eval is run |
 | newpl_v6_next_control_smoothacc_gR1 | `EXP-20260613-newpl_v6_next_control_smoothacc_gR1`; root `/tmp/globalpose_newpl_v6_next_control_smoothacc_gR1_20260613/full`; smooth-aM cache reuse, AMASS 80 -> DIP 40, module eval only |
 | newpl_v6_next_p_pdot_pddot_strong | `EXP-20260616-newpl_v6_next_p_pdot_pddot_strong`; root `data/experiments/newpl_v6_next_p_pdot_pddot_strong_20260615/full`; decoded next p/pd/pdd strong supervision, full AMASS->DIP current/next-frame module eval, diagnostic only |
@@ -61,6 +62,78 @@ Same-cache comparisons are fair; cross-cache rows are historical references only
 | acc_curve_v3_error_distribution_rjs_audit_20260618 | `EXP-20260618-acc_curve_v3_error_distribution_rjs_audit`; root `data/experiments/acc_curve_v3_error_distribution_rjs_audit_20260618`; diagnostic-only audit of residual distributions, rJS distributions/contribution, and correction transfer; diagnosis `likely_model_overfit` |
 
 ## Detailed Records
+
+## EXP-20260620-pl_joint_control_acc_aug102_v1_full - Joint-Target PL Control Acc-Aug102 Full Module Run
+
+Question: after the smoke pass, does the joint-target PL control module with frozen joint acceleration auxiliary input improve direct joint position, velocity, acceleration, and gravity metrics after AMASS pretrain and DIP finetune?
+
+Scope:
+
+```text
+experiment: pl_joint_control_acc_aug102_v1
+root: data/experiments/pl_joint_control_acc_aug102_v1_full_20260620_134805
+training: AMASS pretrain 80 epochs -> DIP finetune 40 epochs
+target_mode: joint_pRB
+feature_mode: frozen_joint_acc_aug102
+feature_layout: aRB[18]+wRB[18]+RRB[45]+gR0[3]+frozen_joint_acc_R[15]+root_acc_smooth_R[3]
+frozen predictor: imu_leaf_acc_predictor_v1, eval-only
+checkpoint: /home/lingfeng/projects/imu_acc_explainability/code/outputs/imu_leaf_acc_predictor_v1/full_world_leaf5_no_trans_smoothed_gtacc_centered_ma_w9_20260619_155137/dip_finetune/best.pt
+evaluation: module-level DIP test only
+not evaluated: IK, full-pipeline, S4, TotalCapture
+```
+
+Command:
+
+```bash
+cd /home/lingfeng/projects/GlobalposeMy/GlobalPose
+CUDA_VISIBLE_DEVICES=0 CACHE_DEVICE=cuda:0 /home/lingfeng/bin/longrun -- \
+  bash scripts/run_pl_joint_control_acc_aug102_full.sh
+```
+
+Cache sanity:
+
+| Split | feature_dim | target_dim | joint-vs-vertex L2 m | frozen_joint_acc_R norm | root_acc_smooth_R norm |
+|---|---:|---:|---:|---:|---:|
+| AMASS | 102 | 18 | 0.268507 | 1.466330 | 1.233902 |
+| DIP train | 102 | 18 | 0.258752 | 1.756837 | 1.765056 |
+| DIP val | 102 | 18 | 0.255726 | 1.866173 | 1.839356 |
+| DIP test | 102 | 18 | 0.259370 | 2.385026 | 2.179893 |
+
+Training selection:
+
+| Stage | Epochs | Best epoch | Best selection loss |
+|---|---:|---:|---:|
+| AMASS pretrain | 80 | 1 | 0.8822397489 |
+| DIP finetune | 40 | 37 | 0.4478730437 |
+
+DIP test module metrics:
+
+| split | joint_pos_l2_m | joint_vel_l2_mps | joint_acc_l2_mps2 | gravity_angle_deg |
+|---|---:|---:|---:|---:|
+| after AMASS | 0.277489 | 0.423087 | 43.323986 | 12.944853 |
+| after DIP | 0.277398 | 0.423258 | 43.328894 | 12.946709 |
+
+Interpretation:
+
+```text
+DIP finetune makes only a negligible joint-position change and does not improve
+decoded velocity, decoded acceleration, or gravity direction. The run should be
+treated as a diagnostic module-level result, not a promoted PL replacement.
+Before running IK/full-pipeline/S4, diagnose the selection/weighted-loss
+divergence and why derivative supervision does not reduce derivative metrics.
+```
+
+Artifacts:
+
+```text
+summary: data/experiments/pl_joint_control_acc_aug102_v1_full_20260620_134805/SUMMARY.md
+summary json: data/experiments/pl_joint_control_acc_aug102_v1_full_20260620_134805/summary.json
+run log: data/experiments/pl_joint_control_acc_aug102_v1_full_20260620_134805/logs/run.log
+AMASS train result: data/experiments/pl_joint_control_acc_aug102_v1_full_20260620_134805/train/amass_pretrain/train_result.json
+DIP train result: data/experiments/pl_joint_control_acc_aug102_v1_full_20260620_134805/train/dip_finetune/train_result.json
+DIP eval after AMASS: data/experiments/pl_joint_control_acc_aug102_v1_full_20260620_134805/eval/dip_test_after_amass.json
+DIP eval after DIP: data/experiments/pl_joint_control_acc_aug102_v1_full_20260620_134805/eval/dip_test_after_dip.json
+```
 
 ## EXP-20260620-pl_joint_control_acc_aug102_v1_smoke - Joint-Target PL Control Acc-Aug102 Smoke
 

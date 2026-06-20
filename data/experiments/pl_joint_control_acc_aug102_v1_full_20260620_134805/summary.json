@@ -1,0 +1,111 @@
+{
+  "status": "ok",
+  "root": "data/experiments/pl_joint_control_acc_aug102_v1_full_20260620_134805",
+  "experiment": "pl_joint_control_acc_aug102_v1",
+  "target_contract": "SMPL joint-based root-frame pRB target. joint_pRB = (joints[:, [18,19,4,5,15]] - joints[:, 0:1]) @ root_R. This is not the legacy IMU-vertex pRB target.",
+  "feature_layout": "aRB[18] + wRB[18] + RRB[45] + gR0[3] + frozen_joint_acc_R[15] + root_acc_smooth_R[3]",
+  "amass_best_loss": 0.8822397489263083,
+  "amass_best_epoch": 1,
+  "dip_best_loss": 0.4478730436509757,
+  "dip_best_epoch": 37,
+  "eval": {
+    "dip_test_after_amass": {
+      "split": "dip_test_after_amass",
+      "joint_pos_l2_m": 0.2774892292524639,
+      "joint_vel_l2_mps": 0.4230872208350583,
+      "joint_acc_l2_mps2": 43.323985953080026,
+      "gravity_angle_deg": 12.944853443848459,
+      "sequence_mean": {
+        "joint_pos_l2_m": 0.2774892292524639,
+        "joint_vel_l2_mps": 0.4230872208350583,
+        "joint_acc_l2_mps2": 43.323985953080026,
+        "gravity_angle_deg": 12.944853443848459
+      },
+      "frame_leaf_mean": {
+        "joint_pos_l2_m": 0.2792234518969762,
+        "joint_vel_l2_mps": 0.3303201406862424,
+        "joint_acc_l2_mps2": 34.466479800243015
+      },
+      "frame_mean_gravity_angle_deg": 15.264474071181757,
+      "sequence_mean_gravity_angle_deg": 12.944853443848459,
+      "per_leaf": {
+        "left_forearm": {
+          "joint_pos_l2_m": 0.3658558161635148,
+          "joint_vel_l2_mps": 0.49241677710884496,
+          "joint_acc_l2_mps2": 61.78890303561562
+        },
+        "right_forearm": {
+          "joint_pos_l2_m": 0.3569160354764838,
+          "joint_vel_l2_mps": 0.42194659851099314,
+          "joint_acc_l2_mps2": 59.28825468766062
+        },
+        "left_lower_leg": {
+          "joint_pos_l2_m": 0.2351715674525813,
+          "joint_vel_l2_mps": 0.370157550628248,
+          "joint_acc_l2_mps2": 28.480581961180036
+        },
+        "right_lower_leg": {
+          "joint_pos_l2_m": 0.25390811107660594,
+          "joint_vel_l2_mps": 0.42714859525624077,
+          "joint_acc_l2_mps2": 34.9925528701983
+        },
+        "head": {
+          "joint_pos_l2_m": 0.175594604329059,
+          "joint_vel_l2_mps": 0.40376653698714154,
+          "joint_acc_l2_mps2": 32.0696358931692
+        }
+      },
+      "num_sequences": 19,
+      "num_frames": 57994
+    },
+    "dip_test_after_dip": {
+      "split": "dip_test_after_dip",
+      "joint_pos_l2_m": 0.2773978788601725,
+      "joint_vel_l2_mps": 0.4232577203135741,
+      "joint_acc_l2_mps2": 43.32889436420641,
+      "gravity_angle_deg": 12.946709168584723,
+      "sequence_mean": {
+        "joint_pos_l2_m": 0.2773978788601725,
+        "joint_vel_l2_mps": 0.4232577203135741,
+        "joint_acc_l2_mps2": 43.32889436420641,
+        "gravity_angle_deg": 12.946709168584723
+      },
+      "frame_leaf_mean": {
+        "joint_pos_l2_m": 0.27913883723667765,
+        "joint_vel_l2_mps": 0.330523066167168,
+        "joint_acc_l2_mps2": 34.47863455539318
+      },
+      "frame_mean_gravity_angle_deg": 15.267436672803612,
+      "sequence_mean_gravity_angle_deg": 12.946709168584723,
+      "per_leaf": {
+        "left_forearm": {
+          "joint_pos_l2_m": 0.3657795598632411,
+          "joint_vel_l2_mps": 0.4925317215292077,
+          "joint_acc_l2_mps2": 61.76721582914654
+        },
+        "right_forearm": {
+          "joint_pos_l2_m": 0.35680280704247325,
+          "joint_vel_l2_mps": 0.4221452866729937,
+          "joint_acc_l2_mps2": 59.264345269454154
+        },
+        "left_lower_leg": {
+          "joint_pos_l2_m": 0.23508013784885406,
+          "joint_vel_l2_mps": 0.3703214961447214,
+          "joint_acc_l2_mps2": 28.5266175395564
+        },
+        "right_lower_leg": {
+          "joint_pos_l2_m": 0.2538623151026274,
+          "joint_vel_l2_mps": 0.42734740576461744,
+          "joint_acc_l2_mps2": 35.02674933483726
+        },
+        "head": {
+          "joint_pos_l2_m": 0.17546457836502477,
+          "joint_vel_l2_mps": 0.40394262126401853,
+          "joint_acc_l2_mps2": 32.05954564245123
+        }
+      },
+      "num_sequences": 19,
+      "num_frames": 57994
+    }
+  }
+}

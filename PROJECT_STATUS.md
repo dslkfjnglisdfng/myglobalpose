@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: Joint-target PL control smoke
-Current task: implement and smoke-test `pl_joint_control_acc_aug102_v1`
-Review state: smoke passed; no full training or full-pipeline claim
-Current changed files: pl_curve.py, pl_curve_train.py, pl_joint_target.py, pl_joint_control_acc_aug102_cache.py, pl_joint_control_acc_aug102_train.py, pl_joint_control_acc_aug102_eval.py, scripts/run_pl_joint_control_acc_aug102_smoke.sh, scripts/run_pl_joint_control_acc_aug102_full.sh, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md, smoke artifact root
+Current stage: Joint-target PL control full module run complete
+Current task: record `pl_joint_control_acc_aug102_v1` AMASS -> DIP full module result
+Review state: full module run completed; no IK/full-pipeline/S4 claim
+Current changed files: scripts/run_pl_joint_control_acc_aug102_full.sh, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md, full summary/JSON/log/config artifacts
 Current module: `joint_control_acc_aug102`
 Current replacement version: PL-s1 / joint-target control with frozen joint acceleration augmented 102D input
 Current experiment: new cache/training/eval route uses `target_mode=joint_pRB`, not legacy vertex pRB. Input is `legacy84 + frozen_joint_acc_R15 + root_acc_smooth_R3`, where frozen predictor output is converted from world/model frame to PL root frame before concatenation. The network predicts 18D control points and decodes joint position, velocity, acceleration, and gravity with the existing cubic spline decoder.
-Current result: smoke root `data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033` passed py_compile, cache validation, 1-epoch train, and module eval. Cache sanity: feature_dim=102, target_dim=18, joint-vs-legacy-vertex diagnostic L2=0.261554 m, frozen_joint_acc_R norm=0.123468, root_acc_smooth_R norm=0.063012. Smoke eval on one DIP-val sequence: joint_pos_l2_m=0.267529, joint_vel_l2_mps=0.022015, joint_acc_l2_mps2=1.920843, gravity_angle_deg=0.582246.
+Current result: full root `data/experiments/pl_joint_control_acc_aug102_v1_full_20260620_134805` completed cache build/validation, AMASS pretrain 80 epochs, DIP finetune 40 epochs, and DIP test module eval. AMASS selected epoch 1 (`best_loss=0.8822397489`); DIP selected epoch 37 (`best_loss=0.4478730437`). DIP test after AMASS: joint_pos_l2_m=0.277489, joint_vel_l2_mps=0.423087, joint_acc_l2_mps2=43.323986, gravity_angle_deg=12.944853. DIP test after DIP: joint_pos_l2_m=0.277398, joint_vel_l2_mps=0.423258, joint_acc_l2_mps2=43.328894, gravity_angle_deg=12.946709. DIP finetune gives only negligible joint-position improvement and does not improve velocity/acceleration/gravity.
 Current blocker: none
-Next action: review smoke artifact, then optionally launch full AMASS -> DIP training with the same joint-target cache contract; do not mix these smoke numbers with old vertex-target PL comparisons.
+Next action: diagnose why selection loss and weighted loss diverge and why decoded derivative metrics remain high before considering full-pipeline/S4 evaluation.
 Git state: dirty worktree with existing unrelated edits; do not revert unrelated files
 CodeGraph state: healthy indexed native backend
-Detailed logs: `data/experiments/pl_joint_control_acc_aug102_v1_smoke_20260620_132033/SUMMARY.md` and EXPERIMENT_LOG.md `EXP-20260620-pl_joint_control_acc_aug102_v1_smoke`
+Detailed logs: `data/experiments/pl_joint_control_acc_aug102_v1_full_20260620_134805/SUMMARY.md`, `summary.json`, `logs/run.log`, and EXPERIMENT_LOG.md `EXP-20260620-pl_joint_control_acc_aug102_v1_full`
 
 ## 0. Version-Line Reading Guide
 
