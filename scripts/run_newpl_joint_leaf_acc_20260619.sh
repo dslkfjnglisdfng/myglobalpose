@@ -84,7 +84,26 @@ ensure_joint_cache() {
   local input_manifest="$3"
   local gt_manifest="$4"
   local out_dir="$CACHE_ROOT/${mode}/${split}"
-  if [[ ! -f "$out_dir/pl_curve_cache_manifest.json" ]]; then
+  local manifest="$out_dir/pl_curve_cache_manifest.json"
+  local rebuild=1
+  if [[ -f "$manifest" ]]; then
+    if "$PY" - "$manifest" <<'PY'
+import json
+import sys
+manifest = json.load(open(sys.argv[1]))
+ok = (
+    manifest.get('type') == 'pl_curve_joint_leaf_acc_cache_v1'
+    and manifest.get('pl_base_source') == 'official_pl_s1'
+    and manifest.get('base_mode') == 'official_pl_s1_prediction'
+)
+raise SystemExit(0 if ok else 1)
+PY
+    then
+      rebuild=0
+    fi
+  fi
+  if [[ "$rebuild" == "1" ]]; then
+    rm -f "$out_dir"/pl_joint_leaf_acc_cache_shard*.pt "$manifest"
     "$PY" pl_joint_leaf_acc_cache.py build \
       --input-cache "$input_manifest" \
       --gt-control-cache "$gt_manifest" \

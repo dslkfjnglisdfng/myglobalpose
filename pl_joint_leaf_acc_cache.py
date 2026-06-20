@@ -12,6 +12,7 @@ import torch.nn.functional as F
 
 import articulate as art
 from l4_train_diverse_short import DEVICE, load_cache_files
+from net import GPNet
 from pl_curve import (
     PL_BONE_LEAF_JOINT_IDS,
     PL_JOINT_LEAF_ACC_INPUT_SIZE,
@@ -22,6 +23,7 @@ from pl_curve import (
     pl_input_feature,
     pl_joint_leaf_init_feature,
     pl_joint_leaf_target_from_pose,
+    pl_target_from_pose,
 )
 
 
@@ -130,6 +132,11 @@ def sequence_legacy_pl_inputs(aM, wM, RMB):
     ]).float()
 
 
+@torch.no_grad()
+def sequence_official_pl_base(gpnet, legacy_pl_input, legacy_init_target):
+    return gpnet.plnet([(legacy_pl_input.to(DEVICE), legacy_init_target.to(DEVICE))])[0].detach().cpu()
+
+
 def acceleration_predictor_feature(aM, wM, RMB, smooth_window):
     a_smoothed = centered_ma(aM, window=smooth_window)
     residual = aM.float() - a_smoothed
@@ -184,15 +191,26 @@ def joint_leaf_from_gt_control(gt_record, n):
     return normalize_gravity(torch.cat((joint, g), dim=-1)), torch.cat((joint_control, g_control), dim=-1)
 
 
-def build_one_record(data, seq_idx, body_model, feature_mode, acc_ctx, init_size, smooth_window, gt_controls=None, max_frames=0):
+def build_one_record(
+    data,
+    seq_idx,
+    joint_body_model,
+    official_pl_body_model,
+    gpnet,
+    feature_mode,
+    acc_ctx,
+    init_size,
+    smooth_window,
+    gt_controls=None,
+    max_frames=0,
+):
     name = str(data['name'][seq_idx])
-    missing = [key for key in ('pose_gt', 'pose_prephysics', 'aM', 'wM', 'RMB', 'offset_r') if key not in data]
+    missing = [key for key in ('pose_gt', 'aM', 'wM', 'RMB', 'offset_r') if key not in data]
     if missing:
         raise KeyError(f'{name} missing required fields for joint-leaf cache: {missing}')
     n = min(
         source_sequence_count(data, seq_idx),
         int(data['pose_gt'][seq_idx].shape[0]),
-        int(data['pose_prephysics'][seq_idx].shape[0]),
         int(data['aM'][seq_idx].shape[0]),
         int(data['wM'][seq_idx].shape[0]),
         int(data['RMB'][seq_idx].shape[0]),
@@ -200,7 +218,6 @@ def build_one_record(data, seq_idx, body_model, feature_mode, acc_ctx, init_size
     if max_frames:
         n = min(n, int(max_frames))
     pose_gt = data['pose_gt'][seq_idx][:n].float()
-    pose_pre = data['pose_prephysics'][seq_idx][:n].float()
     aM = data['aM'][seq_idx][:n].float()
     wM = data['wM'][seq_idx][:n].float()
     RMB = data['RMB'][seq_idx][:n].float()
@@ -210,7 +227,6 @@ def build_one_record(data, seq_idx, body_model, feature_mode, acc_ctx, init_size
     if gt_entry is not None:
         n = min(n, int(gt_entry['num_frames']))
         pose_gt = pose_gt[:n]
-        pose_pre = pose_pre[:n]
         aM = aM[:n]
         wM = wM[:n]
         RMB = RMB[:n]
@@ -219,9 +235,13 @@ def build_one_record(data, seq_idx, body_model, feature_mode, acc_ctx, init_size
     elif gt_controls is not None:
         raise KeyError(f'{name} missing from GT control cache {gt_controls["path"]}.')
     else:
-        pl_target = normalize_gravity(pl_joint_leaf_target_from_pose(pose_gt.to(DEVICE), body_model).float()).cpu()
+        pl_target = normalize_gravity(pl_joint_leaf_target_from_pose(pose_gt.to(DEVICE), joint_body_model).float()).cpu()
         pl_target_control = fit_uniform_cubic_spline_controls(normalize_gravity(pl_target)).cpu()
-    pl_base = normalize_gravity(pl_joint_leaf_target_from_pose(pose_pre.to(DEVICE), body_model).float()).cpu()
+    legacy_init_target = normalize_gravity(
+        pl_target_from_pose(pose_gt.to(DEVICE), official_pl_body_model).float()
+    ).cpu()[0]
+    # This pl_base follows official PL-s1 prediction, not pose_pre FK.
+    pl_base = normalize_gravity(sequence_official_pl_base(gpnet, legacy, legacy_init_target))
     pl_init = pl_joint_leaf_init_feature(offset_r, pl_target[0], init_size=init_size)
     if feature_mode == 'baseline_jointtarget_84D':
         pl_input = legacy
@@ -337,7 +357,11 @@ def build_cache(args):
             'target_contract': checkpoint.get('target_contract'),
             'normalization_keys': sorted(stats),
         }
-    body_model = art.ParametricModel('models/SMPL_male.pkl', device=DEVICE)
+    gpnet = GPNet().eval().to(DEVICE)
+    for parameter in gpnet.parameters():
+        parameter.requires_grad_(False)
+    joint_body_model = art.ParametricModel('models/SMPL_male.pkl', device=DEVICE)
+    official_pl_body_model = art.ParametricModel('models/SMPL_male.pkl', vert_mask=gpnet.v_imu, device=DEVICE)
     rows = []
     cache_files = []
     total_sequences = 0
@@ -364,7 +388,9 @@ def build_cache(args):
             rows.append(build_one_record(
                 data,
                 seq_idx,
-                body_model,
+                joint_body_model,
+                official_pl_body_model,
+                gpnet,
                 args.feature_mode,
                 acc_ctx,
                 args.init_size,
@@ -393,8 +419,11 @@ def build_cache(args):
             )
         ),
         'legacy_first_84_layout': 'aRB[18]+wRB[18]+RRB[45]+gR0[3]',
-        'base_mode': 'pose_prephysics_fk_joint_leaf_gravity',
+        'base_mode': 'official_pl_s1_prediction',
+        'pl_base_source': 'official_pl_s1',
+        'pl_base_source_detail': 'GPNet.plnet official PL-s1 RNN on legacy 84D IMU input, initialized with legacy vertex PL target first frame',
         'target_mode': 'joint_leaf_gravity',
+        'pl_target_source': 'joint_leaf_gravity',
         'control_mode': 'fit_uniform_cubic_spline_controls(normalize_gravity(pl_target))',
         'gt_control_cache': None if gt_controls is None else {
             'path': gt_controls['path'],
@@ -412,7 +441,7 @@ def build_cache(args):
         'fields': {
             'pl_input': f'[T,{feature_dim}] NewPL feature',
             'pl_target': '[T,18] p_leaf_joint_R[15]+gR1[3] from SMPL joints',
-            'pl_base': '[T,18] pose_prephysics FK in joint-leaf semantic space',
+            'pl_base': '[T,18] official PL-s1 pre-correction prediction from IMU; first 15D follow legacy pRB, last 3D are official PL-s1 gR1',
             'pl_init_feature': f'[{args.init_size}] sequence init feature',
             'pl_target_control': '[T,18] derivative-aware fitted GT controls',
         },
@@ -423,10 +452,17 @@ def build_cache(args):
         },
         'flags': {
             'uses_old_vertex_target': False,
-            'uses_old_vertex_base_pl': False,
-            'requires_pose_prephysics': True,
+            'uses_old_vertex_base_pl': True,
+            'requires_pose_prephysics': False,
             'legacy_loss_key_pRB_means': 'p_leaf_joint_R',
             'full_pipeline_eval_supported': False,
+            'comparable_to_v5': True,
+        },
+        'evaluation_protocol_version': 'newpl_joint_leaf_acc_official_base_v2',
+        'protocol_check': {
+            'pl_base': 'official_pl_s1',
+            'pl_target': 'joint_leaf_gravity',
+            'comparable_to_v5': True,
         },
         'frozen_acceleration_source': acc_checkpoint_meta,
         'acc_predictor_input_layout': 'RMB[54]+wM[18]+aM_smoothed[18]+aM[18]+(aM-aM_smoothed)[18]',
@@ -507,13 +543,19 @@ def validate_caches(manifest_paths, output_json=None):
         if int(manifest['feature_dim']) != expected:
             raise RuntimeError(f'{path} mode {mode} expected feature_dim {expected}.')
         flags = manifest.get('flags') or {}
-        if flags.get('uses_old_vertex_target') or flags.get('uses_old_vertex_base_pl'):
-            raise RuntimeError(f'{path} has forbidden old vertex flags.')
+        if flags.get('uses_old_vertex_target'):
+            raise RuntimeError(f'{path} has forbidden old vertex target flag.')
+        if manifest.get('pl_base_source') != 'official_pl_s1':
+            raise RuntimeError(f'{path} must use official_pl_s1 pl_base, got {manifest.get("pl_base_source")}.')
+        if 'pose_prephysics' in str(manifest.get('base_mode', '')):
+            raise RuntimeError(f'{path} uses forbidden pose_prephysics base mode: {manifest.get("base_mode")}.')
         mode_to_records[mode] = records
         manifest_summary[mode] = {
             'path': str(path),
             'num_sequences': len(records),
             'feature_dim': expected,
+            'pl_base_source': manifest.get('pl_base_source'),
+            'protocol_check': manifest.get('protocol_check'),
         }
     missing = set(FEATURE_MODES) - set(mode_to_records)
     if missing:

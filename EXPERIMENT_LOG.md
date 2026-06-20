@@ -15533,4 +15533,72 @@ Full-run final same-cache module metrics:
 | TC test after DIP FT | baseline_jointtarget_84D | `5.174598` | `4.200546` | `0.000000` | `0.000000` |
 | TC test after DIP FT | acc_root_102D | `5.176143` | `4.200393` | `+0.001545` | `-0.000153` |
 | TC test after DIP FT | acc_mixed_102D | `5.176165` | `4.200376` | `+0.001567` | `-0.000170` |
+
+### Protocol repair 2026-06-20: official PL-s1 base
+
+Critical bug found after the full run: `pl_joint_leaf_acc_cache.py` generated
+`pl_base` from `pose_prephysics` FK, making the base too strong and invalid for
+comparison with old NewPL v5 caches. The corrected builder now generates
+`pl_base` from official GPNet PL-s1 (`GPNet.plnet`) on the legacy 84D IMU input,
+initialized with the legacy first-frame PL target. It explicitly does not use
+`pose_prephysics` for `pl_base`.
+
+Code changes:
+
+```text
+pl_joint_leaf_acc_cache.py
+  pl_base_source: official_pl_s1
+  base_mode: official_pl_s1_prediction
+  protocol_check.comparable_to_v5: true
+
+scripts/validate_pl_base_protocol.py
+  rejects non-official base source, base_gR1 < 5 deg, or pose_prephysics base pipeline
+
+scripts/eval_newpl_joint_leaf_acc.py
+  emits pl_base_source, pl_target_source, evaluation_protocol_version, protocol_check
+```
+
+Validation commands:
+
+```bash
+export LD_LIBRARY_PATH=/home/lingfeng/.conda/envs/globalpose-gpu/lib:${LD_LIBRARY_PATH:-}
+PY=/home/lingfeng/.conda/envs/globalpose-gpu/bin/python
+
+$PY pl_joint_leaf_acc_cache.py build --input-cache data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json --gt-control-cache /home/lingfeng/projects/data/dataset_work/dip/gt_control/test/manifest.json --output-dir data/experiments/newpl_joint_leaf_acc_20260619/full/caches/baseline_jointtarget_84D/dip_test --feature-mode baseline_jointtarget_84D --shard-size 100 --device cuda:0
+$PY pl_joint_leaf_acc_cache.py build --input-cache data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json --gt-control-cache /home/lingfeng/projects/data/dataset_work/dip/gt_control/test/manifest.json --output-dir data/experiments/newpl_joint_leaf_acc_20260619/full/caches/acc_root_102D/dip_test --feature-mode acc_root_102D --shard-size 100 --device cuda:0
+$PY pl_joint_leaf_acc_cache.py build --input-cache data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json --gt-control-cache /home/lingfeng/projects/data/dataset_work/dip/gt_control/test/manifest.json --output-dir data/experiments/newpl_joint_leaf_acc_20260619/full/caches/acc_mixed_102D/dip_test --feature-mode acc_mixed_102D --shard-size 100 --device cuda:0
+
+$PY scripts/validate_pl_base_protocol.py --cache data/experiments/newpl_joint_leaf_acc_20260619/full/caches/baseline_jointtarget_84D/dip_test/pl_curve_cache_manifest.json --raw-cache data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json --output-json data/experiments/newpl_joint_leaf_acc_20260619/full/eval/base_protocol_validation_baseline_jointtarget_84D_dip_test.json --device cuda:0
+$PY scripts/validate_pl_base_protocol.py --cache data/experiments/newpl_joint_leaf_acc_20260619/full/caches/acc_root_102D/dip_test/pl_curve_cache_manifest.json --raw-cache data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json --output-json data/experiments/newpl_joint_leaf_acc_20260619/full/eval/base_protocol_validation_acc_root_102D_dip_test.json --device cuda:0
+$PY scripts/validate_pl_base_protocol.py --cache data/experiments/newpl_joint_leaf_acc_20260619/full/caches/acc_mixed_102D/dip_test/pl_curve_cache_manifest.json --raw-cache data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json --output-json data/experiments/newpl_joint_leaf_acc_20260619/full/eval/base_protocol_validation_acc_mixed_102D_dip_test.json --device cuda:0
+```
+
+Corrected DIP test cache validation:
+
+| Mode | base source | base gR1 angle deg | protocol valid |
+|---|---|---:|---|
+| baseline_jointtarget_84D | `official_pl_s1` | `15.267228` | true |
+| acc_root_102D | `official_pl_s1` | `15.267228` | true |
+| acc_mixed_102D | `official_pl_s1` | `15.267228` | true |
+
+Cross-check: old v5 official DIP test cache
+`data/experiments/newpl_v5_official_protocol_20260607/caches/pl_dip_test_official_init36/pl_curve_cache_manifest.json`
+also has `base_gR1=15.267228 deg`, so the corrected joint-leaf cache now matches
+the official base protocol. The value is slightly above the initial 15 deg
+expectation because that is the measured old v5 cache value.
+
+Three-mode invariant after corrected DIP test rebuild:
+
+| Check | Value |
+|---|---:|
+| shared sequences | `19` |
+| max target diff | `0.0` |
+| max base diff | `0.0` |
+| max first84 input diff | `0.0` |
+| max acc_root-vs-acc_mixed last18 diff | `30.88434410095215` |
+
+Decision: the original full-run metrics in this section are retained only as a
+historical invalid protocol record. Do not use them for v5 comparability or
+method effectiveness claims. Regenerate all train/val/test caches and rerun
+training before evaluating acceleration features.
 <!-- END newpl-joint-leaf-acc--2026-06-19 -->

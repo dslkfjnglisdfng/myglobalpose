@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: Joint-leaf acceleration NewPL formal run complete
-Current task: record final `newpl_joint_leaf_acc_20260619/full` module-only results
-Review state: formal AMASS -> DIP training/eval completed; acceleration features are not effective by the planned module criterion
-Current changed files: pl_curve.py, pl_curve_train.py, pl_joint_leaf_acc_cache.py, scripts/eval_newpl_joint_leaf_acc.py, data/experiments/newpl_joint_leaf_acc_20260619/smoke/*, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
+Current stage: Joint-leaf acceleration NewPL base-protocol repair
+Current task: commit/push corrected `pl_base=official_pl_s1` cache builder, protocol validator, eval metadata, and DIP test validation artifacts
+Review state: critical protocol bug fixed; prior full joint-leaf run used pose_prephysics FK as pl_base and is invalid for v5 comparability until caches/training are regenerated
+Current changed files: pl_joint_leaf_acc_cache.py, scripts/eval_newpl_joint_leaf_acc.py, scripts/run_newpl_joint_leaf_acc_20260619.sh, scripts/audit_newpl_joint_leaf_gR1_target.py, scripts/validate_pl_base_protocol.py, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md, lightweight validation JSONs
 Current module: newpl_joint_leaf_acc_20260619
 Current replacement version: PL-s1 / joint-leaf acceleration route with `baseline_jointtarget_84D`, `acc_root_102D`, `acc_mixed_102D`
-Current experiment: preserve `PLCurveModule.forward_sequence -> step(feature_t, base_pl_t) -> base+delta -> spline decode -> pl_curve_loss`, but reinterpret the 18D PL state as `p_leaf_joint_R[15]+gR1[3]`; target/control come from `/home/lingfeng/projects/data/dataset_work/*/gt_control/*/joint_pos_R(_control)` leaf joints plus `pl_pRB_gR1(_control)` gravity; base is `pose_prephysics` FK in the same joint-leaf space; no old IK/full-pipeline eval.
-Current result: full module eval negative. After DIP fine-tune, DIP test p_leaf L2 is baseline `5.702842 cm`, acc_root `5.703787` (+0.000945), acc_mixed `5.703366` (+0.000524); TC test p_leaf L2 is baseline `5.174598 cm`, acc_root `5.176143` (+0.001545), acc_mixed `5.176165` (+0.001567). gR1 improves only by `0.000014-0.000170 deg`. This fails the planned effective criterion: lower p_leaf_joint_R L2 without worse gR1.
+Current experiment: corrected cache builder now generates `pl_base` from official GPNet PL-s1 RNN on legacy 84D IMU input, not pose_prephysics FK. `pl_target` remains joint-leaf gravity. Eval outputs now log `pl_base_source`, `pl_target_source`, `evaluation_protocol_version`, and `protocol_check`.
+Current result: DIP test caches for all three modes were regenerated with corrected base. Protocol validator reports `base_source_type=official_pl_s1`, `is_protocol_valid=true`, and `base_gR1_angle_deg=15.267228` for baseline/acc_root/acc_mixed. This exactly matches old v5 official DIP test cache base gR1 `15.267228`; the earlier full-run p_leaf/gR1 metrics are invalid for v5 comparison because they used pose_prephysics FK base.
 Current blocker: none
-Next action: do not promote this acceleration-feature route; inspect why training stays near pose_prephysics base, or try a stronger residual/gating design only if a new hypothesis is documented
+Next action: if this branch continues, regenerate all train/val/test caches and rerun AMASS -> DIP training from the corrected official PL-s1 base; do not reuse old checkpoints/results for claims.
 Git state: dirty worktree with existing unrelated edits; do not revert unrelated files
 CodeGraph state: healthy indexed native backend
-Detailed logs: data/experiments/newpl_joint_leaf_acc_20260619/full/summary.json, summary.md, eval/*.json, and EXPERIMENT_LOG.md `EXP-20260619-newpl_joint_leaf_acc`
+Detailed logs: data/experiments/newpl_joint_leaf_acc_20260619/full/eval/base_protocol_validation_*_dip_test.json, `cache_validation_dip_test_corrected_base.json`, `gR1_target_audit_dip_test.json`, and EXPERIMENT_LOG.md `EXP-20260619-newpl_joint_leaf_acc`
 
 ## 0. Version-Line Reading Guide
 

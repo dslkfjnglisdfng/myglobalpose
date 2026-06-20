@@ -1,0 +1,600 @@
+{
+  "status": "ok",
+  "joint_cache": "data/experiments/newpl_joint_leaf_acc_20260619/full/caches/baseline_jointtarget_84D/dip_test/pl_curve_cache_manifest.json",
+  "raw_cache": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json",
+  "gt_control_cache": "/home/lingfeng/projects/data/dataset_work/dip/gt_control/test/manifest.json",
+  "joint_cache_type": "pl_curve_joint_leaf_acc_cache_v1",
+  "joint_feature_mode": "baseline_jointtarget_84D",
+  "legacy_pl_vertex_mask": [
+    1961,
+    5424,
+    1176,
+    4662,
+    411,
+    3021
+  ],
+  "gt_control_manifest_type": null,
+  "num_shared_sequences": 19,
+  "num_shared_frames": 57994,
+  "num_gt_control_shared_sequences": 19,
+  "metrics": {
+    "angle_cache_gR_old_gR": {
+      "mean_deg": 0.0004161543329246342,
+      "max_deg": 0.01978234015405178,
+      "p95_deg": 0.0,
+      "num_frames": 57994
+    },
+    "angle_cache_gR_joint_leaf_gR": {
+      "mean_deg": 0.0004161543329246342,
+      "max_deg": 0.01978234015405178,
+      "p95_deg": 0.0,
+      "num_frames": 57994
+    },
+    "angle_old_gR_joint_leaf_gR": {
+      "mean_deg": 0.0004483340017031878,
+      "max_deg": 0.02797645516693592,
+      "p95_deg": 0.0,
+      "num_frames": 57994
+    },
+    "angle_gt_control_gR_old_gR": {
+      "mean_deg": 0.0004161543329246342,
+      "max_deg": 0.01978234015405178,
+      "p95_deg": 0.0,
+      "num_frames": 57994
+    }
+  },
+  "rows": [
+    {
+      "name": "s09_01_a",
+      "num_frames": 4757,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.0003410031204111874,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 4757
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.0003410031204111874,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 4757
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.0003410031204111874,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 4757
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.0003410031204111874,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 4757
+      }
+    },
+    {
+      "name": "s09_01_b",
+      "num_frames": 2641,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.00045691890409216285,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2641
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.00045691890409216285,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2641
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.00045691890409216285,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2641
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.00045691890409216285,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2641
+      }
+    },
+    {
+      "name": "s09_01_c",
+      "num_frames": 2136,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.0005093766958452761,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2136
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.0005093766958452761,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2136
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.0005093766958452761,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2136
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.0005093766958452761,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2136
+      }
+    },
+    {
+      "name": "s09_02_a",
+      "num_frames": 2767,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.00044326166971586645,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2767
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.00044326166971586645,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2767
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.00044326166971586645,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2767
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.00044326166971586645,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2767
+      }
+    },
+    {
+      "name": "s09_02_b",
+      "num_frames": 2559,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.0004019858315587044,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2559
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.0004019858315587044,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2559
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.0004019858315587044,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2559
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.0004019858315587044,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2559
+      }
+    },
+    {
+      "name": "s09_03_a",
+      "num_frames": 2907,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.00042191435932181776,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2907
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.00042191435932181776,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2907
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.0004819924652110785,
+        "max_deg": 0.02797645516693592,
+        "p95_deg": 0.0,
+        "num_frames": 2907
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.00042191435932181776,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2907
+      }
+    },
+    {
+      "name": "s09_03_b",
+      "num_frames": 3015,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.0004396075673867017,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 3015
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.0004396075673867017,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 3015
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.000585355213843286,
+        "max_deg": 0.02797645516693592,
+        "p95_deg": 0.0,
+        "num_frames": 3015
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.0004396075673867017,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 3015
+      }
+    },
+    {
+      "name": "s09_04",
+      "num_frames": 1188,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.0003996432351414114,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 1188
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.0003996432351414114,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 1188
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.0003996432351414114,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 1188
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.0003996432351414114,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 1188
+      }
+    },
+    {
+      "name": "s09_05",
+      "num_frames": 4539,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.00040096393786370754,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 4539
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.00040096393786370754,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 4539
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.0004071274888701737,
+        "max_deg": 0.02797645516693592,
+        "p95_deg": 0.0,
+        "num_frames": 4539
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.00040096393786370754,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 4539
+      }
+    },
+    {
+      "name": "s10_01_a",
+      "num_frames": 5609,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.0003456354606896639,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 5609
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.0003456354606896639,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 5609
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.0003456354606896639,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 5609
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.0003456354606896639,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 5609
+      }
+    },
+    {
+      "name": "s10_01_b",
+      "num_frames": 3330,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.0004633701464626938,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 3330
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.0004633701464626938,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 3330
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.0004633701464626938,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 3330
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.0004633701464626938,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 3330
+      }
+    },
+    {
+      "name": "s10_01_c",
+      "num_frames": 2284,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.0003551120753400028,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2284
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.0003551120753400028,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2284
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.0003551120753400028,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2284
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.0003551120753400028,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2284
+      }
+    },
+    {
+      "name": "s10_02",
+      "num_frames": 3619,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.0003553059068508446,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 3619
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.0003553059068508446,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 3619
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.0003553059068508446,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 3619
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.0003553059068508446,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 3619
+      }
+    },
+    {
+      "name": "s10_03_a",
+      "num_frames": 3038,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.0004948840360157192,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 3038
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.0004948840360157192,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 3038
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.0005685547948814929,
+        "max_deg": 0.02797645516693592,
+        "p95_deg": 0.0,
+        "num_frames": 3038
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.0004948840360157192,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 3038
+      }
+    },
+    {
+      "name": "s10_03_b",
+      "num_frames": 3751,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.0005062928539700806,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 3751
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.0005062928539700806,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 3751
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.0006813002983108163,
+        "max_deg": 0.02797645516693592,
+        "p95_deg": 0.0,
+        "num_frames": 3751
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.0005062928539700806,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 3751
+      }
+    },
+    {
+      "name": "s10_04_a",
+      "num_frames": 865,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.0002744371013250202,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 865
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.0002744371013250202,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 865
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.0002744371013250202,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 865
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.0002744371013250202,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 865
+      }
+    },
+    {
+      "name": "s10_04_b",
+      "num_frames": 1511,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.0005367808626033366,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 1511
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.0005367808626033366,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 1511
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.0006478720461018384,
+        "max_deg": 0.02797645516693592,
+        "p95_deg": 0.0,
+        "num_frames": 1511
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.0005367808626033366,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 1511
+      }
+    },
+    {
+      "name": "s10_04_c",
+      "num_frames": 2051,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.00039545391337014735,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2051
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.00039545391337014735,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2051
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.00048129147035069764,
+        "max_deg": 0.02797645516693592,
+        "p95_deg": 0.0,
+        "num_frames": 2051
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.00039545391337014735,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 2051
+      }
+    },
+    {
+      "name": "s10_05",
+      "num_frames": 5427,
+      "has_gt_control": true,
+      "angle_cache_gR_old_gR": {
+        "mean_deg": 0.00041919463546946645,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 5427
+      },
+      "angle_cache_gR_joint_leaf_gR": {
+        "mean_deg": 0.00041919463546946645,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 5427
+      },
+      "angle_old_gR_joint_leaf_gR": {
+        "mean_deg": 0.00041919463546946645,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 5427
+      },
+      "angle_gt_control_gR_old_gR": {
+        "mean_deg": 0.00041919463546946645,
+        "max_deg": 0.01978234015405178,
+        "p95_deg": 0.0,
+        "num_frames": 5427
+      }
+    }
+  ],
+  "interpretation": "All four angle groups should be close to 0 degrees. Non-zero cache-vs-old or cache-vs-joint_leaf angles mean the joint-leaf cache gravity target is not directly comparable with legacy PL gR1."
+}

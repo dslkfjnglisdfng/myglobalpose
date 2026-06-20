@@ -134,6 +134,17 @@ def average_rows(rows):
     return summary
 
 
+def protocol_check_from_manifest(manifest):
+    pl_base = manifest.get('pl_base_source') or manifest.get('base_mode') or 'unknown'
+    pl_target = manifest.get('pl_target_source') or manifest.get('target_mode') or 'unknown'
+    comparable = pl_base == 'official_pl_s1'
+    return {
+        'pl_base': 'official_pl_s1' if comparable else str(pl_base),
+        'pl_target': str(pl_target),
+        'comparable_to_v5': bool(comparable),
+    }
+
+
 @torch.no_grad()
 def evaluate(args):
     records, manifest = load_records(args.cache, max_sequences=args.max_sequences)
@@ -168,6 +179,13 @@ def evaluate(args):
         'checkpoint': str(args.checkpoint),
         'feature_mode': manifest.get('feature_mode'),
         'manifest_type': manifest.get('type'),
+        'pl_base_source': manifest.get('pl_base_source', manifest.get('base_mode', 'unknown')),
+        'pl_target_source': manifest.get('pl_target_source', manifest.get('target_mode', 'unknown')),
+        'evaluation_protocol_version': manifest.get(
+            'evaluation_protocol_version',
+            'newpl_joint_leaf_acc_unknown_base_v1',
+        ),
+        'protocol_check': protocol_check_from_manifest(manifest),
         'model_config': model_config,
         'checkpoint_epoch': checkpoint.get('epoch'),
         'checkpoint_validation_loss': checkpoint.get('validation_loss'),
@@ -192,6 +210,10 @@ def write_summary(path, payload):
         f"- Cache: `{payload['cache']}`",
         f"- Checkpoint: `{payload['checkpoint']}`",
         f"- Feature mode: `{payload['feature_mode']}`",
+        f"- PL base source: `{payload['pl_base_source']}`",
+        f"- PL target source: `{payload['pl_target_source']}`",
+        f"- Protocol version: `{payload['evaluation_protocol_version']}`",
+        f"- Comparable to v5: `{payload['protocol_check']['comparable_to_v5']}`",
         '- Scope: module-level decoded joint-leaf PL only; no IK/full-pipeline.',
         '',
         '| metric | value |',

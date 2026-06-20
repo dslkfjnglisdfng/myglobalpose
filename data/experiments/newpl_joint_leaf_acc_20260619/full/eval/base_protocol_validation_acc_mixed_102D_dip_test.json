@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "cache": "data/experiments/newpl_joint_leaf_acc_20260619/full/caches/acc_mixed_102D/dip_test/pl_curve_cache_manifest.json",
+  "raw_cache": "data/experiments/newpl_v5_official_protocol_20260607/caches/dip_test_with_offset_r/baseline_cache_manifest.json",
+  "base_source_type": "official_pl_s1",
+  "base_gR1_angle_deg": 15.267228126525879,
+  "base_gR1_angle_summary": {
+    "mean_deg": 15.267228126525879,
+    "max_deg": 75.84286499023438,
+    "p95_deg": 54.65989685058594,
+    "num_frames": 57994
+  },
+  "base_vs_pose_prephysics_gR1_angle_summary": {
+    "mean_deg": 14.863367080688477,
+    "max_deg": 75.39451599121094,
+    "p95_deg": 55.302001953125,
+    "num_frames": 57994
+  },
+  "pose_prephysics_in_pl_base_pipeline": false,
+  "base_gR1_below_min_threshold": false,
+  "min_base_gR1_deg": 5.0,
+  "is_protocol_valid": true,
+  "protocol_check": {
+    "pl_base": "official_pl_s1",
+    "comparable_to_v5": true
+  },
+  "rule": "If base_source_type != official_pl_s1, cache is INVALID for NewPL-v5 comparison."
+}
