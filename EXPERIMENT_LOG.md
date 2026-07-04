@@ -15914,3 +15914,136 @@ Interpretation: rJS does not improve the overall TotalCapture IMU acceleration m
 Claim support: bounded diagnostic.
 
 Conclusion: do not promote the current footlock/pseudo rJS position acceleration as a stronger IMU acceleration explainability or supervision target than the five-vertex baseline. If revisited, audit rJS coordinate convention, TotalCapture mount mismatch, time alignment/filtering, and lower-leg/right-leg residuals before training against it.
+
+### EXP-20260704-totalcapture-accfit-rjs-synthesis - TotalCapture acceleration-fit rJS synthesis
+
+Question: if `r_JS` is solved directly from the TotalCapture sensor-frame IMU acceleration objective, does it beat the old footlock/pseudo rJS cache and the five-vertex baseline?
+
+Change tested: added a pure diagnostic synthesis/evaluation script. No training, no PL/IK/VR/network changes.
+
+Changed files:
+
+```text
+code/tools/synthesize_totalcapture_accfit_rjs.py
+PROJECT_STATUS.md
+RECENT_REPLACEMENT_VERSIONS.md
+EXPERIMENT_LOG.md
+```
+
+Dataset/split:
+
+```text
+data/dataset_work/TotalCapture_globalpose_official/test.pt
+sequences: s5_freestyle1, s5_freestyle3, s5_rom3, s5_walking2
+FPS: 60
+```
+
+Coordinate and acceleration contract:
+
+```text
+r_JS: IMU origin relative to mapped joint J, expressed in joint-local coordinates.
+R_WJ: maps joint-local vectors into world coordinates.
+R_JS: maps sensor-frame vectors into joint-local coordinates.
+R_WS = R_WJ @ R_JS.
+p_WS(t) = p_WJ(t) + R_WJ(t) @ r_JS.
+Main objective: a_S = R_WS^T @ (ddot(p_WJ) + ddot(R_WJ) @ r_JS - g_W).
+Main comparison: sensor-frame specific force against raw TotalCapture aS.
+```
+
+Synthesis modes:
+
+```text
+per_sequence: fit r_JS independently for each sequence and sensor.
+global: fit one shared r_JS per sensor from all four test sequences.
+leave_one_sequence_out: fit on three sequences and evaluate on the held-out sequence.
+```
+
+Smoothing / derivative:
+
+```text
+raw_fd
+savgol9_p3_fd
+savgol15_p3_fd
+centered second derivative
+fit and evaluation use the same smoothing variant
+trim: 1 frame at both boundaries
+ridge: 1e-4
+max_norm projection: 0.5 m
+no-bias is the main result; with-bias is diagnostic only
+```
+
+Baselines:
+
+```text
+5 vertex baseline: recomputed inside the script with the same metric logic.
+old footlock rJS:
+  data/experiments/footlock_transpose_rjs_smoothacc_20260609/totalcapture_test_footlock_transpose_rjs.pt
+```
+
+Commands:
+
+```bash
+python -m py_compile code/tools/synthesize_totalcapture_accfit_rjs.py
+python code/tools/synthesize_totalcapture_accfit_rjs.py --max-sequences 1 --max-frames 180 --output-dir code/outputs/totalcapture_accfit_rjs_synthesis_smoke
+/home/lingfeng/bin/longrun -- python code/tools/synthesize_totalcapture_accfit_rjs.py
+```
+
+Final artifacts:
+
+```text
+root: code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103
+summary: code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/SUMMARY.md
+config: code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/config.json
+per-sequence rJS: code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/rjs_accfit_per_sequence.pt
+global rJS: code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/rjs_accfit_global.pt
+summary JSON: code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/rjs_accfit_summary.json
+rJS offsets JSON: code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/rjs_offsets.json
+overall CSV: code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/summary_overall.csv
+per-sensor CSV: code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/summary_per_sensor.csv
+per-sequence CSV: code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/summary_per_sequence.csv
+fit summary CSV: code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/fit_summary.csv
+frame-level metrics: code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/frame_level_metrics.csv.gz
+plots: accfit_rjs_vs_vertex_rmse_bar.png, accfit_rjs_vs_old_rjs_rmse_bar.png, rjs_norm_bar.png, fit_improvement_bar.png, condition_number_bar.png, timeseries_examples_*.png, scatter_*.png, residual_hist_*.png, boxplot_residuals.png
+```
+
+Main sensor-specific-force RMSE:
+
+| Source | SavGol-9 RMSE | SavGol-15 RMSE |
+|---|---:|---:|
+| vertex_baseline | `2.742093` | `2.871197` |
+| old_footlock_rjs | `3.856079` | `3.689875` |
+| accfit_per_sequence | `2.636344` | `2.807562` |
+| accfit_global | `2.640858` | `2.811195` |
+| accfit_loo | `2.642856` | `2.813506` |
+
+Per-sensor SavGol-9 RMSE:
+
+| Sensor | Vertex | Old footlock rJS | Accfit per-sequence | Accfit global | Accfit LOO |
+|---|---:|---:|---:|---:|---:|
+| left_forearm | `1.651799` | `4.683967` | `1.622808` | `1.623267` | `1.624582` |
+| right_forearm | `2.254237` | `4.486643` | `2.216878` | `2.231775` | `2.231203` |
+| left_lower_leg | `3.589078` | `3.490567` | `3.380552` | `3.383270` | `3.386509` |
+| right_lower_leg | `3.956423` | `4.169763` | `3.825016` | `3.827675` | `3.830115` |
+| head | `1.118298` | `1.645063` | `1.069865` | `1.075746` | `1.080590` |
+
+Fit diagnostics:
+
+```text
+Projected rJS max norm: 0.249660 m
+SavGol-9 global condition number median/max over main sensors: 1.340680 / 1.466202
+All per-sequence/global SavGol-9 condition number median/max: 1.390331 / 1.848262
+Mean extra with-bias fit improvement over projected no-bias: 0.036158
+```
+
+Interpretation:
+
+1. Re-solving `r_JS` from the acceleration objective fixes the major forearm regression seen in old footlock rJS.
+2. Accfit rJS beats the requested vertex SavGol-9 gate overall: `2.636344 < 2.742093`.
+3. Per-sequence is best, but global and LOO are very close, so this is not only sequence-specific overfitting.
+4. Both lower legs improve versus old rJS; right lower leg drops from `4.169763` to `3.825016`, though it remains the hardest sensor.
+5. rJS norms and condition numbers are healthy; no sensor hits the 0.5 m projection cap.
+6. With-bias helps only modestly on average, so the main improvement is not just additive sensor bias/gravity absorption.
+
+Claim support: bounded diagnostic.
+
+Conclusion: old footlock/pseudo rJS should not be used as the acceleration target, but TotalCapture acceleration-fit rJS is a promising IMU acceleration explainability/supervision target candidate. Before any training use, choose the offset policy (per-sequence upper bound vs global/LOO-like fixed installation) and audit remaining lower-leg residuals and possible time alignment.
