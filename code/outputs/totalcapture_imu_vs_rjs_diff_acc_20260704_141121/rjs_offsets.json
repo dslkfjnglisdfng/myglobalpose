@@ -1,0 +1,512 @@
+{
+  "rjs_path": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/data/experiments/footlock_transpose_rjs_smoothacc_20260609/totalcapture_test_footlock_transpose_rjs.pt",
+  "source_path": "data/dataset_work/L4Cache/prephysics_pose_velocity_totalcapture_test_official_neural_only_offset_r/baseline_cache_manifest.json",
+  "offset_field_used": "offset",
+  "sequence_specific": true,
+  "fallback_or_global_note": "sequence-specific r_JS was found for every TotalCapture test sequence",
+  "coordinate_contract": "r_JS is the IMU origin position relative to mapped joint J, expressed in joint-local coordinates. World prediction: p_WS(t)=p_WJ(t)+R_WJ(t)@r_JS. For DIP-IMU, tran is not used as trusted global translation; acceleration objectives are diagnostic/self-supervised only.",
+  "sensor_to_joint_map": {
+    "sensor_names": [
+      "left_forearm",
+      "right_forearm",
+      "left_lower_leg",
+      "right_lower_leg",
+      "head",
+      "pelvis"
+    ],
+    "imu_joints": [
+      18,
+      19,
+      4,
+      5,
+      15,
+      0
+    ],
+    "imu_vertices": [
+      1961,
+      5424,
+      1176,
+      4662,
+      411,
+      3021
+    ],
+    "coordinate_contract": "r_JS is the IMU origin position relative to the mapped joint J, expressed in joint-local coordinates. World prediction: p_WS(t)=p_WJ(t)+R_WJ(t)@r_JS."
+  },
+  "summary": {
+    "num_sequences": 4,
+    "offset_norm_m": {
+      "mean": 0.1824345737695694,
+      "median": 0.19950330257415771,
+      "p95": 0.28797540068626404
+    },
+    "all_finite": true,
+    "coordinate_contract": "r_JS is the IMU origin position relative to mapped joint J, expressed in joint-local coordinates. World prediction: p_WS(t)=p_WJ(t)+R_WJ(t)@r_JS. For DIP-IMU, tran is not used as trusted global translation; acceleration objectives are diagnostic/self-supervised only."
+  },
+  "config": {
+    "input": "data/dataset_work/L4Cache/prephysics_pose_velocity_totalcapture_test_official_neural_only_offset_r/baseline_cache_manifest.json",
+    "output": "data/experiments/footlock_transpose_rjs_smoothacc_20260609/totalcapture_test_footlock_transpose_rjs.pt",
+    "summary_json": "data/experiments/footlock_transpose_rjs_smoothacc_20260609/totalcapture_test_summary.json",
+    "dataset": "totalcapture",
+    "method": "footlock_transpose_v1",
+    "transpose_root": "/home/lingfeng/projects/TransPose",
+    "transpose_weights": "data/weights.pt",
+    "contact_threshold": 0.85,
+    "contact_margin": 0.15,
+    "contact_selection_mode": "transpose_winner",
+    "contact_height_margin": 0.08,
+    "transpose_prob_low": 0.5,
+    "transpose_prob_high": 0.9,
+    "min_contact_frames": 24,
+    "max_contact_frames": 180,
+    "min_fit_frames": 48,
+    "fallback_offset_cache": "",
+    "min_fit_improvement": 0.05,
+    "max_condition_number": 100000.0,
+    "max_sequences": 0,
+    "max_frames": 0,
+    "smooth_window": 9,
+    "derivative_mode": "centered",
+    "ridge": 0.001,
+    "no_fit_sensor_bias": false,
+    "max_offset_norm": 0.5,
+    "device": "cuda:1"
+  },
+  "per_sequence": [
+    {
+      "sequence_id": "s5_freestyle1",
+      "has_sequence_specific_rJS": true,
+      "method_source": "footlock_transpose_contact_pseudo_rjs",
+      "contact_selection_mode": "transpose_winner",
+      "contact_window_count": 54,
+      "contact_side_window_count": {
+        "left": 25,
+        "right": 29
+      },
+      "sensors": [
+        {
+          "sensor_id": 0,
+          "sensor_name": "left_forearm",
+          "mapped_joint_id": 18,
+          "r_JS": [
+            0.19170276820659637,
+            -0.06138104572892189,
+            0.06418783962726593
+          ],
+          "r_JS_norm": 0.21127626299858093,
+          "confidence": 0.39933645725250244,
+          "fallback_reason": "",
+          "fit_improvement": 0.40758082270622253,
+          "num_fit_frames": 2325.0,
+          "num_fit_windows": 54.0
+        },
+        {
+          "sensor_id": 1,
+          "sensor_name": "right_forearm",
+          "mapped_joint_id": 19,
+          "r_JS": [
+            -0.10536552965641022,
+            -0.0505034513771534,
+            0.07390470057725906
+          ],
+          "r_JS_norm": 0.1382548213005066,
+          "confidence": 0.3635849356651306,
+          "fallback_reason": "",
+          "fit_improvement": 0.37109118700027466,
+          "num_fit_frames": 2325.0,
+          "num_fit_windows": 54.0
+        },
+        {
+          "sensor_id": 2,
+          "sensor_name": "left_lower_leg",
+          "mapped_joint_id": 4,
+          "r_JS": [
+            0.06421737372875214,
+            -0.23095913231372833,
+            0.035234563052654266
+          ],
+          "r_JS_norm": 0.2422962337732315,
+          "confidence": 0.48533594608306885,
+          "fallback_reason": "",
+          "fit_improvement": 0.5015475749969482,
+          "num_fit_frames": 1437.0,
+          "num_fit_windows": 29.0
+        },
+        {
+          "sensor_id": 3,
+          "sensor_name": "right_lower_leg",
+          "mapped_joint_id": 5,
+          "r_JS": [
+            -0.06897518783807755,
+            -0.1826615035533905,
+            0.040972750633955
+          ],
+          "r_JS_norm": 0.19950330257415771,
+          "confidence": 0.4141605794429779,
+          "fallback_reason": "",
+          "fit_improvement": 0.4365476369857788,
+          "num_fit_frames": 888.0,
+          "num_fit_windows": 25.0
+        },
+        {
+          "sensor_id": 4,
+          "sensor_name": "head",
+          "mapped_joint_id": 15,
+          "r_JS": [
+            0.014633869752287865,
+            0.061133868992328644,
+            0.01993284747004509
+          ],
+          "r_JS_norm": 0.0659455731511116,
+          "confidence": 0.5654242038726807,
+          "fallback_reason": "",
+          "fit_improvement": 0.577097475528717,
+          "num_fit_frames": 2325.0,
+          "num_fit_windows": 54.0
+        },
+        {
+          "sensor_id": 5,
+          "sensor_name": "pelvis",
+          "mapped_joint_id": 0,
+          "r_JS": [
+            -0.07623466104269028,
+            0.004027975257486105,
+            -0.057692963629961014
+          ],
+          "r_JS_norm": 0.09568921476602554,
+          "confidence": 0.6371551752090454,
+          "fallback_reason": "",
+          "fit_improvement": 0.6503093242645264,
+          "num_fit_frames": 2325.0,
+          "num_fit_windows": 54.0
+        }
+      ]
+    },
+    {
+      "sequence_id": "s5_freestyle3",
+      "has_sequence_specific_rJS": true,
+      "method_source": "footlock_transpose_contact_pseudo_rjs",
+      "contact_selection_mode": "transpose_winner",
+      "contact_window_count": 39,
+      "contact_side_window_count": {
+        "left": 15,
+        "right": 24
+      },
+      "sensors": [
+        {
+          "sensor_id": 0,
+          "sensor_name": "left_forearm",
+          "mapped_joint_id": 18,
+          "r_JS": [
+            0.1099490225315094,
+            -0.297285258769989,
+            0.14517898857593536
+          ],
+          "r_JS_norm": 0.34863197803497314,
+          "confidence": 0.3117039203643799,
+          "fallback_reason": "",
+          "fit_improvement": 0.3218681812286377,
+          "num_fit_frames": 1472.0,
+          "num_fit_windows": 39.0
+        },
+        {
+          "sensor_id": 1,
+          "sensor_name": "right_forearm",
+          "mapped_joint_id": 19,
+          "r_JS": [
+            -0.025931740179657936,
+            -0.08835233002901077,
+            0.12811386585235596
+          ],
+          "r_JS_norm": 0.15777119994163513,
+          "confidence": 0.2225785255432129,
+          "fallback_reason": "",
+          "fit_improvement": 0.22983652353286743,
+          "num_fit_frames": 1472.0,
+          "num_fit_windows": 39.0
+        },
+        {
+          "sensor_id": 2,
+          "sensor_name": "left_lower_leg",
+          "mapped_joint_id": 4,
+          "r_JS": [
+            0.016497647389769554,
+            -0.2294069081544876,
+            0.0018322502728551626
+          ],
+          "r_JS_norm": 0.2300066500902176,
+          "confidence": 0.3829081058502197,
+          "fallback_reason": "",
+          "fit_improvement": 0.40066617727279663,
+          "num_fit_frames": 1035.0,
+          "num_fit_windows": 24.0
+        },
+        {
+          "sensor_id": 3,
+          "sensor_name": "right_lower_leg",
+          "mapped_joint_id": 5,
+          "r_JS": [
+            -0.07111358642578125,
+            -0.06684751063585281,
+            -0.06643789261579514
+          ],
+          "r_JS_norm": 0.11806661635637283,
+          "confidence": 0.2191685140132904,
+          "fallback_reason": "",
+          "fit_improvement": 0.24324195086956024,
+          "num_fit_frames": 437.0,
+          "num_fit_windows": 15.0
+        },
+        {
+          "sensor_id": 4,
+          "sensor_name": "head",
+          "mapped_joint_id": 15,
+          "r_JS": [
+            -0.02070624940097332,
+            -0.01625235192477703,
+            -0.03200019523501396
+          ],
+          "r_JS_norm": 0.041435495018959045,
+          "confidence": 0.41092434525489807,
+          "fallback_reason": "",
+          "fit_improvement": 0.42432406544685364,
+          "num_fit_frames": 1472.0,
+          "num_fit_windows": 39.0
+        },
+        {
+          "sensor_id": 5,
+          "sensor_name": "pelvis",
+          "mapped_joint_id": 0,
+          "r_JS": [
+            -0.037089262157678604,
+            0.05851336196064949,
+            -0.06806594878435135
+          ],
+          "r_JS_norm": 0.09712054580450058,
+          "confidence": 0.4768679738044739,
+          "fallback_reason": "",
+          "fit_improvement": 0.4924180209636688,
+          "num_fit_frames": 1472.0,
+          "num_fit_windows": 39.0
+        }
+      ]
+    },
+    {
+      "sequence_id": "s5_rom3",
+      "has_sequence_specific_rJS": true,
+      "method_source": "footlock_transpose_contact_pseudo_rjs",
+      "contact_selection_mode": "transpose_winner",
+      "contact_window_count": 63,
+      "contact_side_window_count": {
+        "left": 30,
+        "right": 33
+      },
+      "sensors": [
+        {
+          "sensor_id": 0,
+          "sensor_name": "left_forearm",
+          "mapped_joint_id": 18,
+          "r_JS": [
+            0.2587462365627289,
+            -0.06114428490400314,
+            0.010305628180503845
+          ],
+          "r_JS_norm": 0.26607227325439453,
+          "confidence": 0.5124906897544861,
+          "fallback_reason": "",
+          "fit_improvement": 0.5175648927688599,
+          "num_fit_frames": 4848.0,
+          "num_fit_windows": 63.0
+        },
+        {
+          "sensor_id": 1,
+          "sensor_name": "right_forearm",
+          "mapped_joint_id": 19,
+          "r_JS": [
+            -0.23271101713180542,
+            -0.06673566997051239,
+            -0.04005949944257736
+          ],
+          "r_JS_norm": 0.24538302421569824,
+          "confidence": 0.48027774691581726,
+          "fallback_reason": "",
+          "fit_improvement": 0.48503297567367554,
+          "num_fit_frames": 4848.0,
+          "num_fit_windows": 63.0
+        },
+        {
+          "sensor_id": 2,
+          "sensor_name": "left_lower_leg",
+          "mapped_joint_id": 4,
+          "r_JS": [
+            0.04778539389371872,
+            -0.2873951196670532,
+            0.01380072720348835
+          ],
+          "r_JS_norm": 0.2916673719882965,
+          "confidence": 0.6949836611747742,
+          "fallback_reason": "",
+          "fit_improvement": 0.7070180177688599,
+          "num_fit_frames": 2772.0,
+          "num_fit_windows": 33.0
+        },
+        {
+          "sensor_id": 3,
+          "sensor_name": "right_lower_leg",
+          "mapped_joint_id": 5,
+          "r_JS": [
+            -0.05261533334851265,
+            -0.26163145899772644,
+            0.009926041588187218
+          ],
+          "r_JS_norm": 0.26705414056777954,
+          "confidence": 0.6066087484359741,
+          "fallback_reason": "",
+          "fit_improvement": 0.6206343770027161,
+          "num_fit_frames": 2076.0,
+          "num_fit_windows": 30.0
+        },
+        {
+          "sensor_id": 4,
+          "sensor_name": "head",
+          "mapped_joint_id": 15,
+          "r_JS": [
+            -0.02926512248814106,
+            -0.23842374980449677,
+            0.09071393311023712
+          ],
+          "r_JS_norm": 0.2567709982395172,
+          "confidence": 0.6151512861251831,
+          "fallback_reason": "",
+          "fit_improvement": 0.6212419271469116,
+          "num_fit_frames": 4848.0,
+          "num_fit_windows": 63.0
+        },
+        {
+          "sensor_id": 5,
+          "sensor_name": "pelvis",
+          "mapped_joint_id": 0,
+          "r_JS": [
+            0.019990259781479836,
+            -0.09221227467060089,
+            -0.13195191323757172
+          ],
+          "r_JS_norm": 0.1622159630060196,
+          "confidence": 0.7641407251358032,
+          "fallback_reason": "",
+          "fit_improvement": 0.7717065215110779,
+          "num_fit_frames": 4848.0,
+          "num_fit_windows": 63.0
+        }
+      ]
+    },
+    {
+      "sequence_id": "s5_walking2",
+      "has_sequence_specific_rJS": true,
+      "method_source": "footlock_transpose_contact_pseudo_rjs",
+      "contact_selection_mode": "transpose_winner",
+      "contact_window_count": 47,
+      "contact_side_window_count": {
+        "left": 20,
+        "right": 27
+      },
+      "sensors": [
+        {
+          "sensor_id": 0,
+          "sensor_name": "left_forearm",
+          "mapped_joint_id": 18,
+          "r_JS": [
+            0.18754242360591888,
+            -0.057657692581415176,
+            0.049507126212120056
+          ],
+          "r_JS_norm": 0.20235493779182434,
+          "confidence": 0.40042373538017273,
+          "fallback_reason": "",
+          "fit_improvement": 0.4108412563800812,
+          "num_fit_frames": 1845.0,
+          "num_fit_windows": 47.0
+        },
+        {
+          "sensor_id": 1,
+          "sensor_name": "right_forearm",
+          "mapped_joint_id": 19,
+          "r_JS": [
+            -0.12744151055812836,
+            -0.010566200129687786,
+            0.004295054357498884
+          ],
+          "r_JS_norm": 0.12795089185237885,
+          "confidence": 0.3995499610900879,
+          "fallback_reason": "",
+          "fit_improvement": 0.4099447727203369,
+          "num_fit_frames": 1845.0,
+          "num_fit_windows": 47.0
+        },
+        {
+          "sensor_id": 2,
+          "sensor_name": "left_lower_leg",
+          "mapped_joint_id": 4,
+          "r_JS": [
+            -0.047777604311704636,
+            -0.2281377613544464,
+            0.03173274174332619
+          ],
+          "r_JS_norm": 0.23523712158203125,
+          "confidence": 0.39127102494239807,
+          "fallback_reason": "",
+          "fit_improvement": 0.40684399008750916,
+          "num_fit_frames": 1206.0,
+          "num_fit_windows": 27.0
+        },
+        {
+          "sensor_id": 3,
+          "sensor_name": "right_lower_leg",
+          "mapped_joint_id": 5,
+          "r_JS": [
+            0.11897102743387222,
+            -0.17398029565811157,
+            0.02385704405605793
+          ],
+          "r_JS_norm": 0.2121141403913498,
+          "confidence": 0.2934747040271759,
+          "fallback_reason": "",
+          "fit_improvement": 0.3155197501182556,
+          "num_fit_frames": 639.0,
+          "num_fit_windows": 20.0
+        },
+        {
+          "sensor_id": 4,
+          "sensor_name": "head",
+          "mapped_joint_id": 15,
+          "r_JS": [
+            0.05562996119260788,
+            0.03448350355029106,
+            -0.08211545646190643
+          ],
+          "r_JS_norm": 0.10500834137201309,
+          "confidence": 0.5132663249969482,
+          "fallback_reason": "",
+          "fit_improvement": 0.5266196131706238,
+          "num_fit_frames": 1845.0,
+          "num_fit_windows": 47.0
+        },
+        {
+          "sensor_id": 5,
+          "sensor_name": "pelvis",
+          "mapped_joint_id": 0,
+          "r_JS": [
+            0.00874188169836998,
+            0.05932470038533211,
+            0.008767307735979557
+          ],
+          "r_JS_norm": 0.060602858662605286,
+          "confidence": 0.546898365020752,
+          "fallback_reason": "",
+          "fit_improvement": 0.5611266493797302,
+          "num_fit_frames": 1845.0,
+          "num_fit_windows": 47.0
+        }
+      ]
+    }
+  ]
+}

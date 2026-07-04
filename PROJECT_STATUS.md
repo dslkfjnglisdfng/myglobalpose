@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: TotalCapture IMU/vertex acceleration diagnostic complete
-Current task: compare TotalCapture raw sensor-frame IMU acceleration against GlobalPose five IMU-vertex second-difference acceleration
+Current stage: TotalCapture IMU acceleration diagnostics complete
+Current task: compare TotalCapture raw sensor-frame IMU acceleration against rJS IMU-site second-difference acceleration and the prior five-vertex baseline
 Review state: bounded diagnostic complete; no training and no PL/IK/VR/network changes
-Current changed files: code/tools/compare_totalcapture_imu_acc_vs_vertex_diff_acc.py, code/outputs/totalcapture_imu_vs_vertex_diff_acc_20260704_134409/, PROJECT_STATUS.md, EXPERIMENT_LOG.md
+Current changed files: code/tools/compare_totalcapture_imu_acc_vs_rjs_diff_acc.py, code/outputs/totalcapture_imu_vs_rjs_diff_acc_20260704_141121/, PROJECT_STATUS.md, EXPERIMENT_LOG.md
 Current module: data diagnostic only
 Current replacement version: none
-Current experiment: `EXP-20260704-totalcapture-imu-vs-vertex-diff-acc` on `data/dataset_work/TotalCapture_globalpose_official/test.pt`; compares raw finite difference, SavGol-9/poly3, and SavGol-15/poly3 vertex accelerations in both sensor-specific-force and model/world acceleration spaces.
-Current result: sensor-specific-force comparison selects SavGol-9/poly3 as closest: mean L2 `2.280664 m/s^2`, RMSE `2.742093 m/s^2`, Pearson `0.926891`, cosine `0.927408`, magnitude MAE `1.071608 m/s^2`. Raw FD is worse (`RMSE=3.335955`), SavGol-15 is slightly worse than SavGol-9 (`RMSE=2.871197`). Worst sensor is `right_lower_leg` vertex `4662` (`RMSE=3.956423`); best is `head` vertex `411` (`RMSE=1.118298`). Conclusion: vertex finite-difference acceleration is partially supported as an explainability target, but should be gated by per-sensor calibration/offset checks.
+Current experiment: `EXP-20260704-totalcapture-imu-vs-rjs-diff-acc` on `data/dataset_work/TotalCapture_globalpose_official/test.pt`; uses existing `footlock_transpose_v1` rJS cache `data/experiments/footlock_transpose_rjs_smoothacc_20260609/totalcapture_test_footlock_transpose_rjs.pt` and compares raw finite difference, SavGol-9/poly3, and SavGol-15/poly3 rJS-site accelerations in sensor-specific-force and model/world spaces.
+Current result: rJS sensor-specific-force comparison selects SavGol-15/poly3 as closest: mean L2 `3.310745 m/s^2`, RMSE `3.689875 m/s^2`, Pearson `0.864366`, cosine `0.864460`, magnitude MAE `1.559029 m/s^2`. Under same SavGol-9 comparison, rJS RMSE is `3.856080`, worse than the prior vertex SavGol-9 RMSE `2.742093`. Only `left_lower_leg` improves slightly versus vertex (`3.5891 -> 3.4906`, delta `+0.0985 m/s^2`); `right_lower_leg` regresses (`3.9564 -> 4.1698`). Conclusion: current rJS position acceleration is not a stronger IMU acceleration explainability/supervision target than the five-vertex baseline.
 Current blocker: none
-Next action: if using vertex acceleration as supervision/explainability, first audit lower-leg attachment/offset, residual p95 outliers, and time alignment before promoting it into training.
+Next action: do not promote current footlock/pseudo rJS acceleration target into training; if revisited, audit rJS coordinate convention, TotalCapture mount mismatch, time alignment, and lower-leg/right-leg residuals first.
 Git state: dirty worktree with existing unrelated edits; do not revert unrelated files
 CodeGraph state: healthy indexed native backend
-Detailed logs: `code/outputs/totalcapture_imu_vs_vertex_diff_acc_20260704_134409/SUMMARY.md`, `summary_overall.csv`, `summary_per_sensor.csv`, `summary_per_sequence.csv`, local `frame_level_metrics.csv` / committed `frame_level_metrics.csv.gz`, and EXPERIMENT_LOG.md `EXP-20260704-totalcapture-imu-vs-vertex-diff-acc`
+Detailed logs: `code/outputs/totalcapture_imu_vs_rjs_diff_acc_20260704_141121/SUMMARY.md`, `summary_overall.csv`, `summary_per_sensor.csv`, `summary_per_sequence.csv`, local `frame_level_metrics.csv` / committed `frame_level_metrics.csv.gz`, `rjs_offsets.json`, `vertex_vs_rjs_rmse_bar.png`, and EXPERIMENT_LOG.md `EXP-20260704-totalcapture-imu-vs-rjs-diff-acc`
 
 ## 0. Version-Line Reading Guide
 

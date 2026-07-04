@@ -15837,3 +15837,80 @@ Interpretation: SavGol-9 position smoothing before centered second difference is
 Claim support: bounded diagnostic.
 
 Conclusion: partially supports using GlobalPose five-vertex finite-difference acceleration as an IMU acceleration explainability target, especially with SavGol-9 smoothing and explicit sensor-frame gravity handling. It is not yet strong enough to use blindly as a supervision target; lower-leg offsets, residual outliers, and timing/calibration should be audited before training against it.
+
+### EXP-20260704-totalcapture-imu-vs-rjs-diff-acc - TotalCapture IMU acceleration vs rJS IMU-site finite-difference acceleration
+
+Question: does the existing sequence-level `r_JS` IMU-site position explain TotalCapture IMU acceleration better than the five GlobalPose IMU vertices from `EXP-20260704-totalcapture-imu-vs-vertex-diff-acc`?
+
+Change tested: added a pure diagnostic script only. No model training, no PL/IK/VR/network changes, and no new rJS estimation.
+
+Changed files:
+
+```text
+code/tools/compare_totalcapture_imu_acc_vs_rjs_diff_acc.py
+PROJECT_STATUS.md
+EXPERIMENT_LOG.md
+```
+
+Dataset/split:
+
+```text
+data/dataset_work/TotalCapture_globalpose_official/test.pt
+sequences: s5_freestyle1, s5_freestyle3, s5_rom3, s5_walking2
+FPS: 60
+```
+
+rJS source:
+
+```text
+data/experiments/footlock_transpose_rjs_smoothacc_20260609/totalcapture_test_footlock_transpose_rjs.pt
+path selection: default_auto_search
+field used by load_offset_cache: offset
+sequence-specific rJS: yes, all 4 TotalCapture test sequences present
+contract: r_JS is the IMU origin position relative to mapped joint J, expressed in joint-local coordinates; p_WS(t)=p_WJ(t)+R_WJ(t)@r_JS
+```
+
+Command:
+
+```bash
+python -m py_compile code/tools/compare_totalcapture_imu_acc_vs_rjs_diff_acc.py
+python code/tools/compare_totalcapture_imu_acc_vs_rjs_diff_acc.py
+```
+
+Artifacts:
+
+```text
+root: code/outputs/totalcapture_imu_vs_rjs_diff_acc_20260704_141121
+summary: code/outputs/totalcapture_imu_vs_rjs_diff_acc_20260704_141121/SUMMARY.md
+overall CSV: code/outputs/totalcapture_imu_vs_rjs_diff_acc_20260704_141121/summary_overall.csv
+per-sensor CSV: code/outputs/totalcapture_imu_vs_rjs_diff_acc_20260704_141121/summary_per_sensor.csv
+per-sequence CSV: code/outputs/totalcapture_imu_vs_rjs_diff_acc_20260704_141121/summary_per_sequence.csv
+frame-level CSV local: code/outputs/totalcapture_imu_vs_rjs_diff_acc_20260704_141121/frame_level_metrics.csv
+frame-level CSV committed: code/outputs/totalcapture_imu_vs_rjs_diff_acc_20260704_141121/frame_level_metrics.csv.gz
+rJS offsets: code/outputs/totalcapture_imu_vs_rjs_diff_acc_20260704_141121/rjs_offsets.json
+vertex comparison plot: code/outputs/totalcapture_imu_vs_rjs_diff_acc_20260704_141121/vertex_vs_rjs_rmse_bar.png
+```
+
+Main sensor-specific-force results:
+
+| Method | mean L2 m/s^2 | RMSE m/s^2 | Pearson | cosine | magnitude MAE m/s^2 |
+|---|---:|---:|---:|---:|---:|
+| raw FD | `4.188702` | `4.843998` | `0.787203` | `0.787390` | `1.884606` |
+| SavGol-9/poly3 + FD | `3.425655` | `3.856080` | `0.853215` | `0.853296` | `1.560262` |
+| SavGol-15/poly3 + FD | `3.310745` | `3.689875` | `0.864366` | `0.864460` | `1.559029` |
+
+Direct SavGol-9 vertex-vs-rJS comparison:
+
+| Sensor | Vertex RMSE | rJS RMSE | Delta vertex-rJS |
+|---|---:|---:|---:|
+| left_forearm | `1.6518` | `4.6840` | `-3.0322` |
+| right_forearm | `2.2542` | `4.4866` | `-2.2324` |
+| left_lower_leg | `3.5891` | `3.4906` | `+0.0985` |
+| right_lower_leg | `3.9564` | `4.1698` | `-0.2133` |
+| head | `1.1183` | `1.6451` | `-0.5268` |
+
+Interpretation: rJS does not improve the overall TotalCapture IMU acceleration match relative to the five-vertex baseline. The best rJS method is SavGol-15, but even rJS SavGol-15 overall RMSE `3.689875` is worse than the prior vertex SavGol-9 overall RMSE `2.742093`. The only per-sensor SavGol-9 improvement is a small left-lower-leg gain; right lower leg regresses.
+
+Claim support: bounded diagnostic.
+
+Conclusion: do not promote the current footlock/pseudo rJS position acceleration as a stronger IMU acceleration explainability or supervision target than the five-vertex baseline. If revisited, audit rJS coordinate convention, TotalCapture mount mismatch, time alignment/filtering, and lower-leg/right-leg residuals before training against it.
