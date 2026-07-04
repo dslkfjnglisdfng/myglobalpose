@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: Joint-target PL control full module run complete
-Current task: record `pl_joint_control_acc_aug102_v1` AMASS -> DIP full module result
-Review state: full module run completed; no IK/full-pipeline/S4 claim
-Current changed files: scripts/run_pl_joint_control_acc_aug102_full.sh, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md, full summary/JSON/log/config artifacts
-Current module: `joint_control_acc_aug102`
-Current replacement version: PL-s1 / joint-target control with frozen joint acceleration augmented 102D input
-Current experiment: new cache/training/eval route uses `target_mode=joint_pRB`, not legacy vertex pRB. Input is `legacy84 + frozen_joint_acc_R15 + root_acc_smooth_R3`, where frozen predictor output is converted from world/model frame to PL root frame before concatenation. The network predicts 18D control points and decodes joint position, velocity, acceleration, and gravity with the existing cubic spline decoder.
-Current result: full root `data/experiments/pl_joint_control_acc_aug102_v1_full_20260620_134805` completed cache build/validation, AMASS pretrain 80 epochs, DIP finetune 40 epochs, and DIP test module eval. AMASS selected epoch 1 (`best_loss=0.8822397489`); DIP selected epoch 37 (`best_loss=0.4478730437`). DIP test after AMASS: joint_pos_l2_m=0.277489, joint_vel_l2_mps=0.423087, joint_acc_l2_mps2=43.323986, gravity_angle_deg=12.944853. DIP test after DIP: joint_pos_l2_m=0.277398, joint_vel_l2_mps=0.423258, joint_acc_l2_mps2=43.328894, gravity_angle_deg=12.946709. DIP finetune gives only negligible joint-position improvement and does not improve velocity/acceleration/gravity.
+Current stage: TotalCapture IMU/vertex acceleration diagnostic complete
+Current task: compare TotalCapture raw sensor-frame IMU acceleration against GlobalPose five IMU-vertex second-difference acceleration
+Review state: bounded diagnostic complete; no training and no PL/IK/VR/network changes
+Current changed files: code/tools/compare_totalcapture_imu_acc_vs_vertex_diff_acc.py, code/outputs/totalcapture_imu_vs_vertex_diff_acc_20260704_134409/, PROJECT_STATUS.md, EXPERIMENT_LOG.md
+Current module: data diagnostic only
+Current replacement version: none
+Current experiment: `EXP-20260704-totalcapture-imu-vs-vertex-diff-acc` on `data/dataset_work/TotalCapture_globalpose_official/test.pt`; compares raw finite difference, SavGol-9/poly3, and SavGol-15/poly3 vertex accelerations in both sensor-specific-force and model/world acceleration spaces.
+Current result: sensor-specific-force comparison selects SavGol-9/poly3 as closest: mean L2 `2.280664 m/s^2`, RMSE `2.742093 m/s^2`, Pearson `0.926891`, cosine `0.927408`, magnitude MAE `1.071608 m/s^2`. Raw FD is worse (`RMSE=3.335955`), SavGol-15 is slightly worse than SavGol-9 (`RMSE=2.871197`). Worst sensor is `right_lower_leg` vertex `4662` (`RMSE=3.956423`); best is `head` vertex `411` (`RMSE=1.118298`). Conclusion: vertex finite-difference acceleration is partially supported as an explainability target, but should be gated by per-sensor calibration/offset checks.
 Current blocker: none
-Next action: diagnose why selection loss and weighted loss diverge and why decoded derivative metrics remain high before considering full-pipeline/S4 evaluation.
+Next action: if using vertex acceleration as supervision/explainability, first audit lower-leg attachment/offset, residual p95 outliers, and time alignment before promoting it into training.
 Git state: dirty worktree with existing unrelated edits; do not revert unrelated files
 CodeGraph state: healthy indexed native backend
-Detailed logs: `data/experiments/pl_joint_control_acc_aug102_v1_full_20260620_134805/SUMMARY.md`, `summary.json`, `logs/run.log`, and EXPERIMENT_LOG.md `EXP-20260620-pl_joint_control_acc_aug102_v1_full`
+Detailed logs: `code/outputs/totalcapture_imu_vs_vertex_diff_acc_20260704_134409/SUMMARY.md`, `summary_overall.csv`, `summary_per_sensor.csv`, `summary_per_sequence.csv`, local `frame_level_metrics.csv` / committed `frame_level_metrics.csv.gz`, and EXPERIMENT_LOG.md `EXP-20260704-totalcapture-imu-vs-vertex-diff-acc`
 
 ## 0. Version-Line Reading Guide
 

@@ -1,0 +1,47 @@
+{
+  "source": "l4_sensor_offset_utils.IMU_VERTICES",
+  "all_imu_vertices": [
+    1961,
+    5424,
+    1176,
+    4662,
+    411,
+    3021
+  ],
+  "compared_leaf_vertices": [
+    {
+      "sensor_id": 0,
+      "sensor_name": "left_forearm",
+      "body_part": "left_forearm",
+      "vertex_id": 1961
+    },
+    {
+      "sensor_id": 1,
+      "sensor_name": "right_forearm",
+      "body_part": "right_forearm",
+      "vertex_id": 5424
+    },
+    {
+      "sensor_id": 2,
+      "sensor_name": "left_lower_leg",
+      "body_part": "left_lower_leg",
+      "vertex_id": 1176
+    },
+    {
+      "sensor_id": 3,
+      "sensor_name": "right_lower_leg",
+      "body_part": "right_lower_leg",
+      "vertex_id": 4662
+    },
+    {
+      "sensor_id": 4,
+      "sensor_name": "head",
+      "body_part": "head",
+      "vertex_id": 411
+    }
+  ],
+  "pelvis_root_vertex_not_compared": {
+    "sensor_name": "pelvis",
+    "vertex_id": 3021
+  }
+}

@@ -15758,3 +15758,82 @@ historical invalid protocol record. Do not use them for v5 comparability or
 method effectiveness claims. Regenerate all train/val/test caches and rerun
 training before evaluating acceleration features.
 <!-- END newpl-joint-leaf-acc--2026-06-19 -->
+
+### EXP-20260704-totalcapture-imu-vs-vertex-diff-acc - TotalCapture IMU acceleration vs SMPL IMU-vertex finite-difference acceleration
+
+Question: on TotalCapture, how close is the current repository's IMU acceleration to the second-difference acceleration of the five GlobalPose IMU vertices, and is the vertex signal credible as a later acceleration explainability/supervision target?
+
+Change tested: added a pure diagnostic script only. No model training, no PL/IK/VR/network changes.
+
+Changed files:
+
+```text
+code/tools/compare_totalcapture_imu_acc_vs_vertex_diff_acc.py
+PROJECT_STATUS.md
+EXPERIMENT_LOG.md
+```
+
+Dataset/split:
+
+```text
+data/dataset_work/TotalCapture_globalpose_official/test.pt
+sequences: s5_freestyle1, s5_freestyle3, s5_rom3, s5_walking2
+FPS: 60
+```
+
+Command:
+
+```bash
+python -m py_compile code/tools/compare_totalcapture_imu_acc_vs_vertex_diff_acc.py
+python code/tools/compare_totalcapture_imu_acc_vs_vertex_diff_acc.py --split test
+```
+
+Coordinate and gravity contract:
+
+```text
+Raw TotalCapture field `aS` is treated as sensor-frame specific force.
+R_WS = RIM^T @ RIS.
+Sensor-like vertex comparison: acc_sensor_like = R_WS^T @ (acc_vertex_world - gravity_world).
+World/model comparison: aM = RIM^T @ RIS @ aS + gravity_world, compared to acc_vertex_world.
+Vertex positions come from fk_imu_joints_and_vertices(pose, tran), so root translation is included and no root-relative subtraction is applied.
+IMU vertex ids are read from l4_sensor_offset_utils.IMU_VERTICES, not hand-entered in the result logic.
+Compared five leaf vertices: left_forearm=1961, right_forearm=5424, left_lower_leg=1176, right_lower_leg=4662, head=411.
+```
+
+Artifacts:
+
+```text
+root: code/outputs/totalcapture_imu_vs_vertex_diff_acc_20260704_134409
+summary: code/outputs/totalcapture_imu_vs_vertex_diff_acc_20260704_134409/SUMMARY.md
+overall CSV: code/outputs/totalcapture_imu_vs_vertex_diff_acc_20260704_134409/summary_overall.csv
+per-sensor CSV: code/outputs/totalcapture_imu_vs_vertex_diff_acc_20260704_134409/summary_per_sensor.csv
+per-sequence CSV: code/outputs/totalcapture_imu_vs_vertex_diff_acc_20260704_134409/summary_per_sequence.csv
+frame-level CSV: code/outputs/totalcapture_imu_vs_vertex_diff_acc_20260704_134409/frame_level_metrics.csv
+GitHub committed copy: code/outputs/totalcapture_imu_vs_vertex_diff_acc_20260704_134409/frame_level_metrics.csv.gz
+config: code/outputs/totalcapture_imu_vs_vertex_diff_acc_20260704_134409/config.json
+vertex ids: code/outputs/totalcapture_imu_vs_vertex_diff_acc_20260704_134409/vertex_ids.json
+plots: error_bar_rmse.png, corr_bar.png, timeseries_examples_*.png, scatter_*.png, residual_hist_*.png, boxplot_residuals.png
+```
+
+Main sensor-specific-force results:
+
+| Method | mean L2 m/s^2 | RMSE m/s^2 | Pearson | cosine | magnitude MAE m/s^2 |
+|---|---:|---:|---:|---:|---:|
+| raw FD | `2.836418` | `3.335955` | `0.895983` | `0.896658` | `1.300606` |
+| SavGol-9/poly3 + FD | `2.280664` | `2.742093` | `0.926891` | `0.927408` | `1.071608` |
+| SavGol-15/poly3 + FD | `2.372107` | `2.871197` | `0.919483` | `0.920057` | `1.155638` |
+
+Sensor readout for selected SavGol-9/poly3:
+
+```text
+worst sensor: right_lower_leg vertex 4662, RMSE 3.956423 m/s^2
+best sensor: head vertex 411, RMSE 1.118298 m/s^2
+largest aggregate bias sensor: left_lower_leg, bias (-0.3226, -0.2460, 0.3693) m/s^2
+worst sequence: s5_freestyle3, RMSE 4.6446 m/s^2
+```
+
+Interpretation: SavGol-9 position smoothing before centered second difference is closest. The sensor-frame comparison has much higher correlation than the world/model-frame comparison, matching the raw `aS` specific-force contract. Residual p95 remains high, especially on lower legs, so the remaining error is not only a constant bias; it likely includes attachment/site mismatch, soft-tissue or strap motion, finite-difference noise/outliers, and possibly sequence/sensor time alignment.
+
+Claim support: bounded diagnostic.
+
+Conclusion: partially supports using GlobalPose five-vertex finite-difference acceleration as an IMU acceleration explainability target, especially with SavGol-9 smoothing and explicit sensor-frame gravity handling. It is not yet strong enough to use blindly as a supervision target; lower-leg offsets, residual outliers, and timing/calibration should be audited before training against it.

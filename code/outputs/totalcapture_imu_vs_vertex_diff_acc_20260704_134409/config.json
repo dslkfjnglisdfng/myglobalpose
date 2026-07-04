@@ -1,0 +1,165 @@
+{
+  "script": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/code/tools/compare_totalcapture_imu_acc_vs_vertex_diff_acc.py",
+  "dataset_path": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/data/dataset_work/TotalCapture_globalpose_official/test.pt",
+  "split": "test",
+  "output_dir": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/code/outputs/totalcapture_imu_vs_vertex_diff_acc_20260704_134409",
+  "num_sequences": 4,
+  "sequence_names": [
+    "s5_freestyle1",
+    "s5_freestyle3",
+    "s5_rom3",
+    "s5_walking2"
+  ],
+  "fps": 60.0,
+  "dt": 0.016666666666666666,
+  "trim": 1,
+  "gravity_world": [
+    0.0,
+    -9.800000190734863,
+    0.0
+  ],
+  "preferred_comparison_space": "sensor_specific_force",
+  "methods": [
+    "raw_fd",
+    "savgol9_p3_fd",
+    "savgol15_p3_fd"
+  ],
+  "imu_contract": {
+    "raw_field_aS": "TotalCapture raw accelerometer field in sensor frame; preprocessing stores specific force.",
+    "sensor_like_formula": "acc_sensor_like = R_WS^T @ (acc_vertex_world - gravity_world), where R_WS = RIM^T @ RIS.",
+    "official_model_world_formula": "aM = RIM^T @ RIS @ aS + gravity_world.",
+    "official_model_world_available_in_file": false,
+    "comparison_spaces": {
+      "sensor_specific_force": "compare raw aS to sensor-frame specific force from vertex acceleration.",
+      "model_world_linear_acc": "compare official/reconstructed aM to world/model-frame vertex linear acceleration."
+    }
+  },
+  "source_fields": {
+    "RIM": [
+      [
+        6,
+        3,
+        3
+      ],
+      [
+        6,
+        3,
+        3
+      ]
+    ],
+    "RIS": [
+      [
+        3072,
+        6,
+        3,
+        3
+      ],
+      [
+        3561,
+        6,
+        3,
+        3
+      ]
+    ],
+    "RSB": [
+      [
+        6,
+        3,
+        3
+      ],
+      [
+        6,
+        3,
+        3
+      ]
+    ],
+    "aS": [
+      [
+        3072,
+        6,
+        3
+      ],
+      [
+        3561,
+        6,
+        3
+      ]
+    ],
+    "mS": [
+      [
+        3072,
+        6,
+        3
+      ],
+      [
+        3561,
+        6,
+        3
+      ]
+    ],
+    "name": [
+      "str",
+      "str"
+    ],
+    "pose": [
+      [
+        3072,
+        72
+      ],
+      [
+        3561,
+        72
+      ]
+    ],
+    "tran": [
+      [
+        3072,
+        3
+      ],
+      [
+        3561,
+        3
+      ]
+    ],
+    "wS": [
+      [
+        3072,
+        6,
+        3
+      ],
+      [
+        3561,
+        6,
+        3
+      ]
+    ]
+  },
+  "sensor_to_joint_map": {
+    "sensor_names": [
+      "left_forearm",
+      "right_forearm",
+      "left_lower_leg",
+      "right_lower_leg",
+      "head",
+      "pelvis"
+    ],
+    "imu_joints": [
+      18,
+      19,
+      4,
+      5,
+      15,
+      0
+    ],
+    "imu_vertices": [
+      1961,
+      5424,
+      1176,
+      4662,
+      411,
+      3021
+    ],
+    "coordinate_contract": "r_JS is the IMU origin position relative to the mapped joint J, expressed in joint-local coordinates. World prediction: p_WS(t)=p_WJ(t)+R_WJ(t)@r_JS."
+  },
+  "world_position_note": "FK vertex positions are generated with the sequence root translation `tran`; no root-relative subtraction is applied."
+}
