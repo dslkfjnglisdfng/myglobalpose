@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: TotalCapture IMU-aware pose-label refinement bounded tuning runner implemented
-Current task: sweep conservative TotalCapture pose/tran refinement settings, gate trans-only Mode A before any root+lower-body Mode B run, and reject configs that improve fitted sensors while hurting held-out/gyro/smoothness/contact
-Review state: Implemented with smoke plus small bounded Stage 1 diagnostic; no training and no PL/IK/VR/network changes
-Current changed files: code/tools/run_totalcapture_pose_refinement_tuning_sweep.py, code/outputs/totalcapture_pose_refinement_tuning_sweep_smoke/, code/outputs/totalcapture_pose_refinement_tuning_sweep_stage1_180f/, PROJECT_STATUS.md, EXPERIMENT_LOG.md
+Current stage: TotalCapture FK/IMU both-smooth protocol selected; simplified smooth pose/rJS diagnostics implemented
+Current task: use matched smooth/low-frequency IMU acceleration as the measurement target for future pose smoothing; do not continue raw-acceleration pose refinement
+Review state: Implemented with smoke plus bounded diagnostics; first-step smooth protocol is supported, second/third-step refinement gates do not pass yet
+Current changed files: code/tools/audit_totalcapture_both_smooth_fk_imu_acc.py, code/tools/refine_totalcapture_pose_kalman_style_smoother.py, code/tools/alternate_totalcapture_rjs_pose_smoothing.py, code/outputs/totalcapture_both_smooth_fk_imu_acc_smoke/, code/outputs/totalcapture_both_smooth_fk_imu_acc_full/, code/outputs/totalcapture_kalman_style_smoother_smoke/, code/outputs/totalcapture_kalman_style_smoother_bounded/, code/outputs/totalcapture_rjs_pose_alternating_smoke/, code/outputs/totalcapture_rjs_pose_alternating_bounded/, code/outputs/totalcapture_fk_imu_smooth_kalman_pipeline_20260705/, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
 Current module: data diagnostic only
 Current replacement version: none
-Current experiment: `EXP-20260705-totalcapture-pose-refinement-tuning-sweep-stage1-180f` on `data/dataset_work/TotalCapture_globalpose_official/test.pt`; one sequence, 180 frames, Mode A only, 20 iterations, fit sensors forearms+head, held-out lower legs, grid over lr `1e-4/3e-4/1e-3` and acc weight `0.1/0.3`.
-Current result: Stage 1 bounded subset produced zero passing rows out of 18 filter rows (`raw`, `savgol9_p3`, `savgol15_p3`). Every config failed fit-improvement, held-out, jerk, and foot-sliding gates. Best raw fit delta was still positive/worse (`+0.008609`) with held-out delta `+0.003113`; larger lr worsened both fit and held-out residuals. Per requested gate, Stage 2 Mode B was not run.
+Current experiment: `EXP-20260705-totalcapture-both-smooth-fk-imu-acc`, `EXP-20260705-totalcapture-kalman-style-smoother-bounded`, and `EXP-20260705-totalcapture-rjs-pose-alternating-bounded`.
+Current result: Step 1 full TotalCapture official test supports matched smoothing: accfit-global rJS centered_ma21 sensor-frame specific-force RMSE `0.492988` vs raw `3.053103`; lower-leg-only RMSE `0.430999` vs raw `3.613702`; SavGol-9 accfit-global beats old rJS by `-1.939099` RMSE and vertex by `-0.204214`. Step 2 bounded smoother with centered_ma21 did not pass: all-sensor delta `+0.000350`, held-out lower-leg delta `+0.000370`, gyro/jerk/foot sliding slightly worse. Step 3 3-round alternating run also did not pass; round-3 all-sensor delta `+0.000150`, held-out lower-leg delta `+0.000119`.
 Current blocker: none
-Next action: do not claim refinement success. If continuing, pivot to lower-frequency acceleration loss, stronger low-frequency parameterization of translation, or target/noise analysis before trying root+lower-body pose updates.
+Next action: use centered_ma21 smooth/low-frequency sensor-frame specific force as the measurement target; do not optimize raw acceleration. If continuing refinement, reduce optimizer aggressiveness or parameterize lower-frequency pose/tran deltas before expanding beyond bounded diagnostics.
 Git state: dirty worktree with existing unrelated edits; do not revert unrelated files
-CodeGraph state: tool unavailable in current Codex session; local `.codegraph/` exists and prior status said healthy indexed native backend
-Detailed logs: `code/outputs/totalcapture_pose_refinement_tuning_sweep_stage1_180f/SUMMARY.md`, `sweep_summary.csv`, `failed_configs.csv`, `best_configs_by_gate.csv`, `per_config_summary/`, plots, and EXPERIMENT_LOG.md `EXP-20260705-totalcapture-pose-refinement-tuning-sweep-stage1-180f`
+CodeGraph state: healthy native index checked from `/home/lingfeng/projects/GlobalposeMy`, 261 files indexed
+Detailed logs: `code/outputs/totalcapture_fk_imu_smooth_kalman_pipeline_20260705/SUMMARY.md`, `smooth_protocol_summary.csv`, `kalman_style_refinement_summary.csv`, `rjs_iteration_summary.csv`, and EXPERIMENT_LOG.md `EXP-20260705-totalcapture-both-smooth-fk-imu-acc`
 
 ## 0. Version-Line Reading Guide
 
@@ -4219,3 +4219,21 @@ Result: no Stage 1 config passed. All 18 filter rows failed fit improvement, hel
 Risks/blockers: this is still a small bounded subset, not the full grid. However it is negative evidence for trans-only refinement under the tested conservative settings.
 
 Next action: pivot toward low-frequency-only acceleration loss or translation parameterization before spending compute on broader Mode B pose refinement.
+
+### 2026-07-05 - TotalCapture both-smooth FK/IMU acceleration audit and smooth-only refinement diagnostics
+
+User request: stop direct raw acceleration pose refinement; first reproduce and extend the old smooth protocol on TotalCapture test, compare FK sensor-site acceleration against IMU acceleration in model/world and sensor-specific-force frames, then implement a simplified Kalman-style smoother and a 3-round rJS/pose alternating diagnostic.
+
+Changed files: `code/tools/audit_totalcapture_both_smooth_fk_imu_acc.py`, `code/tools/refine_totalcapture_pose_kalman_style_smoother.py`, `code/tools/alternate_totalcapture_rjs_pose_smoothing.py`, `PROJECT_STATUS.md`, `RECENT_REPLACEMENT_VERSIONS.md`, `EXPERIMENT_LOG.md`; artifacts under `code/outputs/totalcapture_both_smooth_fk_imu_acc_full/`, `code/outputs/totalcapture_kalman_style_smoother_bounded/`, `code/outputs/totalcapture_rjs_pose_alternating_bounded/`, and `code/outputs/totalcapture_fk_imu_smooth_kalman_pipeline_20260705/`.
+
+Work performed: implemented the both-smooth audit over raw, legacy MA9, legacy lowpass-5Hz, SavGol-9/15, centered moving average 9/15/21, and low-pass 3/5/8/12Hz; compared vertex, old footlock rJS, and accfit global rJS in both sensor-frame specific force and model/world linear acceleration; emitted overall/per-sensor/per-sequence/lower-leg summaries and plots. Implemented a simplified offline window smoother that optimizes pose/tran deltas against the selected smooth measurement only, with `qd_clean` and `qdd_clean` derived from the same clean trajectory. Implemented bounded 3-round alternating pose smoothing and global rJS refit.
+
+Design details: transform contract remains `R_WJ` joint-local to world, `r_JS` sensor origin relative to mapped joint expressed in joint-local coordinates, `p_WS = p_WJ + R_WJ @ r_JS`, and sensor-frame specific force `a_S = R_WS_obs^T @ (ddot(p_WS) - g_W)`. The selected measurement is `centered_ma21` sensor-frame specific force with accfit global rJS. Raw acceleration is explicitly not the smoother objective.
+
+Validation: `python -m py_compile` passed for all three new scripts. Smoke runs passed for the smooth audit, smoother, and alternating script. Full/diagnostic runs completed under longrun and sent completion email.
+
+Result: Step 1 supports the old smooth protocol: accfit-global rJS centered_ma21 sensor-frame RMSE is `0.492988` versus raw `3.053103`; lower-leg-only RMSE is `0.430999` versus raw `3.613702`; SavGol-9 accfit-global beats old rJS and vertex. Step 2 bounded smoother does not pass the conservative gate: all-sensor smooth RMSE delta `+0.000350`, held-out lower-leg delta `+0.000370`, with tiny gyro/jerk/foot-sliding regressions. Step 3 alternating run also does not pass: round-3 all-sensor delta `+0.000150`, held-out lower-leg delta `+0.000119`.
+
+Risks/blockers: the smoother and alternating runs are bounded diagnostics, not final optimization recipes. Current evidence selects a smooth measurement target but does not yet support pose refinement success.
+
+Next action: continue only with smooth/low-frequency acceleration objectives, not raw acceleration; if refining pose, use a lower-frequency parameterization or more conservative optimizer before expanding sequence length or rounds.

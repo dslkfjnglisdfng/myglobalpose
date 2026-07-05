@@ -16180,3 +16180,179 @@ Interpretation: under these conservative trans-only settings, root translation r
 Claim support: bounded diagnostic.
 
 Next action: if continuing this branch, test a low-frequency-only acceleration loss or lower-dimensional translation parameterization before broadening to Mode B pose deltas.
+
+### EXP-20260705-totalcapture-both-smooth-fk-imu-acc - TotalCapture both-smooth FK/IMU acceleration audit
+
+Question: can matched IMU smoothing and FK acceleration smoothing make `FK(q, qd, qdd, rJS)` sensor-site acceleration close enough to IMU acceleration to serve as a later Kalman-style smoother measurement?
+
+Hypothesis: raw FK acceleration is too noisy because pose/tran second differences amplify noise; matched smoothing should improve FK/IMU agreement. If raw fails and smooth succeeds, later refinement should target only smooth/low-frequency acceleration.
+
+Scope:
+
+```text
+script: code/tools/audit_totalcapture_both_smooth_fk_imu_acc.py
+dataset: data/dataset_work/TotalCapture_globalpose_official/test.pt
+split: TotalCapture official test
+sequences: 4
+sources: vertex, old_footlock_rjs, accfit_global_rjs
+rJS default: code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/rjs_accfit_global.pt
+rJS method/field: savgol9_p3_fd / r_JS_projected
+frames: full sequences
+comparison frames: sensor_specific_force and model_world_linear_acc
+protocols: raw, legacy_both_smooth_ma9, legacy_both_lowpass_5hz, savgol9_p3, savgol15_p3, centered_ma9, centered_ma15, centered_ma21, lowpass_3hz, lowpass_5hz, lowpass_8hz, lowpass_12hz
+not run: pose refinement, training, PL/IK/VR/full-pipeline evaluation
+```
+
+Commands:
+
+```bash
+python -m py_compile code/tools/audit_totalcapture_both_smooth_fk_imu_acc.py
+python code/tools/audit_totalcapture_both_smooth_fk_imu_acc.py --max-sequences 1 --max-frames 180 --output-dir code/outputs/totalcapture_both_smooth_fk_imu_acc_smoke
+/home/lingfeng/bin/longrun -- python code/tools/audit_totalcapture_both_smooth_fk_imu_acc.py --output-dir code/outputs/totalcapture_both_smooth_fk_imu_acc_full
+```
+
+Artifacts:
+
+```text
+smoke root: code/outputs/totalcapture_both_smooth_fk_imu_acc_smoke
+full root: code/outputs/totalcapture_both_smooth_fk_imu_acc_full
+summary: code/outputs/totalcapture_both_smooth_fk_imu_acc_full/SUMMARY.md
+overall CSV: code/outputs/totalcapture_both_smooth_fk_imu_acc_full/smooth_protocol_summary.csv
+per-sensor CSV: code/outputs/totalcapture_both_smooth_fk_imu_acc_full/per_sensor_summary.csv
+per-sequence CSV: code/outputs/totalcapture_both_smooth_fk_imu_acc_full/per_sequence_summary.csv
+lower-leg CSV: code/outputs/totalcapture_both_smooth_fk_imu_acc_full/lower_leg_summary.csv
+source comparison: code/outputs/totalcapture_both_smooth_fk_imu_acc_full/rjs_source_comparison.csv
+plots: code/outputs/totalcapture_both_smooth_fk_imu_acc_full/plots/*.png
+```
+
+Key full-test result:
+
+| Readout | Source | Protocol | Frame | RMSE | L2 | Corr | Cosine | p95 |
+|---|---|---|---|---:|---:|---:|---:|---:|
+| best overall | accfit_global_rjs | centered_ma21 | sensor_specific_force | `0.492988` | `0.612267` | `0.996950` | `0.996965` | `1.759593` |
+| accfit raw | accfit_global_rjs | raw | sensor_specific_force | `3.053103` | `2.659551` | `0.912537` | `0.913169` | `8.075048` |
+| best world/model | accfit_global_rjs | centered_ma21 | model_world_linear_acc | `0.448956` | `0.580442` | `0.979122` | `0.978972` | `1.615185` |
+| lower-leg raw | accfit_global_rjs | raw | sensor_specific_force | `3.613702` | `3.306250` | `0.873858` | `0.875454` | `11.069432` |
+| lower-leg best | accfit_global_rjs | centered_ma21 | sensor_specific_force | `0.430999` | `0.600381` | `0.997401` | `0.997448` | `1.323008` |
+
+Source comparison:
+
+```text
+SavGol-9 sensor specific force:
+  accfit_global RMSE 1.136693
+  old_rjs RMSE 3.075792, delta -1.939099
+  vertex RMSE 1.340907, delta -0.204214
+lowpass-5Hz sensor specific force:
+  accfit_global RMSE 0.809531
+  old_rjs RMSE 2.606780, delta -1.797249
+  vertex RMSE 1.015487, delta -0.205957
+```
+
+Interpretation: matched smoothing is the main reason the old protocol helps. Frame choice is not the main explanation because both sensor-frame and world/model-frame rows improve strongly and share the same winning centered-MA21 protocol. Accfit global rJS is better than old footlock rJS and vertex for the tested smooth protocols. Lower-leg error drops sharply under matched smoothing.
+
+Claim support: full TotalCapture test diagnostic.
+
+Next action: use centered-MA21 sensor-frame specific force as the smoother measurement; do not chase raw acceleration.
+
+### EXP-20260705-totalcapture-kalman-style-smoother-bounded - Simplified smooth pose/tran optimization
+
+Question: after selecting centered-MA21 specific force as the measurement, can a simple offline window optimization improve FK/IMU smooth acceleration while keeping pose/tran, gyro, jerk, and foot sliding stable?
+
+Scope:
+
+```text
+script: code/tools/refine_totalcapture_pose_kalman_style_smoother.py
+dataset: TotalCapture official test
+measurement: centered_ma21 sensor-frame specific force
+rJS: accfit global rJS
+bounded run: 4 sequences, 180 frames each, 20 iterations
+variables saved: pose_clean, tran_clean, qd_clean, qdd_clean
+contract: qd/qdd are derived from the same cleaned pose/tran trajectory, not optimized independently
+not run: true EKF, raw acceleration objective, PL/IK/VR/full-pipeline evaluation
+```
+
+Commands:
+
+```bash
+python -m py_compile code/tools/refine_totalcapture_pose_kalman_style_smoother.py
+python code/tools/refine_totalcapture_pose_kalman_style_smoother.py --max-sequences 1 --max-frames 60 --iterations 2 --output-dir code/outputs/totalcapture_kalman_style_smoother_smoke
+/home/lingfeng/bin/longrun -- python code/tools/refine_totalcapture_pose_kalman_style_smoother.py --max-frames 180 --iterations 20 --output-dir code/outputs/totalcapture_kalman_style_smoother_bounded
+```
+
+Artifacts:
+
+```text
+smoke root: code/outputs/totalcapture_kalman_style_smoother_smoke
+bounded root: code/outputs/totalcapture_kalman_style_smoother_bounded
+summary: code/outputs/totalcapture_kalman_style_smoother_bounded/SUMMARY.md
+summary CSV: code/outputs/totalcapture_kalman_style_smoother_bounded/kalman_style_refinement_summary.csv
+per-sequence CSV: code/outputs/totalcapture_kalman_style_smoother_bounded/per_sequence_summary.csv
+refined trajectories: code/outputs/totalcapture_kalman_style_smoother_bounded/refined_sequences.pt
+```
+
+Bounded result:
+
+| Group | Before RMSE | After RMSE | Delta |
+|---|---:|---:|---:|
+| all | `0.339067` | `0.339417` | `+0.000350` |
+| heldout_lower_leg | `0.281647` | `0.282017` | `+0.000370` |
+
+Diagnostics: mean pose delta `0.009889 deg`, mean translation delta `0.000455 m`, but gyro delta `+0.0000027`, jerk delta `+0.021988`, and foot sliding delta `+0.000255`.
+
+Interpretation: implementation works, but the bounded configuration does not pass. It slightly worsens the smooth acceleration objective and held-out lower legs, so it is not a selected smoother.
+
+Claim support: bounded diagnostic.
+
+Next action: if continuing, make the parameterization lower-frequency or reduce optimizer aggressiveness; do not switch back to raw acceleration.
+
+### EXP-20260705-totalcapture-rjs-pose-alternating-bounded - 3-round rJS and pose alternating diagnostic
+
+Question: does alternating fixed-rJS pose smoothing and fixed-pose global rJS refit improve the centered-MA21 FK/IMU agreement?
+
+Scope:
+
+```text
+script: code/tools/alternate_totalcapture_rjs_pose_smoothing.py
+dataset: TotalCapture official test
+measurement: centered_ma21 sensor-frame specific force
+rounds: 3
+bounded run: 4 sequences, 120 frames each, 5 smoother iterations per round
+rJS refit: global linear least squares with norm projection max 0.25m
+not run: full-length refinement, training, PL/IK/VR/full-pipeline evaluation
+```
+
+Commands:
+
+```bash
+python -m py_compile code/tools/alternate_totalcapture_rjs_pose_smoothing.py
+python code/tools/alternate_totalcapture_rjs_pose_smoothing.py --max-sequences 1 --max-frames 60 --rounds 1 --iterations 1 --output-dir code/outputs/totalcapture_rjs_pose_alternating_smoke
+/home/lingfeng/bin/longrun -- python code/tools/alternate_totalcapture_rjs_pose_smoothing.py --max-frames 120 --rounds 3 --iterations 5 --output-dir code/outputs/totalcapture_rjs_pose_alternating_bounded
+```
+
+Artifacts:
+
+```text
+smoke root: code/outputs/totalcapture_rjs_pose_alternating_smoke
+bounded root: code/outputs/totalcapture_rjs_pose_alternating_bounded
+summary: code/outputs/totalcapture_rjs_pose_alternating_bounded/SUMMARY.md
+rJS iteration CSV: code/outputs/totalcapture_rjs_pose_alternating_bounded/rjs_iteration_summary.csv
+per-sequence round CSV: code/outputs/totalcapture_rjs_pose_alternating_bounded/per_sequence_round_summary.csv
+round rJS files: round_1_rjs_global.pt, round_2_rjs_global.pt, round_3_rjs_global.pt
+```
+
+Bounded result:
+
+| Round | Group | Before RMSE | After RMSE | Delta |
+|---:|---|---:|---:|---:|
+| 1 | all | `0.290152` | `0.290338` | `+0.000186` |
+| 1 | heldout_lower_leg | `0.223659` | `0.223866` | `+0.000207` |
+| 2 | all | `0.290795` | `0.290945` | `+0.000150` |
+| 2 | heldout_lower_leg | `0.231003` | `0.231121` | `+0.000118` |
+| 3 | all | `0.290817` | `0.290967` | `+0.000150` |
+| 3 | heldout_lower_leg | `0.231046` | `0.231165` | `+0.000119` |
+
+Interpretation: alternating infrastructure works and produces round rJS files, but this bounded configuration does not improve FK/IMU acceleration and is not a selected refinement method.
+
+Claim support: bounded diagnostic.
+
+Next action: do not expand alternating optimization until the fixed-rJS smoother passes a conservative gate.
