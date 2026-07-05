@@ -1,0 +1,3 @@
+mode,sequence_id,variant,foot_sliding,stance_foot_velocity,stance_foot_acceleration
+A,s5_freestyle1,original,0.019606582820415497,0.019606582820415497,1.2101600170135498
+A,s5_freestyle1,refined,0.019776664674282074,0.019776664674282074,1.2421618700027466

@@ -1,0 +1,18 @@
+{
+  "mode": "A",
+  "iterations": 20,
+  "lr": 0.0003,
+  "acc_weight": 0.1,
+  "pose_prior_label": "high",
+  "pose_prior_weight": 500.0,
+  "tran_prior_label": "high",
+  "tran_prior_weight": 5000.0,
+  "jerk_weight": 10.0,
+  "loss": "huber",
+  "fit_preset": "forearms_head",
+  "fit_sensors": "left_forearm,right_forearm,head",
+  "heldout_sensors": "left_lower_leg,right_lower_leg",
+  "config_id": "0002_A_forearms_head_it20_lr0.0003_acc0.1_huber_j10.0_high_high",
+  "output_dir": "code/outputs/totalcapture_pose_refinement_tuning_sweep_stage1_180f/per_config_summary/0002_A_forearms_head_it20_lr0.0003_acc0.1_huber_j10.0_high_high",
+  "command": "/miniconda3/bin/python /home/lingfeng/projects/GlobalposeMy/GlobalPose/code/tools/refine_totalcapture_pose_with_imu_acc_consistency.py --dataset /home/lingfeng/projects/GlobalposeMy/GlobalPose/data/dataset_work/TotalCapture_globalpose_official/test.pt --rjs-path /home/lingfeng/projects/GlobalposeMy/GlobalPose/code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/rjs_accfit_global.pt --mode A --max-sequences 1 --max-frames 180 --iterations 20 --lr 0.0003 --robust-loss huber --lambda-acc 0.1 --lambda-pose 500.0 --lambda-tran 5000.0 --lambda-jerk 10.0 --fit-sensors left_forearm,right_forearm,head --output-dir code/outputs/totalcapture_pose_refinement_tuning_sweep_stage1_180f/per_config_summary/0002_A_forearms_head_it20_lr0.0003_acc0.1_huber_j10.0_high_high --device cpu --heldout-sensors left_lower_leg,right_lower_leg"
+}

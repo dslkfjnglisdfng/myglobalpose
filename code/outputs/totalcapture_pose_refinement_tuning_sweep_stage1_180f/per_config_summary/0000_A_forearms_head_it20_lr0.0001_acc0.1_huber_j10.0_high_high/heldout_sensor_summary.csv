@@ -1,0 +1,3 @@
+mode,sequence_id,sensor_name,original_acc_rmse,refined_acc_rmse,delta_acc_rmse
+A,s5_freestyle1,left_lower_leg,0.8732976523636198,0.8839497644726739,0.010652112109054146
+A,s5_freestyle1,right_lower_leg,2.161832211923515,2.162255107831252,0.00042289590773680885

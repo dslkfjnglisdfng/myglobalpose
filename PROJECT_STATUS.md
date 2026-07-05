@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: TotalCapture IMU-aware pose-label refinement diagnostic implemented
-Current task: refine TotalCapture pose/tran near the original labels with IMU acceleration consistency, gyro consistency, strong pose/tran priors, temporal smoothness, contact diagnostics, and held-out sensor validation
-Review state: Implemented, smoke validation only; no training and no PL/IK/VR/network changes
-Current changed files: code/tools/refine_totalcapture_pose_with_imu_acc_consistency.py, code/outputs/totalcapture_imu_aware_pose_refinement_smoke/, PROJECT_STATUS.md, EXPERIMENT_LOG.md
+Current stage: TotalCapture IMU-aware pose-label refinement bounded tuning runner implemented
+Current task: sweep conservative TotalCapture pose/tran refinement settings, gate trans-only Mode A before any root+lower-body Mode B run, and reject configs that improve fitted sensors while hurting held-out/gyro/smoothness/contact
+Review state: Implemented with smoke plus small bounded Stage 1 diagnostic; no training and no PL/IK/VR/network changes
+Current changed files: code/tools/run_totalcapture_pose_refinement_tuning_sweep.py, code/outputs/totalcapture_pose_refinement_tuning_sweep_smoke/, code/outputs/totalcapture_pose_refinement_tuning_sweep_stage1_180f/, PROJECT_STATUS.md, EXPERIMENT_LOG.md
 Current module: data diagnostic only
 Current replacement version: none
-Current experiment: `EXP-20260705-totalcapture-imu-aware-pose-refinement-smoke` on `data/dataset_work/TotalCapture_globalpose_official/test.pt`; smoke command used one sequence, 48 frames, two optimizer iterations, and all modes A/B/C. Default rJS source is `code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/rjs_accfit_global.pt`, field `r_JS_projected`, method `savgol9_p3_fd`.
-Current result: Script smoke completed and produced all required artifact classes under `code/outputs/totalcapture_imu_aware_pose_refinement_smoke/`: config, SUMMARY, overall/per-sensor/per-sequence/pose/smoothness/held-out CSVs, gyro/contact CSVs, plots, and `refined_sequences.pt`. Smoke metrics are implementation checks only, not a success claim: short two-iteration smoke worsened raw acc RMSE in all modes, while Mode B/C showed finite small pose deltas (`mean 0.012318 deg`, `max 0.104217 deg`) and held-out reporting worked.
+Current experiment: `EXP-20260705-totalcapture-pose-refinement-tuning-sweep-stage1-180f` on `data/dataset_work/TotalCapture_globalpose_official/test.pt`; one sequence, 180 frames, Mode A only, 20 iterations, fit sensors forearms+head, held-out lower legs, grid over lr `1e-4/3e-4/1e-3` and acc weight `0.1/0.3`.
+Current result: Stage 1 bounded subset produced zero passing rows out of 18 filter rows (`raw`, `savgol9_p3`, `savgol15_p3`). Every config failed fit-improvement, held-out, jerk, and foot-sliding gates. Best raw fit delta was still positive/worse (`+0.008609`) with held-out delta `+0.003113`; larger lr worsened both fit and held-out residuals. Per requested gate, Stage 2 Mode B was not run.
 Current blocker: none
-Next action: run a bounded diagnostic with more frames/iterations only if needed; judge success by acc residual, held-out residual, pose/tran deviation, gyro, jerk/high-frequency energy, and contact/foot-sliding non-regression together.
+Next action: do not claim refinement success. If continuing, pivot to lower-frequency acceleration loss, stronger low-frequency parameterization of translation, or target/noise analysis before trying root+lower-body pose updates.
 Git state: dirty worktree with existing unrelated edits; do not revert unrelated files
 CodeGraph state: tool unavailable in current Codex session; local `.codegraph/` exists and prior status said healthy indexed native backend
-Detailed logs: `code/outputs/totalcapture_imu_aware_pose_refinement_smoke/SUMMARY.md`, `summary_overall.csv`, `summary_per_sensor.csv`, `summary_per_sequence.csv`, `pose_delta_summary.csv`, `smoothness_summary.csv`, `heldout_sensor_summary.csv`, plots, `refined_sequences.pt`, and EXPERIMENT_LOG.md `EXP-20260705-totalcapture-imu-aware-pose-refinement-smoke`
+Detailed logs: `code/outputs/totalcapture_pose_refinement_tuning_sweep_stage1_180f/SUMMARY.md`, `sweep_summary.csv`, `failed_configs.csv`, `best_configs_by_gate.csv`, `per_config_summary/`, plots, and EXPERIMENT_LOG.md `EXP-20260705-totalcapture-pose-refinement-tuning-sweep-stage1-180f`
 
 ## 0. Version-Line Reading Guide
 
@@ -4201,3 +4201,21 @@ Documentation updated: `PROJECT_STATUS.md` active summary and this implementatio
 Risks/blockers: full diagnostic is not run yet; optimizer defaults are intentionally conservative but may require tuning for a meaningful bounded run. Success must not be claimed unless acc, held-out sensors, pose/tran deviation, gyro, jerk/high-frequency energy, and contact/foot-sliding gates are all checked together.
 
 Next action: run a bounded diagnostic with more frames/iterations only after deciding runtime budget and sequence scope.
+
+### 2026-07-05 - TotalCapture pose refinement tuning sweep runner
+
+User request: add a bounded tuning diagnostic runner for `code/tools/refine_totalcapture_pose_with_imu_acc_consistency.py` that first sweeps Mode A trans-only and runs Mode B only if Mode A passes conservative gates.
+
+Changed files: `code/tools/run_totalcapture_pose_refinement_tuning_sweep.py`, `PROJECT_STATUS.md`, `EXPERIMENT_LOG.md`; smoke artifacts under `code/outputs/totalcapture_pose_refinement_tuning_sweep_smoke/`; bounded Stage 1 artifacts under `code/outputs/totalcapture_pose_refinement_tuning_sweep_stage1_180f/`.
+
+Work performed: implemented staged sweep enumeration, per-config output directories, `sweep_summary.csv`, `best_configs_by_gate.csv`, `failed_configs.csv`, `SUMMARY.md`, three requested sweep plots, explicit fit/held-out sensor presets, signal-filter rows for raw/SavGol-9/SavGol-15, and strict pass/fail verdict logic.
+
+Design details: default Stage 1 is Mode A only; Stage 2 Mode B runs only when Stage 1 has at least one pass unless `--force-stage2` is used. Presets are `all` with no held-out pass eligibility, `forearms_head` fit with lower-leg held-out, and `lower_legs` fit with forearms/head held-out.
+
+Validation: `python -m py_compile code/tools/run_totalcapture_pose_refinement_tuning_sweep.py` passed. Runner smoke with one config and 48 frames completed. A small bounded Stage 1 subset with one sequence, 180 frames, 20 iterations, forearms/head fit, lower-leg held-out, lr `1e-4/3e-4/1e-3`, and acc weight `0.1/0.3` completed under longrun.
+
+Result: no Stage 1 config passed. All 18 filter rows failed fit improvement, held-out, jerk, and foot-sliding gates. Best raw fit delta remained worse (`+0.008609`), so Mode B was not run.
+
+Risks/blockers: this is still a small bounded subset, not the full grid. However it is negative evidence for trans-only refinement under the tested conservative settings.
+
+Next action: pivot toward low-frequency-only acceleration loss or translation parameterization before spending compute on broader Mode B pose refinement.

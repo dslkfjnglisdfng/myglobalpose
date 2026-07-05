@@ -1,0 +1,126 @@
+{
+  "args": {
+    "dataset": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/data/dataset_work/TotalCapture_globalpose_official/test.pt",
+    "rjs_path": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/rjs_accfit_global.pt",
+    "rjs_method": "savgol9_p3_fd",
+    "rjs_field": "r_JS_projected",
+    "mode": "A",
+    "output_dir": "code/outputs/totalcapture_pose_refinement_tuning_sweep_stage1_180f/per_config_summary/0003_A_forearms_head_it20_lr0.0003_acc0.3_huber_j10.0_high_high",
+    "max_sequences": 1,
+    "max_frames": 180,
+    "trim": 4,
+    "iterations": 20,
+    "lr": 0.0003,
+    "device": "cpu",
+    "robust_loss": "huber",
+    "huber_delta": 1.5,
+    "charbonnier_eps": 0.001,
+    "fit_sensors": "left_forearm,right_forearm,head",
+    "heldout_sensors": "left_lower_leg,right_lower_leg",
+    "lambda_acc": 0.3,
+    "lambda_gyro": 0.05,
+    "lambda_pose": 500.0,
+    "lambda_tran": 5000.0,
+    "lambda_vel": 0.02,
+    "lambda_acc_smooth": 0.005,
+    "lambda_jerk": 10.0,
+    "lambda_contact": 0.005,
+    "max_pose_delta_deg": 8.0,
+    "max_tran_delta": 0.02,
+    "delta_smooth_window": 9,
+    "save_frame_level": false
+  },
+  "output_dir": "code/outputs/totalcapture_pose_refinement_tuning_sweep_stage1_180f/per_config_summary/0003_A_forearms_head_it20_lr0.0003_acc0.3_huber_j10.0_high_high",
+  "fps": 60.0,
+  "gravity_world": [
+    0.0,
+    -9.800000190734863,
+    0.0
+  ],
+  "sensor_to_joint_map": {
+    "sensor_names": [
+      "left_forearm",
+      "right_forearm",
+      "left_lower_leg",
+      "right_lower_leg",
+      "head",
+      "pelvis"
+    ],
+    "imu_joints": [
+      18,
+      19,
+      4,
+      5,
+      15,
+      0
+    ],
+    "imu_vertices": [
+      1961,
+      5424,
+      1176,
+      4662,
+      411,
+      3021
+    ],
+    "coordinate_contract": "r_JS is the IMU origin position relative to the mapped joint J, expressed in joint-local coordinates. World prediction: p_WS(t)=p_WJ(t)+R_WJ(t)@r_JS."
+  },
+  "lower_body_joints": [
+    1,
+    2,
+    4,
+    5,
+    7,
+    8
+  ],
+  "fit_sensors": [
+    "left_forearm",
+    "right_forearm",
+    "head"
+  ],
+  "heldout_sensors": [
+    "left_lower_leg",
+    "right_lower_leg"
+  ],
+  "rjs_config": {
+    "fps": 60.0,
+    "dt": 0.016666666666666666,
+    "gravity_world": [
+      0.0,
+      -9.800000190734863,
+      0.0
+    ],
+    "ridge": 0.0001,
+    "bias_ridge": 0.0001,
+    "max_norm": 0.5,
+    "trim": 1,
+    "methods": {
+      "raw_fd": {
+        "window": 1,
+        "polyorder": 0
+      },
+      "savgol9_p3_fd": {
+        "window": 9,
+        "polyorder": 3
+      },
+      "savgol15_p3_fd": {
+        "window": 15,
+        "polyorder": 3
+      }
+    },
+    "derivative_mode": "centered",
+    "rjs_contract": "r_JS is the IMU origin position relative to mapped joint J, expressed in joint-local coordinates. World prediction: p_WS(t)=p_WJ(t)+R_WJ(t)@r_JS. For DIP-IMU, tran is not used as trusted global translation; acceleration objectives are diagnostic/self-supervised only.",
+    "transform_convention": {
+      "R_WJ": "maps joint-local vectors into world coordinates",
+      "R_JS": "maps sensor-frame vectors into joint-local coordinates",
+      "R_WS": "R_WJ @ R_JS, maps sensor-frame vectors into world coordinates",
+      "r_JS": "IMU sensor origin relative to mapped joint origin, expressed in joint-local coordinates",
+      "prediction": "a_S = R_WS^T @ (ddot(p_WJ) + ddot(R_WJ) @ r_JS - g_W)"
+    }
+  },
+  "transform_convention": {
+    "R_WJ": "maps joint-local vectors into world coordinates",
+    "R_JS": "maps sensor-frame vectors into joint-local coordinates",
+    "R_WS": "R_WJ @ R_JS, maps sensor-frame vectors into world coordinates",
+    "r_JS": "IMU sensor origin relative to mapped joint origin, expressed in joint-local coordinates"
+  }
+}

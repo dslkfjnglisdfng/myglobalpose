@@ -1,0 +1,29 @@
+{
+  "args": {
+    "dataset": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/data/dataset_work/TotalCapture_globalpose_official/test.pt",
+    "rjs_path": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/rjs_accfit_global.pt",
+    "output_dir": "code/outputs/totalcapture_pose_refinement_tuning_sweep_smoke",
+    "stage": "stage1",
+    "force_stage2": false,
+    "max_sequences": 1,
+    "max_frames": 48,
+    "max_configs": 1,
+    "dry_run": false,
+    "device": "cpu",
+    "iterations": "2",
+    "lrs": "0.0001",
+    "acc_weights": "0.1",
+    "pose_priors": "high",
+    "tran_priors": "high",
+    "jerk_weights": "1.0",
+    "losses": "huber",
+    "signal_filters": "raw,savgol9_p3,savgol15_p3",
+    "fit_presets": "forearms_head",
+    "max_jerk_delta": 0.0,
+    "max_pose_mean_deg": 0.25,
+    "max_trans_mean": 0.002,
+    "max_foot_sliding_delta": 0.0,
+    "summary_only": false
+  },
+  "num_configs": 1
+}

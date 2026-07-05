@@ -1,0 +1,2 @@
+mode,sequence_id,original_gyro_rmse,refined_gyro_rmse,delta_gyro_rmse
+A,s5_freestyle1,0.44941821674978555,0.44941821674978555,0.0

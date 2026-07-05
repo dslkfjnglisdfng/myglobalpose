@@ -16107,3 +16107,76 @@ Interpretation: the implementation and reporting surface are smoke-validated, bu
 Claim support: smoke only.
 
 Next action: run a bounded diagnostic with more frames/iterations only if needed, and judge success by the combined gate: acc residual decrease, held-out residual non-regression, small pose/tran deviation, gyro non-regression, jerk/high-frequency non-regression, and foot-sliding/contact non-regression.
+
+### EXP-20260705-totalcapture-pose-refinement-tuning-sweep-stage1-180f - Conservative Mode A tuning sweep
+
+Question: can translation-only TotalCapture label refinement reduce fit-sensor IMU acceleration residual without hurting held-out sensors, gyro, jerk/high-frequency behavior, pose/tran deviation, or foot sliding in a bounded setting?
+
+Hypothesis: if root translation noise is a major contributor, a very conservative Mode A sweep should show at least one configuration with fit acc RMSE decrease and no held-out/smoothness/contact regression. If no Stage 1 config passes, Mode B should not be run.
+
+Change tested:
+
+```text
+new runner: code/tools/run_totalcapture_pose_refinement_tuning_sweep.py
+called refinement script: code/tools/refine_totalcapture_pose_with_imu_acc_consistency.py
+mode: A only, trans-only
+dataset: TotalCapture official test
+bounded scope: 1 sequence, 180 frames
+iterations: 20
+lr: 1e-4, 3e-4, 1e-3
+acc weight: 0.1, 0.3
+pose prior: high (unused by Mode A)
+tran prior: high
+jerk weight: 10.0
+loss: Huber
+fit sensors: left_forearm, right_forearm, head
+held-out sensors: left_lower_leg, right_lower_leg
+signal filters reported: raw, savgol9_p3, savgol15_p3
+```
+
+Commands:
+
+```bash
+python -m py_compile code/tools/run_totalcapture_pose_refinement_tuning_sweep.py
+python code/tools/run_totalcapture_pose_refinement_tuning_sweep.py --stage stage1 --max-configs 1 --max-sequences 1 --max-frames 48 --iterations 2 --lrs 0.0001 --acc-weights 0.1 --pose-priors high --tran-priors high --jerk-weights 1.0 --losses huber --fit-presets forearms_head --output-dir code/outputs/totalcapture_pose_refinement_tuning_sweep_smoke
+/home/lingfeng/bin/longrun -- python code/tools/run_totalcapture_pose_refinement_tuning_sweep.py --stage stage1 --max-sequences 1 --max-frames 180 --iterations 20 --lrs 1e-4,3e-4,1e-3 --acc-weights 0.1,0.3 --pose-priors high --tran-priors high --jerk-weights 10.0 --losses huber --fit-presets forearms_head --output-dir code/outputs/totalcapture_pose_refinement_tuning_sweep_stage1_180f
+```
+
+Artifacts:
+
+```text
+smoke root: code/outputs/totalcapture_pose_refinement_tuning_sweep_smoke
+bounded root: code/outputs/totalcapture_pose_refinement_tuning_sweep_stage1_180f
+summary: SUMMARY.md
+sweep summary: sweep_summary.csv
+pass table: best_configs_by_gate.csv
+fail table: failed_configs.csv
+per-config outputs: per_config_summary/
+plots: sweep_acc_vs_jerk.png, sweep_heldout_vs_fit.png, sweep_pose_delta_vs_acc.png
+```
+
+Bounded Stage 1 result:
+
+```text
+total verdict rows: 18
+pass rows: 0
+Stage 1 passed: false
+Stage 2 ran: false
+```
+
+Best raw rows by fit delta:
+
+| Config | Fit delta | Held-out delta | Gyro delta | Jerk delta | Trans mean | Foot sliding delta | Verdict |
+|---|---:|---:|---:|---:|---:|---:|---|
+| lr=1e-4 acc=0.1 | `+0.008609` | `+0.003113` | `0.000000` | `+0.001221` | `0.000274` | `+0.000259` | fail |
+| lr=1e-4 acc=0.3 | `+0.008610` | `+0.003114` | `0.000000` | `+0.001221` | `0.000274` | `+0.000259` | fail |
+| lr=3e-4 acc=0.1 | `+0.056729` | `+0.030263` | `0.000000` | `+0.008850` | `0.000617` | `+0.000710` | fail |
+| lr=1e-3 acc=0.1 | `+0.499432` | `+0.326489` | `0.000000` | `+0.075989` | `0.001257` | `+0.003803` | fail |
+
+SavGol-9 also failed: best fit delta was `+0.001671` with held-out delta `+0.000737`, so smoothing the metric does not reveal a hidden pass in this subset.
+
+Interpretation: under these conservative trans-only settings, root translation refinement does not reduce even fitted-sensor residual and consistently increases held-out residual, jerk, and foot sliding. The failure is more consistent with translation-only not explaining the residual and/or raw second-difference acceleration optimization being too unstable/noisy than with needing Mode B immediately. Per gate, do not run root+lower-body Mode B from this result.
+
+Claim support: bounded diagnostic.
+
+Next action: if continuing this branch, test a low-frequency-only acceleration loss or lower-dimensional translation parameterization before broadening to Mode B pose deltas.
