@@ -16047,3 +16047,63 @@ Interpretation:
 Claim support: bounded diagnostic.
 
 Conclusion: old footlock/pseudo rJS should not be used as the acceleration target, but TotalCapture acceleration-fit rJS is a promising IMU acceleration explainability/supervision target candidate. Before any training use, choose the offset policy (per-sequence upper bound vs global/LOO-like fixed installation) and audit remaining lower-leg residuals and possible time alignment.
+
+### EXP-20260705-totalcapture-imu-aware-pose-refinement-smoke - TotalCapture IMU-aware pose label refinement script smoke
+
+Question: can the new TotalCapture label-refinement diagnostic run end-to-end without touching PL/IK/VR or training code, while producing the requested metrics/artifacts for trans-only, root+lower-body, and held-out sensor modes?
+
+Hypothesis: using the latest global accfit `r_JS` artifact and conservative pose/tran deltas is enough to smoke-test the optimization path and reporting surface. This smoke is not expected to prove refinement success.
+
+Change tested:
+
+```text
+new script: code/tools/refine_totalcapture_pose_with_imu_acc_consistency.py
+mode A: trans-only refinement
+mode B: root + lower-body small-angle refinement
+mode C: held-out sensor validation, default fit sensors left_forearm/right_forearm/head and held-out left_lower_leg/right_lower_leg
+default rJS: code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/rjs_accfit_global.pt
+default rJS field/method: r_JS_projected / savgol9_p3_fd
+robust loss: Huber by default; Charbonnier supported
+```
+
+Dataset/split: `data/dataset_work/TotalCapture_globalpose_official/test.pt`; smoke limited to one sequence and 48 frames.
+
+Command:
+
+```bash
+python -m py_compile code/tools/refine_totalcapture_pose_with_imu_acc_consistency.py
+python code/tools/refine_totalcapture_pose_with_imu_acc_consistency.py --mode all --max-sequences 1 --max-frames 48 --iterations 2 --output-dir code/outputs/totalcapture_imu_aware_pose_refinement_smoke
+```
+
+Artifacts:
+
+```text
+root: code/outputs/totalcapture_imu_aware_pose_refinement_smoke
+config: config.json
+summary: SUMMARY.md
+overall CSV: summary_overall.csv
+per-sensor CSV: summary_per_sensor.csv
+per-sequence CSV: summary_per_sequence.csv
+pose delta CSV: pose_delta_summary.csv
+smoothness CSV: smoothness_summary.csv
+held-out CSV: heldout_sensor_summary.csv
+additional diagnostics: gyro_summary.csv, contact_summary.csv
+refined labels: refined_sequences.pt
+plots: acc_rmse_before_after.png, pose_delta_per_joint.png, trans_delta_timeseries.png, gyro_residual_before_after.png, heldout_sensor_rmse.png, example_acc_timeseries_before_after.png, jerk_before_after.png
+```
+
+Smoke metrics:
+
+| Mode | Original raw acc RMSE | Refined raw acc RMSE | Held-out delta | Mean pose delta deg | Mean trans delta m | Gyro delta | Jerk delta |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| A | `2.032809` | `2.538594` | `0.291601` | `0.000000` | `0.000628` | `0.000000` | `0.072327` |
+| B | `2.032809` | `2.758181` | `0.196128` | `0.012318` | `0.000664` | `-0.000297` | `1.629517` |
+| C | `2.032809` | `2.758181` | `0.196128` | `0.012318` | `0.000664` | `-0.000297` | `1.629517` |
+
+Raw/SavGol comparison: `summary_per_sequence.csv` and `summary_per_sensor.csv` include `signal_filter` rows for `raw`, `savgol9_p3`, and `savgol15_p3`.
+
+Interpretation: the implementation and reporting surface are smoke-validated, but the two-iteration short-window run does not support a refinement-success claim. In this smoke, raw acc residual worsened. The important validated behavior is that held-out sensor reporting, pose/tran deviation reporting, gyro/smoothness/contact metrics, plots, and refined label serialization all execute.
+
+Claim support: smoke only.
+
+Next action: run a bounded diagnostic with more frames/iterations only if needed, and judge success by the combined gate: acc residual decrease, held-out residual non-regression, small pose/tran deviation, gyro non-regression, jerk/high-frequency non-regression, and foot-sliding/contact non-regression.

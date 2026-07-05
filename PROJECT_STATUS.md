@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: TotalCapture acceleration-fit rJS diagnostic complete
-Current task: synthesize TotalCapture rJS directly from a sensor-specific-force acceleration objective and compare against vertex and old footlock rJS baselines
-Review state: bounded diagnostic complete; no training and no PL/IK/VR/network changes
-Current changed files: code/tools/synthesize_totalcapture_accfit_rjs.py, code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
+Current stage: TotalCapture IMU-aware pose-label refinement diagnostic implemented
+Current task: refine TotalCapture pose/tran near the original labels with IMU acceleration consistency, gyro consistency, strong pose/tran priors, temporal smoothness, contact diagnostics, and held-out sensor validation
+Review state: Implemented, smoke validation only; no training and no PL/IK/VR/network changes
+Current changed files: code/tools/refine_totalcapture_pose_with_imu_acc_consistency.py, code/outputs/totalcapture_imu_aware_pose_refinement_smoke/, PROJECT_STATUS.md, EXPERIMENT_LOG.md
 Current module: data diagnostic only
 Current replacement version: none
-Current experiment: `EXP-20260704-totalcapture-accfit-rjs-synthesis` on `data/dataset_work/TotalCapture_globalpose_official/test.pt`; solves `r_JS` from `a_S = R_WS^T @ (ddot(p_WJ) + ddot(R_WJ) @ r_JS - g_W)` with raw FD, SavGol-9/poly3, and SavGol-15/poly3; evaluates per-sequence, global, and leave-one-sequence-out rJS against vertex and old footlock rJS baselines.
-Current result: Accfit rJS is better than the old footlock rJS and also beats the five-vertex SavGol-9 gate. Sensor-specific-force SavGol-9 RMSE: vertex `2.742093`, old footlock rJS `3.856079`, accfit per-sequence `2.636344`, accfit global `2.640858`, accfit LOO `2.642856`. Lower-leg RMSE improves versus old rJS (`left_lower_leg 3.490567 -> 3.380552`, `right_lower_leg 4.169763 -> 3.825016`) and forearms recover strongly (`left_forearm 4.683967 -> 1.622808`, `right_forearm 4.486643 -> 2.216878`). Projected rJS norms stay below `0.249660 m`; condition numbers are healthy (median `1.390331`, max `1.848262`). With-bias adds only `0.036158` mean fit-improvement, so the main gain is not just an additive bias.
+Current experiment: `EXP-20260705-totalcapture-imu-aware-pose-refinement-smoke` on `data/dataset_work/TotalCapture_globalpose_official/test.pt`; smoke command used one sequence, 48 frames, two optimizer iterations, and all modes A/B/C. Default rJS source is `code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/rjs_accfit_global.pt`, field `r_JS_projected`, method `savgol9_p3_fd`.
+Current result: Script smoke completed and produced all required artifact classes under `code/outputs/totalcapture_imu_aware_pose_refinement_smoke/`: config, SUMMARY, overall/per-sensor/per-sequence/pose/smoothness/held-out CSVs, gyro/contact CSVs, plots, and `refined_sequences.pt`. Smoke metrics are implementation checks only, not a success claim: short two-iteration smoke worsened raw acc RMSE in all modes, while Mode B/C showed finite small pose deltas (`mean 0.012318 deg`, `max 0.104217 deg`) and held-out reporting worked.
 Current blocker: none
-Next action: treat acceleration-fit rJS as a promising TotalCapture acceleration explainability target; before training against it, decide whether to use per-sequence, global, or LOO/global-style offsets and audit lower-leg residuals/time alignment.
+Next action: run a bounded diagnostic with more frames/iterations only if needed; judge success by acc residual, held-out residual, pose/tran deviation, gyro, jerk/high-frequency energy, and contact/foot-sliding non-regression together.
 Git state: dirty worktree with existing unrelated edits; do not revert unrelated files
-CodeGraph state: healthy indexed native backend
-Detailed logs: `code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/SUMMARY.md`, `summary_overall.csv`, `summary_per_sensor.csv`, `summary_per_sequence.csv`, `fit_summary.csv`, `rjs_offsets.json`, `rjs_accfit_per_sequence.pt`, `rjs_accfit_global.pt`, plots, local-only `frame_level_metrics.csv.gz`, and EXPERIMENT_LOG.md `EXP-20260704-totalcapture-accfit-rjs-synthesis`
+CodeGraph state: tool unavailable in current Codex session; local `.codegraph/` exists and prior status said healthy indexed native backend
+Detailed logs: `code/outputs/totalcapture_imu_aware_pose_refinement_smoke/SUMMARY.md`, `summary_overall.csv`, `summary_per_sensor.csv`, `summary_per_sequence.csv`, `pose_delta_summary.csv`, `smoothness_summary.csv`, `heldout_sensor_summary.csv`, plots, `refined_sequences.pt`, and EXPERIMENT_LOG.md `EXP-20260705-totalcapture-imu-aware-pose-refinement-smoke`
 
 ## 0. Version-Line Reading Guide
 
@@ -4181,3 +4181,23 @@ Downstream result, lower score is better:
 | TotalCapture smoothacc | `45.293466` | `45.451494` | `+0.158027` | worse |
 
 Conclusion: better module-level `gR1` is real, but it is not downstream-useful by itself in this ablation. The hybrid consistently reduces `Joint Jitter` slightly, but worsens local angle and joint errors, and all four full-pipeline scores regress. Do not promote `newpl_v6_gR1nextonly_smoothacc` to IK/full-pipeline as-is.
+
+## Implementation Records
+
+### 2026-07-05 - TotalCapture IMU-aware pose refinement diagnostic script
+
+User request: add `code/tools/refine_totalcapture_pose_with_imu_acc_consistency.py` for TotalCapture label refinement/data-cleaning diagnostics using accfit `r_JS`, IMU acceleration consistency, gyro consistency, pose/tran priors, temporal smoothness, contact diagnostics, and held-out sensor validation.
+
+Changed files: `code/tools/refine_totalcapture_pose_with_imu_acc_consistency.py`, `PROJECT_STATUS.md`, `EXPERIMENT_LOG.md`; smoke artifacts under `code/outputs/totalcapture_imu_aware_pose_refinement_smoke/`.
+
+Work performed: implemented modes A/B/C, robust Huber/Charbonnier acceleration loss, default fit sensors `left_forearm,right_forearm,head`, default held-out sensors `left_lower_leg,right_lower_leg`, strong pose/tran priors, velocity/acceleration/jerk regularization, weak heuristic contact metric/loss, raw/SavGol-9/SavGol-15 metric rows, required CSV/plot outputs, and `refined_sequences.pt` containing `pose_clean`, `tran_clean`, `qd_clean`, `qdd_clean`, and `acc_clean`.
+
+Design details: default rJS source is the latest global accfit artifact `code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/rjs_accfit_global.pt` with method `savgol9_p3_fd` and field `r_JS_projected`; the transform contract remains `p_WS = p_WJ + R_WJ @ r_JS`, `R_WS = R_WJ @ R_JS`, and `aS_pred = R_WS_obs^T @ (d2p_WS/dt2 - g_W)`. Mode B/C use conservative small-angle axis-angle additive lower-body/root deltas with strong priors and smoothed/clamped delta updates.
+
+Validation: `python -m py_compile code/tools/refine_totalcapture_pose_with_imu_acc_consistency.py` passed. Smoke command `python code/tools/refine_totalcapture_pose_with_imu_acc_consistency.py --mode all --max-sequences 1 --max-frames 48 --iterations 2 --output-dir code/outputs/totalcapture_imu_aware_pose_refinement_smoke` completed and produced all required artifact classes. Smoke metrics are not a success claim.
+
+Documentation updated: `PROJECT_STATUS.md` active summary and this implementation record; `EXPERIMENT_LOG.md` smoke experiment entry.
+
+Risks/blockers: full diagnostic is not run yet; optimizer defaults are intentionally conservative but may require tuning for a meaningful bounded run. Success must not be claimed unless acc, held-out sensors, pose/tran deviation, gyro, jerk/high-frequency energy, and contact/foot-sliding gates are all checked together.
+
+Next action: run a bounded diagnostic with more frames/iterations only after deciding runtime budget and sequence scope.
