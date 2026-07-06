@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: TotalCapture FK/IMU both-smooth protocol selected; simplified smooth pose/rJS diagnostics implemented
-Current task: use matched smooth/low-frequency IMU acceleration as the measurement target for future pose smoothing; do not continue raw-acceleration pose refinement
-Review state: Implemented with smoke plus bounded diagnostics; first-step smooth protocol is supported, second/third-step refinement gates do not pass yet
-Current changed files: code/tools/audit_totalcapture_both_smooth_fk_imu_acc.py, code/tools/refine_totalcapture_pose_kalman_style_smoother.py, code/tools/alternate_totalcapture_rjs_pose_smoothing.py, code/outputs/totalcapture_both_smooth_fk_imu_acc_smoke/, code/outputs/totalcapture_both_smooth_fk_imu_acc_full/, code/outputs/totalcapture_kalman_style_smoother_smoke/, code/outputs/totalcapture_kalman_style_smoother_bounded/, code/outputs/totalcapture_rjs_pose_alternating_smoke/, code/outputs/totalcapture_rjs_pose_alternating_bounded/, code/outputs/totalcapture_fk_imu_smooth_kalman_pipeline_20260705/, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
+Current stage: TotalCapture FK/IMU q-smoothing diagnostic completed after both-smooth protocol and bounded smooth pose/rJS diagnostics
+Current task: evaluate whether smoothing only `q(t)=[tran, pose]`, then deriving FK acceleration without FK-acc post-smoothing, supports B-spline control-point refinement
+Review state: Implemented and validated with smoke plus full TotalCapture official test; q-smoothing does not pass the B-spline refinement gate
+Current changed files: code/tools/evaluate_q_smoothing_fk_imu_acc_consistency.py, code/outputs/q_smoothing_fk_imu_acc_consistency_smoke/, code/outputs/q_smoothing_fk_imu_acc_consistency_20260707_004014/, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
 Current module: data diagnostic only
 Current replacement version: none
-Current experiment: `EXP-20260705-totalcapture-both-smooth-fk-imu-acc`, `EXP-20260705-totalcapture-kalman-style-smoother-bounded`, and `EXP-20260705-totalcapture-rjs-pose-alternating-bounded`.
-Current result: Step 1 full TotalCapture official test supports matched smoothing: accfit-global rJS centered_ma21 sensor-frame specific-force RMSE `0.492988` vs raw `3.053103`; lower-leg-only RMSE `0.430999` vs raw `3.613702`; SavGol-9 accfit-global beats old rJS by `-1.939099` RMSE and vertex by `-0.204214`. Step 2 bounded smoother with centered_ma21 did not pass: all-sensor delta `+0.000350`, held-out lower-leg delta `+0.000370`, gyro/jerk/foot sliding slightly worse. Step 3 3-round alternating run also did not pass; round-3 all-sensor delta `+0.000150`, held-out lower-leg delta `+0.000119`.
+Current experiment: `EXP-20260707-q-smoothing-fk-imu-acc-consistency`.
+Current result: Full TotalCapture official q-smoothing diagnostic keeps `r_JS_projected["savgol9_p3_fd"]` fixed and smooths only q. With no FK-acceleration post-smoothing, centered-MA21 target best is `bspline_q_knot10` RMSE `2.751086`, L2 `2.844688`, corr `0.899847`, cosine `0.897525`, p95 `9.188947`; lowpass-5Hz target best is `raw_q` RMSE `2.598585`. No B-spline method passes the refinement gate because B-spline q deviations are too large: knot10 mean translation delta `0.775097 m`, mean pose delta `17.990561 deg`.
 Current blocker: none
-Next action: use centered_ma21 smooth/low-frequency sensor-frame specific force as the measurement target; do not optimize raw acceleration. If continuing refinement, reduce optimizer aggressiveness or parameterize lower-frequency pose/tran deltas before expanding beyond bounded diagnostics.
+Next action: do not enter B-spline control-point refinement from this q-smoothing diagnostic. Keep centered_ma21 smooth/low-frequency sensor-frame specific force as the measurement target, but require a q parameterization with acceptable mean pose/translation deviation before another refinement attempt.
 Git state: dirty worktree with existing unrelated edits; do not revert unrelated files
 CodeGraph state: healthy native index checked from `/home/lingfeng/projects/GlobalposeMy`, 261 files indexed
-Detailed logs: `code/outputs/totalcapture_fk_imu_smooth_kalman_pipeline_20260705/SUMMARY.md`, `smooth_protocol_summary.csv`, `kalman_style_refinement_summary.csv`, `rjs_iteration_summary.csv`, and EXPERIMENT_LOG.md `EXP-20260705-totalcapture-both-smooth-fk-imu-acc`
+Detailed logs: `code/outputs/q_smoothing_fk_imu_acc_consistency_20260707_004014/summary.md`, `summary.json`, CSVs, figures, and EXPERIMENT_LOG.md `EXP-20260707-q-smoothing-fk-imu-acc-consistency`
 
 ## 0. Version-Line Reading Guide
 

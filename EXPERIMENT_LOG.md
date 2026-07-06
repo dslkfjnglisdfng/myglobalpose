@@ -16356,3 +16356,63 @@ Interpretation: alternating infrastructure works and produces round rJS files, b
 Claim support: bounded diagnostic.
 
 Next action: do not expand alternating optimization until the fixed-rJS smoother passes a conservative gate.
+
+### EXP-20260707-q-smoothing-fk-imu-acc-consistency - q trajectory smoothing FK/IMU acceleration consistency
+
+Question: if only `q(t)=[tran, pose]` is smoothed, and `qd/qdd` plus FK sensor-site acceleration are derived from that same processed q trajectory, does the result support B-spline control-point refinement for TotalCapture FK/IMU acceleration consistency?
+
+Scope:
+
+```text
+script: code/tools/evaluate_q_smoothing_fk_imu_acc_consistency.py
+dataset: data/dataset_work/TotalCapture_globalpose_official/test.pt
+rJS: code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/rjs_accfit_global.pt field r_JS_projected method savgol9_p3_fd
+q methods: raw_q, savgol_q_w9_p3, savgol_q_w15_p3, bspline_q_knot10/15/21/30
+target filters: centered_ma21(aS), lowpass_5hz(aS)
+FK contract: p_WS=p_WJ+R_WJ@r_JS; a_pred_world=strict centered d2(p_WS)/dt2; a_pred_sensor=R_WS_obs^T@(a_pred_world-gravity)
+not run: FK acceleration post-smoothing, pose optimization, control-point optimization, model training, PL/IK/VR/full-pipeline evaluation
+```
+
+Commands:
+
+```bash
+python -m py_compile code/tools/evaluate_q_smoothing_fk_imu_acc_consistency.py
+python code/tools/evaluate_q_smoothing_fk_imu_acc_consistency.py --max-sequences 1 --max-frames 300 --output-dir code/outputs/q_smoothing_fk_imu_acc_consistency_smoke
+/home/lingfeng/bin/longrun -- python code/tools/evaluate_q_smoothing_fk_imu_acc_consistency.py --output-dir code/outputs/q_smoothing_fk_imu_acc_consistency_20260707_004014
+```
+
+Artifacts:
+
+```text
+smoke root: code/outputs/q_smoothing_fk_imu_acc_consistency_smoke
+full root: code/outputs/q_smoothing_fk_imu_acc_consistency_20260707_004014
+summary: code/outputs/q_smoothing_fk_imu_acc_consistency_20260707_004014/summary.md
+summary JSON: code/outputs/q_smoothing_fk_imu_acc_consistency_20260707_004014/summary.json
+CSV files: overall_summary.csv, per_sequence_summary.csv, per_sensor_summary.csv, lower_leg_summary.csv, q_deviation_summary.csv, refinement_gate.csv
+figures: code/outputs/q_smoothing_fk_imu_acc_consistency_20260707_004014/figures/*.png
+```
+
+Full TotalCapture official result:
+
+| Target | Best method | RMSE | L2 | Corr | Cosine | p95 |
+|---|---|---:|---:|---:|---:|---:|
+| centered_ma21 | `bspline_q_knot10` | `2.751086` | `2.844688` | `0.899847` | `0.897525` | `9.188947` |
+| lowpass_5hz | `raw_q` | `2.598585` | `2.373334` | `0.931983` | `0.931971` | `7.002259` |
+
+Refinement gate:
+
+| Method | centered_ma21 RMSE | lower-leg RMSE | mean tran delta m | mean pose delta deg | Supported? |
+|---|---:|---:|---:|---:|---|
+| `raw_q` | `3.290287` | `3.439441` | `0.000000` | `0.000000` | no |
+| `savgol_q_w9_p3` | `8.383681` | `9.248243` | `0.000214` | `0.187883` | no |
+| `savgol_q_w15_p3` | `11.747521` | `12.783387` | `0.000682` | `0.451027` | no |
+| `bspline_q_knot10` | `2.751086` | `2.092970` | `0.775097` | `17.990561` | no |
+| `bspline_q_knot15` | `2.787575` | `2.147341` | `0.490339` | `16.470749` | no |
+| `bspline_q_knot21` | `3.030117` | `2.315991` | `0.263543` | `14.499047` | no |
+| `bspline_q_knot30` | `3.472033` | `2.923897` | `0.121886` | `12.961217` | no |
+
+Interpretation: smoothing only q is not equivalent to the earlier both-smooth FK/IMU protocol. Without FK-acceleration post-smoothing, B-spline q methods can reduce centered-MA21 RMSE relative to raw q, but only by moving q far outside the acceptable deviation gate. Lowpass-5Hz prefers raw q. This does not support entering B-spline control-point refinement.
+
+Claim support: full TotalCapture official test diagnostic.
+
+Next action: keep using smooth/low-frequency sensor-frame specific force as the measurement target, but require a q parameterization with acceptable mean pose/translation deviation before another refinement attempt. Do not optimize raw acceleration and do not promote this diagnostic to PL/IK/VR/full-pipeline claims.

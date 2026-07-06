@@ -1,0 +1,162 @@
+{
+  "args": {
+    "dataset_path": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/data/dataset_work/TotalCapture_globalpose_official/test.pt",
+    "rjs_path": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/rjs_accfit_global.pt",
+    "rjs_method": "savgol9_p3_fd",
+    "rjs_field": "r_JS_projected",
+    "output_dir": "code/outputs/q_smoothing_fk_imu_acc_consistency_smoke",
+    "max_sequences": 1,
+    "max_frames": 300,
+    "trim": 12,
+    "device": "cpu"
+  },
+  "dataset_path": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/data/dataset_work/TotalCapture_globalpose_official/test.pt",
+  "rjs_path": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/code/outputs/totalcapture_accfit_rjs_synthesis_20260704_171103/rjs_accfit_global.pt",
+  "rjs_field": "r_JS_projected",
+  "rjs_method": "savgol9_p3_fd",
+  "fps": 60.0,
+  "gravity_world": [
+    0.0,
+    -9.800000190734863,
+    0.0
+  ],
+  "q_methods": [
+    "raw_q",
+    "savgol_q_w9_p3",
+    "savgol_q_w15_p3",
+    "bspline_q_knot10",
+    "bspline_q_knot15",
+    "bspline_q_knot21",
+    "bspline_q_knot30"
+  ],
+  "target_filters": [
+    "centered_ma21",
+    "lowpass_5hz"
+  ],
+  "lower_leg_sensor_ids": [
+    2,
+    3
+  ],
+  "sensor_to_joint_map": {
+    "sensor_names": [
+      "left_forearm",
+      "right_forearm",
+      "left_lower_leg",
+      "right_lower_leg",
+      "head",
+      "pelvis"
+    ],
+    "imu_joints": [
+      18,
+      19,
+      4,
+      5,
+      15,
+      0
+    ],
+    "imu_vertices": [
+      1961,
+      5424,
+      1176,
+      4662,
+      411,
+      3021
+    ],
+    "coordinate_contract": "r_JS is the IMU origin position relative to the mapped joint J, expressed in joint-local coordinates. World prediction: p_WS(t)=p_WJ(t)+R_WJ(t)@r_JS."
+  },
+  "rjs_source_config": {
+    "fps": 60.0,
+    "dt": 0.016666666666666666,
+    "gravity_world": [
+      0.0,
+      -9.800000190734863,
+      0.0
+    ],
+    "ridge": 0.0001,
+    "bias_ridge": 0.0001,
+    "max_norm": 0.5,
+    "trim": 1,
+    "methods": {
+      "raw_fd": {
+        "window": 1,
+        "polyorder": 0
+      },
+      "savgol9_p3_fd": {
+        "window": 9,
+        "polyorder": 3
+      },
+      "savgol15_p3_fd": {
+        "window": 15,
+        "polyorder": 3
+      }
+    },
+    "derivative_mode": "centered",
+    "rjs_contract": "r_JS is the IMU origin position relative to mapped joint J, expressed in joint-local coordinates. World prediction: p_WS(t)=p_WJ(t)+R_WJ(t)@r_JS. For DIP-IMU, tran is not used as trusted global translation; acceleration objectives are diagnostic/self-supervised only.",
+    "transform_convention": {
+      "R_WJ": "maps joint-local vectors into world coordinates",
+      "R_JS": "maps sensor-frame vectors into joint-local coordinates",
+      "R_WS": "R_WJ @ R_JS, maps sensor-frame vectors into world coordinates",
+      "r_JS": "IMU sensor origin relative to mapped joint origin, expressed in joint-local coordinates",
+      "prediction": "a_S = R_WS^T @ (ddot(p_WJ) + ddot(R_WJ) @ r_JS - g_W)"
+    }
+  },
+  "spline_metadata": [
+    {
+      "sequence_id": "s5_freestyle1",
+      "method": "raw_q",
+      "postprocesses_fk_acceleration": false
+    },
+    {
+      "sequence_id": "s5_freestyle1",
+      "method": "savgol_q_w9_p3",
+      "postprocesses_fk_acceleration": false
+    },
+    {
+      "sequence_id": "s5_freestyle1",
+      "method": "savgol_q_w15_p3",
+      "postprocesses_fk_acceleration": false
+    },
+    {
+      "sequence_id": "s5_freestyle1",
+      "method": "bspline_q_knot10",
+      "postprocesses_fk_acceleration": false,
+      "requested_knot_count": 10,
+      "used_knot_count": 10,
+      "spline_order": 3
+    },
+    {
+      "sequence_id": "s5_freestyle1",
+      "method": "bspline_q_knot15",
+      "postprocesses_fk_acceleration": false,
+      "requested_knot_count": 15,
+      "used_knot_count": 15,
+      "spline_order": 3
+    },
+    {
+      "sequence_id": "s5_freestyle1",
+      "method": "bspline_q_knot21",
+      "postprocesses_fk_acceleration": false,
+      "requested_knot_count": 21,
+      "used_knot_count": 21,
+      "spline_order": 3
+    },
+    {
+      "sequence_id": "s5_freestyle1",
+      "method": "bspline_q_knot30",
+      "postprocesses_fk_acceleration": false,
+      "requested_knot_count": 30,
+      "used_knot_count": 30,
+      "spline_order": 3
+    }
+  ],
+  "contract": {
+    "T_AB_convention": "R_WJ maps coordinates from joint frame J into world frame W.",
+    "q": "q(t) = [tran_W, pose_axis_angle_24x3]. qd and qdd are derived from the same processed q(t).",
+    "r_JS": "sensor origin S relative to mapped joint J, expressed in joint-local coordinates.",
+    "p_WS": "p_WJ + R_WJ @ r_JS",
+    "a_pred_world": "strict centered second difference of p_WS at 60 Hz",
+    "a_pred_sensor": "R_WS_obs^T @ (a_pred_world - gravity_world)",
+    "prediction_smoothing": "none",
+    "target_smoothing": "centered_ma21(aS) and zero-phase lowpass_5hz(aS)"
+  }
+}
