@@ -1,0 +1,45 @@
+{
+  "source_input": "data/test_datasets/dipimu.pt",
+  "source_manifest": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/data/experiments/dip_official_protocol_check_20260607/dip_test_prephysics_neural_only_with_offset_r/baseline_cache_manifest.json",
+  "device": "cuda",
+  "euler_seq": "XYZ",
+  "max_frames": 0,
+  "max_sequences": 0,
+  "save_prephysics": true,
+  "neural_only_prephysics": true,
+  "cache_files": [
+    {
+      "path": "data/dataset_work/L4Cache/prephysics_pose_velocity_diptest_official_neural_only_offset_r/baseline_cache_shard00000.pt",
+      "source_path": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/data/experiments/dip_official_protocol_check_20260607/dip_test_prephysics_neural_only_with_offset_r/baseline_cache_shard00000.pt",
+      "num_sequences": 19,
+      "num_frames": 57994,
+      "failures": [],
+      "offset_r_shape": [
+        19,
+        6,
+        3
+      ],
+      "globalpose_cache_type": "q75_prephysics"
+    }
+  ],
+  "num_sequences": 19,
+  "num_frames": 57994,
+  "source_cache_manifest": "data/experiments/dip_official_protocol_check_20260607/dip_test_prephysics_neural_only/baseline_cache_manifest.json",
+  "offset_source_path": "data/experiments/dip_official_protocol_check_20260607/dip_test_offset_alias.pt",
+  "offset_source_key": "imu_offset_r",
+  "offset_field_added": "offset_r",
+  "offset_contract": "offset_r is sequence-level r_JS with shape [6,3]: IMU origin relative to mapped joint, expressed in joint-local coordinates. It is copied from processed data and is not repeated per frame.",
+  "dataset_split": "dip_test",
+  "globalpose_cache_type": "q75_prephysics",
+  "v_root_vr_source": "globalpose_pipeline_v_root_vr",
+  "contact_mode": "real_globalpose_stationary_prob",
+  "features_gp_contract": "q_gp_root_lower + root_translation_velocity_gp + optional contact only",
+  "sequence_name_alignment": "DIPtest loader names must match cache name values exactly; missing keys are fatal in the evaluator.",
+  "root_velocity_evaluation": "disabled_or_diagnostic_only_for_diptest",
+  "root_acceleration_evaluation": "disabled_or_diagnostic_only_for_diptest",
+  "model_input_contains_qdot_fd_from_gp": false,
+  "model_input_contains_qddot_fd_from_gp": false,
+  "fd_diagnostic_eval_only": true,
+  "fd_diagnostic_is_native_globalpose_output": false,
+  "command": "code/tools/build_diptest_globalpose_cache.py"
+}
