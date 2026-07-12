@@ -1,0 +1,51 @@
+{
+  "status": "ok",
+  "unit_tests": true,
+  "cache_sequences": 2,
+  "max_frames": 240,
+  "finite": true,
+  "gradient_norm": {
+    "v_head": 2.5210325717926025,
+    "a_head": 0.008656272664666176,
+    "gravity_head": 0.1432831734418869
+  },
+  "module_summary": [
+    {
+      "dataset": "AMASS-smoke",
+      "version": "official_PL",
+      "num_sequences": 2,
+      "p_cm_l1": 1.1586440205574036,
+      "p_cm_l2": 2.494978427886963,
+      "p_cm_rmse": 2.7576810121536255,
+      "v_cm_s_l1": 3.2828261852264404,
+      "v_cm_s_l2": 6.791685104370117,
+      "v_cm_s_rmse": 18.58740997314453,
+      "v_state_cm_s_l1": 3.2828261852264404,
+      "v_state_cm_s_l2": 6.791685104370117,
+      "v_state_cm_s_rmse": 18.58740997314453,
+      "a_cm_s2_l1": 326.8885192871094,
+      "a_cm_s2_l2": 672.7463684082031,
+      "a_cm_s2_rmse": 1213.7564697265625,
+      "g_angle_deg": 7.342839002609253
+    },
+    {
+      "dataset": "AMASS-smoke",
+      "version": "pl_va_state_v1",
+      "num_sequences": 2,
+      "p_cm_l1": 2.464731812477112,
+      "p_cm_l2": 5.021169424057007,
+      "p_cm_rmse": 5.999462127685547,
+      "v_cm_s_l1": 2.4328861236572266,
+      "v_cm_s_l2": 4.97893500328064,
+      "v_cm_s_rmse": 6.82405424118042,
+      "v_state_cm_s_l1": 2.4328430891036987,
+      "v_state_cm_s_l2": 4.978821754455566,
+      "v_state_cm_s_rmse": 6.823822259902954,
+      "a_cm_s2_l1": 201.04888916015625,
+      "a_cm_s2_l2": 417.78863525390625,
+      "a_cm_s2_rmse": 569.7518005371094,
+      "g_angle_deg": 4.245389938354492
+    }
+  ],
+  "frame_audit": "data/experiments/pl_va_state_v1_20260712/smoke/frame_audit.json"
+}

@@ -1,0 +1,170 @@
+{
+  "AMASS": {
+    "manifest": "data/dataset_work/L4Cache/prephysics_pose_velocity_amass_k2_paired_offset_overlay/baseline_cache_manifest.json",
+    "sequences": [
+      "HumanEva/S1/Box_1_poses::original",
+      "HumanEva/S1/Box_1_poses::offset_aug_overlay",
+      "HumanEva/S1/Box_3_poses::original"
+    ],
+    "current_sign": "omega=-Log(R_t^T R_t-1)/dt",
+    "relative_rotation_order": "RMB_t^T @ RMB_t-1",
+    "equivalent": "Log(RMB_t-1^T @ RMB_t)/dt",
+    "first_frame": "strict zero",
+    "overall": {
+      "rmse": 5.30731725692749,
+      "l2": 8.45559024810791,
+      "correlation": 0.22389647364616394,
+      "cosine": 0.1142258420586586
+    },
+    "per_sensor": {
+      "left_forearm": {
+        "rmse": 5.358685493469238,
+        "l2": 8.57106876373291,
+        "correlation": 0.3522067964076996,
+        "cosine": 0.21737505495548248
+      },
+      "right_forearm": {
+        "rmse": 5.2297468185424805,
+        "l2": 8.311596870422363,
+        "correlation": 0.3626258671283722,
+        "cosine": 0.22204796969890594
+      },
+      "left_lower_leg": {
+        "rmse": 5.160235404968262,
+        "l2": 8.229534149169922,
+        "correlation": 0.06664030253887177,
+        "cosine": 0.04549830034375191
+      },
+      "right_lower_leg": {
+        "rmse": 5.296383857727051,
+        "l2": 8.421602249145508,
+        "correlation": 0.04744243994355202,
+        "cosine": 0.04597536474466324
+      },
+      "head": {
+        "rmse": 5.429266452789307,
+        "l2": 8.64588451385498,
+        "correlation": 0.09806093573570251,
+        "cosine": 0.0829087570309639
+      },
+      "pelvis_root": {
+        "rmse": 5.365006446838379,
+        "l2": 8.553855895996094,
+        "correlation": 0.09294480085372925,
+        "cosine": 0.07154958695173264
+      }
+    }
+  },
+  "DIP": {
+    "manifest": "data/experiments/dip_official_protocol_check_20260607/dip_test_prephysics_neural_only/baseline_cache_manifest.json",
+    "sequences": [
+      "s09_01_a",
+      "s09_01_b",
+      "s09_01_c"
+    ],
+    "current_sign": "omega=-Log(R_t^T R_t-1)/dt",
+    "relative_rotation_order": "RMB_t^T @ RMB_t-1",
+    "equivalent": "Log(RMB_t-1^T @ RMB_t)/dt",
+    "first_frame": "strict zero",
+    "overall": {
+      "rmse": 0.24735532701015472,
+      "l2": 0.20898084342479706,
+      "correlation": 0.9863253235816956,
+      "cosine": 0.9405736923217773
+    },
+    "per_sensor": {
+      "left_forearm": {
+        "rmse": 0.4418267607688904,
+        "l2": 0.5356060862541199,
+        "correlation": 0.9856993556022644,
+        "cosine": 0.9520485401153564
+      },
+      "right_forearm": {
+        "rmse": 0.3997296094894409,
+        "l2": 0.4755115807056427,
+        "correlation": 0.9872382879257202,
+        "cosine": 0.9576820135116577
+      },
+      "left_lower_leg": {
+        "rmse": 0.03872406482696533,
+        "l2": 0.038380518555641174,
+        "correlation": 0.9654204845428467,
+        "cosine": 0.9251886010169983
+      },
+      "right_lower_leg": {
+        "rmse": 0.051089104264974594,
+        "l2": 0.046394120901823044,
+        "correlation": 0.9550546407699585,
+        "cosine": 0.9147559404373169
+      },
+      "head": {
+        "rmse": 0.0763922706246376,
+        "l2": 0.09739013761281967,
+        "correlation": 0.980212926864624,
+        "cosine": 0.9546407461166382
+      },
+      "pelvis_root": {
+        "rmse": 0.04656001180410385,
+        "l2": 0.06060270592570305,
+        "correlation": 0.9807788133621216,
+        "cosine": 0.9391265511512756
+      }
+    }
+  },
+  "TotalCapture": {
+    "manifest": "data/dataset_work/L4Cache/prephysics_pose_velocity_totalcapture_test_official_neural_only/baseline_cache_manifest.json",
+    "sequences": [
+      "s5_freestyle1",
+      "s5_freestyle3",
+      "s5_rom3"
+    ],
+    "current_sign": "omega=-Log(R_t^T R_t-1)/dt",
+    "relative_rotation_order": "RMB_t^T @ RMB_t-1",
+    "equivalent": "Log(RMB_t-1^T @ RMB_t)/dt",
+    "first_frame": "strict zero",
+    "overall": {
+      "rmse": 0.07122954726219177,
+      "l2": 0.01901363395154476,
+      "correlation": 0.9991531372070312,
+      "cosine": 0.9871174693107605
+    },
+    "per_sensor": {
+      "left_forearm": {
+        "rmse": 0.014036545529961586,
+        "l2": 0.015910832211375237,
+        "correlation": 0.9999781847000122,
+        "cosine": 0.9985136985778809
+      },
+      "right_forearm": {
+        "rmse": 0.01772766187787056,
+        "l2": 0.015739182010293007,
+        "correlation": 0.9999653697013855,
+        "cosine": 0.9990772008895874
+      },
+      "left_lower_leg": {
+        "rmse": 0.058502472937107086,
+        "l2": 0.027253977954387665,
+        "correlation": 0.9994671940803528,
+        "cosine": 0.9664674401283264
+      },
+      "right_lower_leg": {
+        "rmse": 0.15187963843345642,
+        "l2": 0.022608667612075806,
+        "correlation": 0.9972376227378845,
+        "cosine": 0.9775028824806213
+      },
+      "head": {
+        "rmse": 0.011030600406229496,
+        "l2": 0.01528229471296072,
+        "correlation": 0.999896228313446,
+        "cosine": 0.9958301186561584
+      },
+      "pelvis_root": {
+        "rmse": 0.05761042982339859,
+        "l2": 0.017286846414208412,
+        "correlation": 0.9986523389816284,
+        "cosine": 0.9853143692016602
+      }
+    }
+  }
+}

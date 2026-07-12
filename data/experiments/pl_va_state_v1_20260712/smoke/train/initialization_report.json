@@ -1,0 +1,216 @@
+{
+  "source": "data/weights.pt",
+  "copied_keys": [
+    {
+      "key": "rnn.weight_hh_l0",
+      "shape_before": [
+        2048,
+        512
+      ],
+      "shape_after": [
+        2048,
+        512
+      ]
+    },
+    {
+      "key": "rnn.bias_ih_l0",
+      "shape_before": [
+        2048
+      ],
+      "shape_after": [
+        2048
+      ]
+    },
+    {
+      "key": "rnn.bias_hh_l0",
+      "shape_before": [
+        2048
+      ],
+      "shape_after": [
+        2048
+      ]
+    },
+    {
+      "key": "rnn.weight_ih_l1",
+      "shape_before": [
+        2048,
+        512
+      ],
+      "shape_after": [
+        2048,
+        512
+      ]
+    },
+    {
+      "key": "rnn.weight_hh_l1",
+      "shape_before": [
+        2048,
+        512
+      ],
+      "shape_after": [
+        2048,
+        512
+      ]
+    },
+    {
+      "key": "rnn.bias_ih_l1",
+      "shape_before": [
+        2048
+      ],
+      "shape_after": [
+        2048
+      ]
+    },
+    {
+      "key": "rnn.bias_hh_l1",
+      "shape_before": [
+        2048
+      ],
+      "shape_after": [
+        2048
+      ]
+    },
+    {
+      "key": "rnn.weight_ih_l2",
+      "shape_before": [
+        2048,
+        512
+      ],
+      "shape_after": [
+        2048,
+        512
+      ]
+    },
+    {
+      "key": "rnn.weight_hh_l2",
+      "shape_before": [
+        2048,
+        512
+      ],
+      "shape_after": [
+        2048,
+        512
+      ]
+    },
+    {
+      "key": "rnn.bias_ih_l2",
+      "shape_before": [
+        2048
+      ],
+      "shape_after": [
+        2048
+      ]
+    },
+    {
+      "key": "rnn.bias_hh_l2",
+      "shape_before": [
+        2048
+      ],
+      "shape_after": [
+        2048
+      ]
+    },
+    {
+      "key": "init_net.0.weight",
+      "shape_before": [
+        512,
+        18
+      ],
+      "shape_after": [
+        512,
+        18
+      ]
+    },
+    {
+      "key": "init_net.0.bias",
+      "shape_before": [
+        512
+      ],
+      "shape_after": [
+        512
+      ]
+    },
+    {
+      "key": "init_net.2.weight",
+      "shape_before": [
+        1536,
+        512
+      ],
+      "shape_after": [
+        1536,
+        512
+      ]
+    },
+    {
+      "key": "init_net.2.bias",
+      "shape_before": [
+        1536
+      ],
+      "shape_after": [
+        1536
+      ]
+    },
+    {
+      "key": "init_net.4.weight",
+      "shape_before": [
+        3072,
+        1536
+      ],
+      "shape_after": [
+        3072,
+        1536
+      ]
+    },
+    {
+      "key": "init_net.4.bias",
+      "shape_before": [
+        3072
+      ],
+      "shape_after": [
+        3072
+      ]
+    }
+  ],
+  "partially_copied_keys": [
+    {
+      "key": "rnn.weight_ih_l0",
+      "shape_before": [
+        2048,
+        84
+      ],
+      "shape_after": [
+        2048,
+        102
+      ],
+      "copied": "columns 0:84",
+      "new": "columns 84:102 zero"
+    },
+    {
+      "key": "linear2.weight",
+      "shape_before": [
+        18,
+        512
+      ],
+      "shape_after": [
+        33,
+        512
+      ],
+      "copied": "old gravity rows 15:18 to new 30:33",
+      "new": "v/a rows zero"
+    },
+    {
+      "key": "linear2.bias",
+      "shape_before": [
+        18
+      ],
+      "shape_after": [
+        33
+      ],
+      "copied": "old gravity rows 15:18 to new 30:33",
+      "new": "v/a rows zero"
+    }
+  ],
+  "newly_initialized_keys": [],
+  "skipped_keys": [],
+  "new_input_init": "zero"
+}
