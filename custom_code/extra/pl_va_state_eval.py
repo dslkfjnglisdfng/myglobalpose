@@ -9,7 +9,9 @@ import torch
 import articulate as art
 
 from custom_code.modified_official.net import GPNet
-from pl_va_state import LEAF_NAMES, PLVAStateV1, centered_derivative_targets
+from pl_va_state import (ANGULAR_VELOCITY_EMA_BETA, ANGULAR_VELOCITY_FRAME,
+                         ANGULAR_VELOCITY_LAG, ANGULAR_VELOCITY_METHOD,
+                         LEAF_NAMES, PLVAStateV1, centered_derivative_targets)
 from pl_va_state_train import load_records
 
 
@@ -78,6 +80,8 @@ def evaluate(cache, checkpoint, output_dir, dataset_label, max_sequences=0):
         row["g_angle_deg"]=sum(x["g_angle_deg"] for x in selected)/len(selected); summary.append(row)
     output_dir.mkdir(parents=True,exist_ok=True)
     (output_dir/"metrics.json").write_text(json.dumps({"cache":str(cache),"checkpoint":str(checkpoint),"manifest":manifest,
+        "angular_velocity_method": ANGULAR_VELOCITY_METHOD, "angular_velocity_frame": ANGULAR_VELOCITY_FRAME,
+        "angular_velocity_lag": ANGULAR_VELOCITY_LAG, "angular_velocity_ema_beta": ANGULAR_VELOCITY_EMA_BETA,
         "summary":summary,"sequences":sequence_rows},indent=2)+"\n")
     with (output_dir/"comparison.csv").open("w",newline="") as f:
         writer=csv.DictWriter(f,fieldnames=list(summary[0]));writer.writeheader();writer.writerows(summary)

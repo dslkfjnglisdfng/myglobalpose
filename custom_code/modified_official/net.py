@@ -245,22 +245,21 @@ class GPNet(torch.nn.Module):
                 raise ValueError(f'Unsupported PL curve init_size={self.pl_curve.init_size}.')
         if self.pl_va is not None:
             self.pl_va.reset_stream(pRL.to(x1.device), gR.to(x1.device))
-            self._pl_va_prev_rmb = None
+            self._pl_va_angular_velocity_state = None
             self._pl_va_acc_filter = None
         if self.ik1_curve is not None:
             self.ik1_curve.reset_stream()
 
     def _pl_curve_frame_feature(self, a, w, R, x_pl_legacy):
         if self.pl_backend == 'va_state_v1':
-            from pl_va_state import CausalButterworthLowpass, pl_va_feature_step
+            from pl_va_state import CausalButterworthLowpass, CausalRMBWorldAngularVelocityEMA, pl_va_feature_step
             if self._pl_va_acc_filter is None:
                 self._pl_va_acc_filter = CausalButterworthLowpass(
                     a.shape, fs=1.0 / self.dt, cutoff_hz=self.pl_va.cutoff_hz,
                     order=self.pl_va.filter_order, device=a.device, dtype=a.dtype,
                 )
-            feature, self._pl_va_prev_rmb, _ = pl_va_feature_step(
-                a, R, self._pl_va_prev_rmb, self._pl_va_acc_filter, dt=self.dt,
-            )
+                self._pl_va_angular_velocity_state = CausalRMBWorldAngularVelocityEMA(dt=self.dt)
+            feature = pl_va_feature_step(a, R, self._pl_va_angular_velocity_state, self._pl_va_acc_filter)
             return feature
         if self.pl_backend != 'curve_v1' or self.pl_curve is None:
             return x_pl_legacy

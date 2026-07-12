@@ -6,38 +6,67 @@ import torch
 import articulate as art
 from pl_va_state import (
     CausalButterworthLowpass,
+    CausalRMBWorldAngularVelocityEMA,
     PLVAStateV1,
-    causal_angular_velocity_from_rmb_sequence,
-    causal_angular_velocity_from_rmb_step,
+    causal_world_angular_velocity_from_rmb_sequence,
     causal_butterworth_lowpass_sequence,
     partial_initialize_from_official,
     pl_va_feature_sequence,
+    world_angular_velocity_to_root_frame,
 )
 
 
 def test_rmb_static_first_and_causal():
     r = torch.eye(3).repeat(12, 6, 1, 1)
-    out = causal_angular_velocity_from_rmb_sequence(r)
+    out = causal_world_angular_velocity_from_rmb_sequence(r)
     assert torch.equal(out[0], torch.zeros_like(out[0]))
+    assert torch.equal(out[1], torch.zeros_like(out[1]))
     assert torch.equal(out, torch.zeros_like(out))
     changed = r.clone()
     changed[8:] = art.math.axis_angle_to_rotation_matrix(torch.tensor([[0.3, 0.0, 0.0]])).expand(4, 6, 3, 3)
-    assert torch.equal(out[:8], causal_angular_velocity_from_rmb_sequence(changed)[:8])
+    assert torch.equal(out[:8], causal_world_angular_velocity_from_rmb_sequence(changed)[:8])
 
 
-def test_constant_angular_velocity_and_k2_alignment():
+def test_constant_world_angular_velocity_sequence_step_and_reference_alignment():
     dt, omega = 1 / 60, torch.tensor([0.0, 1.2, 0.0])
     aa = torch.arange(20)[:, None, None] * dt * omega
     r = art.math.axis_angle_to_rotation_matrix(aa.expand(-1, 6, -1).reshape(-1, 3)).reshape(20, 6, 3, 3)
-    out = causal_angular_velocity_from_rmb_sequence(r, dt)
-    assert torch.allclose(out[1:], omega.expand_as(out[1:]), atol=2e-5)
-    rel = r[1:].transpose(-1, -2).matmul(r[:-1])
-    expected = -art.math.rotation_matrix_to_axis_angle(rel.reshape(-1, 3, 3)).reshape(19, 6, 3) / dt
-    assert torch.allclose(out[1:], expected, atol=1e-7)
-    step, prev, first = causal_angular_velocity_from_rmb_step(r[0], None, dt)
-    assert first and torch.equal(step, torch.zeros_like(step))
-    step, _, first = causal_angular_velocity_from_rmb_step(r[1], prev, dt)
-    assert not first and torch.allclose(step, out[1], atol=1e-7)
+    out = causal_world_angular_velocity_from_rmb_sequence(r, dt=dt)
+    assert torch.equal(out[:2], torch.zeros_like(out[:2]))
+    assert torch.allclose(out[2:], omega.expand_as(out[2:]), atol=2e-5)
+
+    state = CausalRMBWorldAngularVelocityEMA(dt=dt)
+    stepped = torch.stack([state.step(frame) for frame in r])
+    assert (out - stepped).abs().max() < 1e-6
+
+    delta = r[2:].matmul(r[:-2].transpose(-1, -2))
+    raw = art.math.rotation_matrix_to_axis_angle(delta.reshape(-1, 3, 3)).reshape(18, 6, 3) / (2 * dt)
+    reference = torch.zeros_like(out)
+    reference[2] = raw[0]
+    for t in range(3, len(r)):
+        reference[t] = 0.7 * reference[t - 1] + 0.3 * raw[t - 2]
+    assert torch.allclose(out, reference, atol=1e-7)
+
+
+def test_ema_initialization_and_updates():
+    dt = 1 / 60
+    increments = torch.tensor([0.0, 0.02, 0.05, 0.01, 0.04, 0.03])
+    angles = increments.cumsum(0)
+    aa = torch.zeros(len(angles), 6, 3)
+    aa[..., 2] = angles[:, None]
+    r = art.math.axis_angle_to_rotation_matrix(aa.reshape(-1, 3)).reshape(len(angles), 6, 3, 3)
+    out = causal_world_angular_velocity_from_rmb_sequence(r, dt=dt)
+    delta = r[2:].matmul(r[:-2].transpose(-1, -2))
+    raw = art.math.rotation_matrix_to_axis_angle(delta.reshape(-1, 3, 3)).reshape(-1, 6, 3) / (2 * dt)
+    assert torch.allclose(out[2], raw[0], atol=1e-6)
+    assert torch.allclose(out[3], 0.7 * out[2] + 0.3 * raw[1], atol=1e-6)
+    assert torch.allclose(out[4], 0.7 * out[3] + 0.3 * raw[2], atol=1e-6)
+
+
+def test_world_to_root_frame_contract():
+    root = art.math.axis_angle_to_rotation_matrix(torch.tensor([[0.0, 0.0, 0.7]]))[0]
+    w_m = torch.tensor([[1.0, 2.0, 3.0], [-2.0, 0.5, 1.0]])
+    assert torch.allclose(world_angular_velocity_to_root_frame(w_m, root), w_m @ root)
 
 
 def test_filter_and_feature_contract():

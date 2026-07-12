@@ -16,32 +16,75 @@ INPUT_SIZE = 102
 RAW_OUTPUT_SIZE = 33
 LEGACY_OUTPUT_SIZE = 18
 LEAF_NAMES = ("left_forearm", "right_forearm", "left_lower_leg", "right_lower_leg", "head")
+ANGULAR_VELOCITY_METHOD = "causal_world_so3_backward_lag2_ema03"
+ANGULAR_VELOCITY_FRAME = "world_then_root"
+ANGULAR_VELOCITY_LAG = 2
+ANGULAR_VELOCITY_EMA_BETA = 0.3
 
 
-def causal_angular_velocity_from_rmb_step(rmb_t, prev_rmb, dt=DT):
-    """Return body/local omega using the exact k2_so3_curve causal convention."""
-    if prev_rmb is None:
-        return torch.zeros(rmb_t.shape[:-2] + (3,), device=rmb_t.device, dtype=rmb_t.dtype), rmb_t, True
-    rel_t = rmb_t.transpose(-1, -2).matmul(prev_rmb)
-    rotvec_t = art.math.rotation_matrix_to_axis_angle(rel_t.reshape(-1, 3, 3)).reshape(rel_t.shape[:-2] + (3,))
-    return -rotvec_t / float(dt), rmb_t, False
+class CausalRMBWorldAngularVelocityEMA:
+    """Strictly causal world-frame SO(3) lag difference followed by EMA.
+
+    RMB is R_M_B (body/sensor coordinates to model/world coordinates).
+    """
+
+    def __init__(self, lag=ANGULAR_VELOCITY_LAG, beta=ANGULAR_VELOCITY_EMA_BETA, dt=DT):
+        if int(lag) < 1 or not 0.0 < float(beta) <= 1.0 or float(dt) <= 0.0:
+            raise ValueError("lag >= 1, 0 < beta <= 1, and dt > 0 are required")
+        self.lag = int(lag)
+        self.beta = float(beta)
+        self.dt = float(dt)
+        self.reset()
+
+    def reset(self):
+        self.rmb_history = []
+        self.previous_filtered_w = None
+        self.num_frames_seen = 0
+
+    def step(self, rmb_t):
+        if len(self.rmb_history) < self.lag:
+            filtered = rmb_t.new_zeros(rmb_t.shape[:-2] + (3,))
+        else:
+            delta_r_m = rmb_t.matmul(self.rmb_history[-self.lag].transpose(-1, -2))
+            raw = art.math.rotation_matrix_to_axis_angle(delta_r_m.reshape(-1, 3, 3)).reshape(
+                delta_r_m.shape[:-2] + (3,)
+            ) / (self.lag * self.dt)
+            filtered = raw if self.previous_filtered_w is None else (
+                (1.0 - self.beta) * self.previous_filtered_w + self.beta * raw
+            )
+            self.previous_filtered_w = filtered
+        self.rmb_history.append(rmb_t)
+        if len(self.rmb_history) > self.lag:
+            self.rmb_history.pop(0)
+        self.num_frames_seen += 1
+        return filtered
 
 
-def causal_angular_velocity_from_rmb_sequence(rmb, dt=DT):
-    if rmb.shape[-4] == 0:
+def causal_world_angular_velocity_from_rmb_sequence(
+        rmb, lag=ANGULAR_VELOCITY_LAG, beta=ANGULAR_VELOCITY_EMA_BETA, dt=DT):
+    state = CausalRMBWorldAngularVelocityEMA(lag=lag, beta=beta, dt=dt)
+    if rmb.shape[0] == 0:
         return rmb.new_zeros(rmb.shape[:-2] + (3,))
+    return torch.stack([state.step(frame) for frame in rmb])
+
+
+def world_angular_velocity_to_root_frame(w_m, rmb_root):
+    """Apply original GlobalPose row-vector convention: wRB = wM @ RMB_root."""
+    return w_m.unsqueeze(-2).matmul(rmb_root).squeeze(-2)
+
+
+def legacy_lag1_body_angular_velocity_from_rmb_sequence(rmb, dt=DT):
+    """Previous PL-VA implementation retained only for diagnostics."""
     omega = torch.zeros(rmb.shape[:-2] + (3,), device=rmb.device, dtype=rmb.dtype)
-    if rmb.shape[-4] > 1:
-        rel = rmb[..., 1:, :, :, :].transpose(-1, -2).matmul(rmb[..., :-1, :, :, :])
+    if rmb.shape[0] > 1:
+        rel = rmb[1:].transpose(-1, -2).matmul(rmb[:-1])
         rv = art.math.rotation_matrix_to_axis_angle(rel.reshape(-1, 3, 3)).reshape(rel.shape[:-2] + (3,))
-        omega[..., 1:, :, :] = -rv / float(dt)
+        omega[1:] = -rv / float(dt)
     return omega
 
 
-def body_omega_to_root_frame(omega_body, rmb, rmb_root):
-    """Convert body-column omega through M to the project's row-vector root frame."""
-    omega_m = rmb.matmul(omega_body.unsqueeze(-1)).squeeze(-1)
-    return omega_m.unsqueeze(-2).matmul(rmb_root).squeeze(-2)
+def legacy_body_omega_to_world_frame(omega_body, rmb):
+    return rmb.matmul(omega_body.unsqueeze(-1)).squeeze(-1)
 
 
 class CausalButterworthLowpass:
@@ -84,28 +127,28 @@ def causal_butterworth_lowpass_sequence(x, fs=FPS, cutoff_hz=4.0, order=2):
     return torch.stack([filt.step(frame) for frame in x])
 
 
-def pl_va_feature_step(a_m_raw, rmb_t, prev_rmb, acc_filter, dt=DT):
-    omega_body, next_rmb, first = causal_angular_velocity_from_rmb_step(rmb_t, prev_rmb, dt)
+def pl_va_feature_step(a_m_raw, rmb_t, angular_velocity_state, acc_filter):
+    w_m = angular_velocity_state.step(rmb_t)
     root = rmb_t[-1]
     a_smooth = acc_filter.step(a_m_raw)
     a_rb_raw = a_m_raw.matmul(root)
     a_rb_smooth = a_smooth.matmul(root)
-    w_rb = body_omega_to_root_frame(omega_body, rmb_t, root)
+    w_rb = world_angular_velocity_to_root_frame(w_m, root)
     r_rb = root.transpose(-1, -2).matmul(rmb_t[:-1])
     g_r0 = -root[:, 1]
     feature = torch.cat((a_rb_raw.reshape(-1), w_rb.reshape(-1), r_rb.reshape(-1), g_r0, a_rb_smooth.reshape(-1)))
     if feature.numel() != INPUT_SIZE:
         raise RuntimeError(f"PL-VA feature must be {INPUT_SIZE}D, got {feature.numel()}")
-    return feature, next_rmb, first
+    return feature
 
 
 def pl_va_feature_sequence(a_m_raw, rmb, dt=DT, fs=FPS, cutoff_hz=4.0, order=2):
     smooth = causal_butterworth_lowpass_sequence(a_m_raw, fs, cutoff_hz, order)
-    omega_body = causal_angular_velocity_from_rmb_sequence(rmb, dt)
+    w_m = causal_world_angular_velocity_from_rmb_sequence(rmb, dt=dt)
     root = rmb[:, -1]
     a_raw = a_m_raw.matmul(root)
     a_smooth = smooth.matmul(root)
-    w_rb = body_omega_to_root_frame(omega_body, rmb, root[:, None].expand_as(rmb))
+    w_rb = world_angular_velocity_to_root_frame(w_m, root[:, None])
     r_rb = root.transpose(-1, -2)[:, None].matmul(rmb[:, :-1])
     g_r0 = -root[:, :, 1]
     return torch.cat((a_raw.flatten(1), w_rb.flatten(1), r_rb.flatten(1), g_r0, a_smooth.flatten(1)), dim=-1)

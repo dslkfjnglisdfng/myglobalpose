@@ -16106,6 +16106,26 @@ Interpretation: the implementation and reporting surface are smoke-validated, bu
 
 Claim support: smoke only.
 
+### EXP-20260712-PL-VA-State-V1-lag2-EMA03
+
+Question: does the PL-VA input exactly implement the previously validated strictly causal world-frame RMB angular velocity, and is the current AMASS cache temporally consistent enough for formal training?
+
+Change: replaced the lag1/no-EMA body-frame default with shared `CausalRMBWorldAngularVelocityEMA`: `Log(RMB[t] RMB[t-2]^T)/(2dt)`, EMA beta 0.3, first two frames zero, then `wRB=wM@RMB_root`. Cache, sequence feature construction, and GPNet streaming call the same implementation. All other PL-VA and GlobalPose contracts are unchanged.
+
+Commands: compile/unit tests and `CUDA_VISIBLE_DEVICES=1 ROOT=data/experiments/pl_va_state_v1_lag2_ema03_20260712 /home/lingfeng/bin/longrun -- bash custom_code/extra/scripts/run_pl_va_state_v1_smoke.sh`. TotalCapture FK audit used the original evidence runner with `--splits totalcapture_test` and output directory `code/outputs/pl_va_lag2_ema03_tc_fk_audit_20260712` in `imu_acc_explainability`.
+
+TotalCapture FK result: cached wM RMSE `1.234275`, Pearson `0.725116`; new lag2/EMA0.3 RMSE `0.674296`, mean L2 `0.715831`, Pearson `0.872634`, cosine `0.809420`; offline centered RMSE `0.514684`, Pearson `0.912147`. The fixed causal configuration improves FK agreement over cached wM by 45.37% RMSE.
+
+Cached-signal diagnostics (three sampled sequences each), new versus measured wM: AMASS RMSE/Pearson `0.992176/0.710632`; DIP `0.660005/0.898438`; TotalCapture `1.106601/0.751789`. These are not FK metrics. TotalCapture measured wM being close to lag1 does not override the FK-based method selection.
+
+AMASS risk: original-view RMB angular-step p50 `0.1387-0.1392 rad/frame`, p95 `0.2555-0.2606`, much larger than typical DIP/TotalCapture samples. Source audit found independent per-frame `nR` in `process_amass_globalpose.py::_syn_imu` after gyro-consistent integration. AMASS new-w-vs-FK Pearson is not yet validly established, so the gate fails and formal AMASS training was not launched.
+
+Smoke result: all finite; sequence/step max difference `0.0`; frames 0/1 exactly zero. Candidate pRB L2 `5.076698 cm`; direct-v L2 `4.983681 cm/s`; state-v L2 `4.983505 cm/s`; acceleration L2 `417.789276 cm/s2`; gravity `2.440315 deg`. Gradients: v head `2.532255`, a head `0.008683`, gravity head `0.070520`; integrated-position loss `0.044016`.
+
+Artifacts: `data/experiments/pl_va_state_v1_lag2_ema03_20260712/smoke/`, `audits/frame_audit_cached.json`, `audits/amass_training_gate.json`. Old `data/experiments/pl_va_state_v1_20260712/` remains untouched.
+
+Claim support: smoke plus full TotalCapture FK diagnostic. No DIP-FK result, AMASS-FK pass, formal training, DIP/TC module test, or full-pipeline result is claimed.
+
 Next action: run a bounded diagnostic with more frames/iterations only if needed, and judge success by the combined gate: acc residual decrease, held-out residual non-regression, small pose/tran deviation, gyro non-regression, jerk/high-frequency non-regression, and foot-sliding/contact non-regression.
 
 ### EXP-20260705-totalcapture-pose-refinement-tuning-sweep-stage1-180f - Conservative Mode A tuning sweep

@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: PL-VA-State-V1 Stage 0 smoke passed; formal AMASS pretrain launch pending
-Current task: replace opt-in PL-s1 direct pRB regression with causal v/a prediction and explicit p/v/a state integration while preserving the legacy 18D PL and 63D IK1 contracts
-Review state: Approved for next step
+Current stage: PL-VA-State-V1 lag2/EMA0.3 correction implemented and smoke passed; formal AMASS pretrain blocked by the AMASS RMB temporal-consistency gate
+Current task: correct only the opt-in PL-VA angular-velocity feature to the validated causal world-frame lag2/EMA0.3 method
+Review state: Needs revision
 Current changed files: custom_code/extra/pl_va_state*.py, custom_code/extra/tests/test_pl_va_state.py, custom_code/extra/scripts/run_pl_va_state_v1_*.sh, custom_code/modified_official/net.py, project documents
 Current module: PL-s1 only; IK1, IK2, VR, root fusion, physics, evaluator, and data/weights.pt remain frozen
-Current replacement version: PL-VA-State-V1
-Current experiment: `data/experiments/pl_va_state_v1_20260712`
-Current result: Stage 0 compile/unit/cache/train/eval smoke passed on two AMASS sequences capped at 240 frames. All outputs are finite and v/a/gravity heads have nonzero gradients. The fixed k2 RMB-difference convention aligns strongly with measured wRB on sampled DIP and TotalCapture sequences, but the sampled AMASS overlay has poor agreement and is an explicit training risk.
-Current blocker: none; full-pipeline evaluation remains gated on same-cache DIP and TotalCapture pRB L2 not being worse than official PL
-Next action: launch AMASS 80-epoch pretrain, then automatic DIP 40-epoch fine-tune and module evaluation
+Current replacement version: PL-VA-State-V1-lag2-EMA03
+Current experiment: `data/experiments/pl_va_state_v1_lag2_ema03_20260712`
+Current result: compile/unit/cache/train/eval smoke passed on two AMASS sequences capped at 240 frames; all outputs are finite. TotalCapture FK audit exactly reproduces lag2/beta0.3 RMSE 0.674296 and Pearson 0.872634 versus cached wM RMSE 1.234275/Pearson 0.725116. AMASS sampled RMB steps are abnormally large (original-view p50 about 0.139 rad/frame), consistent with independent per-frame orientation noise.
+Current blocker: AMASS training gate failed because temporal RMB jitter is present and a valid AMASS new-w-vs-FK Pearson has not yet been established; formal training must not start.
+Next action: generate a new versioned AMASS cache with temporally consistent RMB/w (remove independent per-frame nR or replace it with synchronized random walk), rerun the AMASS FK gate, then launch AMASS pretrain only if Pearson >= 0.8.
 Git state: dirty worktree with existing unrelated edits; do not revert unrelated files
 CodeGraph state: healthy native index checked from `/home/lingfeng/projects/GlobalposeMy`, 271 files indexed
-Detailed logs: `data/experiments/pl_va_state_v1_20260712/smoke/summary.json` and EXPERIMENT_LOG.md `EXP-20260712-PL-VA-State-V1`
+Detailed logs: `data/experiments/pl_va_state_v1_lag2_ema03_20260712/smoke/summary.json`, `audits/amass_training_gate.json`, and EXPERIMENT_LOG.md `EXP-20260712-PL-VA-State-V1-lag2-EMA03`
 
 ## 0. Version-Line Reading Guide
 

@@ -624,7 +624,7 @@ Not run. This is a diagnostic module and is not connected to PL/IK/NewIK1/full p
 
 ### PL-VA-State-V1 — causal velocity/acceleration state PL
 
-Status: Stage 0 smoke passed; formal AMASS -> DIP run approved.
+Status: superseded by `PL-VA-State-V1-lag2-EMA03`; its lag1/no-EMA angular input must not be used for formal training.
 
 Replaced module: opt-in PL-s1 backend only. `GPNet(pl_backend="original")` remains the default.
 
@@ -645,6 +645,24 @@ Gate: run full pipeline only if same-cache DIP and TotalCapture candidate pRB L2
 Artifacts: `data/experiments/pl_va_state_v1_20260712/`.
 
 Conclusion: smoke only; no module or pose improvement claim.
+
+### PL-VA-State-V1-lag2-EMA03 — validated realtime RMB angular input
+
+Status: implementation and Stage 0 smoke passed; formal AMASS training blocked by the AMASS temporal-consistency gate.
+
+Replaced module: only the angular-velocity source inside opt-in PL-VA. Original PL, 102D layout, 33D network output, beta=0.7 p/v/a integrator, Butterworth acceleration, and downstream 18D PL/63D IK1 contracts are unchanged.
+
+Angular velocity contract: `RMB=R_M_B`; `raw_w_M[t]=Log(RMB[t] RMB[t-2]^T)/(2dt)`; frames 0 and 1 are strict zero; frame 2 initializes the EMA from raw; later frames use `w_hat=0.7*w_prev+0.3*raw`; PL root conversion is `wRB=w_hat_M @ RMB_root`. Method ID is `causal_world_so3_backward_lag2_ema03`, frame ID `world_then_root`.
+
+Validation: sequence/step max absolute difference is 0.0. TotalCapture official FK audit: cached wM RMSE/Pearson `1.234275/0.725116`, new lag2/EMA0.3 `0.674296/0.872634`, offline centered `0.514684/0.912147`. New causal w therefore improves FK agreement over cached wM but does not imply PL or pose improvement.
+
+Smoke: candidate pRB L2 `5.076698 cm`; direct-v L2 `4.983681 cm/s`; state-v L2 `4.983505 cm/s`; acceleration L2 `417.789276 cm/s2`; gravity angle `2.440315 deg`. Head gradients: v `2.532255`, a `0.008683`, gravity `0.070520`; integrated-position loss gradient norm `0.044016`.
+
+AMASS gate: failed. Sampled original sequences have RMB angular-step p50 about `0.139 rad/frame` and p95 about `0.256-0.261 rad/frame`; `process_amass_globalpose.py` applies an independent per-frame `nR` after gyro-consistent integration. Do not change formula/sign and do not fall back to measured wM. Build a new versioned temporally consistent cache before training.
+
+Artifacts: `data/experiments/pl_va_state_v1_lag2_ema03_20260712/`; FK audit `/home/lingfeng/projects/imu_acc_explainability/code/outputs/pl_va_lag2_ema03_tc_fk_audit_20260712/`.
+
+Conclusion: angular-velocity implementation accepted; training data gate not accepted; no formal training or full-pipeline claim.
 
 ## Version: newpl_v1_processed_no_baseline
 

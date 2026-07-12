@@ -8,7 +8,9 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 
-from pl_va_state import PLVAStateV1, partial_initialize_from_official
+from pl_va_state import (ANGULAR_VELOCITY_EMA_BETA, ANGULAR_VELOCITY_FRAME,
+                         ANGULAR_VELOCITY_LAG, ANGULAR_VELOCITY_METHOD,
+                         PLVAStateV1, partial_initialize_from_official)
 
 
 WEIGHTS = {"p": 1.0, "v_direct": 0.25, "v_state": 0.25, "a": 0.1,
@@ -17,6 +19,9 @@ WEIGHTS = {"p": 1.0, "v_direct": 0.25, "v_state": 0.25, "a": 0.1,
 
 def load_records(manifest_path, max_sequences=0):
     manifest = json.loads(Path(manifest_path).read_text()); rows = []
+    angular = manifest.get("angular_velocity", {})
+    if angular.get("method") != ANGULAR_VELOCITY_METHOD:
+        raise ValueError(f"refusing incompatible PL-VA cache angular velocity: {angular.get('method')!r}")
     for item in manifest["cache_files"]:
         rows.extend(torch.load(item["path"], map_location="cpu"))
         if max_sequences and len(rows) >= max_sequences: break
@@ -113,13 +118,20 @@ def main():
     model = PLVAStateV1().to(device)
     init_report = None
     if args.init_checkpoint:
-        checkpoint = torch.load(args.init_checkpoint, map_location="cpu", weights_only=False); model.load_state_dict(checkpoint["model"]); stats = checkpoint["normalization"]
+        checkpoint = torch.load(args.init_checkpoint, map_location="cpu", weights_only=False)
+        if checkpoint.get("config", {}).get("angular_velocity_method") != ANGULAR_VELOCITY_METHOD:
+            raise ValueError("refusing checkpoint trained with an incompatible PL-VA angular-velocity feature")
+        model.load_state_dict(checkpoint["model"]); stats = checkpoint["normalization"]
     else:
         init_report = partial_initialize_from_official(model, args.weights, args.output_dir / "initialization_report.json")
         stats = normalization(train)
     stats = {k: (v.to(device) if torch.is_tensor(v) else v) for k, v in stats.items()}
     config = vars(args) | {"beta": model.beta, "cutoff_hz": model.cutoff_hz, "filter_order": model.filter_order,
-                           "loss_weights": WEIGHTS, "state_reset": "once_per_full_sequence", "device": str(device)}
+                           "loss_weights": WEIGHTS, "state_reset": "once_per_full_sequence", "device": str(device),
+                           "angular_velocity_method": ANGULAR_VELOCITY_METHOD,
+                           "angular_velocity_frame": ANGULAR_VELOCITY_FRAME,
+                           "angular_velocity_lag": ANGULAR_VELOCITY_LAG,
+                           "angular_velocity_ema_beta": ANGULAR_VELOCITY_EMA_BETA}
     (args.output_dir / "config.json").write_text(json.dumps(config, indent=2, default=str) + "\n")
     opt = torch.optim.Adam(model.parameters(), lr=args.lr); best = float("inf"); history = []; smoke_grad = None; per_loss_grad = None
     for epoch in range(args.epochs):

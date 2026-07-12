@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-ROOT=${ROOT:-data/experiments/pl_va_state_v1_20260712}
+ROOT=${ROOT:-data/experiments/pl_va_state_v1_lag2_ema03_20260712}
 ENV=${ENV:-/home/lingfeng/.conda/envs/globalpose-gpu}; PY="$ENV/bin/python"
 export PYTHONPATH="$PWD/custom_code/modified_official:$PWD/custom_code/extra:$PWD:${PYTHONPATH:-}"
 export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"
@@ -14,6 +14,7 @@ BATCH=${BATCH:-8}; mkdir -p "$ROOT" "$ROOT/logs"
 import json,sys
 from pathlib import Path
 r=Path(sys.argv[1]); cfg={"task":"PL-VA-State-V1","fps":60,"dt":1/60,"beta":0.7,"cutoff_hz":4.0,"filter_order":2,
+ "angular_velocity_method":"causal_world_so3_backward_lag2_ema03","angular_velocity_frame":"world_then_root","angular_velocity_lag":2,"angular_velocity_ema_beta":0.3,
  "input_size":102,"raw_output_size":33,"legacy_output_size":18,"amass_epochs":80,"dip_epochs":40,"batch_size":int(sys.argv[2]),
  "protocol":"AMASS pretrain -> DIP train/val fine-tune -> DIP test + TotalCapture test; no TC fine-tune","fullpipeline_gate":"candidate pRB L2 <= official PL on both DIP and TotalCapture"}
 (r/'config.json').write_text(json.dumps(cfg,indent=2)+'\n')

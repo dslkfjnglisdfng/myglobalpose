@@ -10,7 +10,9 @@ import articulate as art
 from l4_train_diverse_short import load_cache_files
 from pl_curve import pl_target_from_pose
 from pl_curve import pl_input_feature
-from pl_va_state import centered_derivative_targets, pl_va_feature_sequence
+from pl_va_state import (ANGULAR_VELOCITY_EMA_BETA, ANGULAR_VELOCITY_FRAME,
+                         ANGULAR_VELOCITY_LAG, ANGULAR_VELOCITY_METHOD,
+                         centered_derivative_targets, pl_va_feature_sequence)
 
 
 def iter_records(manifest):
@@ -67,8 +69,10 @@ def build_cache(input_cache, output_dir, max_sequences=0, max_frames=0, fps=60.0
                 "input_layout": "aRB_raw[18]+wRB_rmbdiff[18]+RRB[45]+gR0[3]+aRB_smooth[18]",
                 "target_layout": "pRB_vertex[15], vRB=d(pRB)/dt, aRB=d2(pRB)/dt2, gR1[3]",
                 "derivatives": "centered interior; one-sided endpoints; mask recorded",
-                "angular_velocity": {"source": "k2_so3_curve.SO3CurveStateDecoder._angular_motion",
-                    "relative_order": "RMB_t^T @ RMB_t-1", "sign": "negative axis-angle / dt", "first_frame": "zero"},
+                "angular_velocity": {"method": ANGULAR_VELOCITY_METHOD, "frame": ANGULAR_VELOCITY_FRAME,
+                    "lag": ANGULAR_VELOCITY_LAG, "ema_beta": ANGULAR_VELOCITY_EMA_BETA,
+                    "relative_order": "RMB_t @ RMB_t-2^T", "sign": "positive SO3Log / (2*dt)",
+                    "first_frames": "t=0,1 strict zero; t=2 initializes EMA from raw"},
                 "smoothing": {"causal": True, "filter": "Butterworth SOS", "cutoff_hz": cutoff_hz, "order": order}}
     manifest["target_fk_device"] = str(device)
     path = output_dir / "manifest.json"

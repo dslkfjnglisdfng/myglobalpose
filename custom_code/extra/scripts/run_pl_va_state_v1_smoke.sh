@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-ROOT=${ROOT:-data/experiments/pl_va_state_v1_20260712}
+ROOT=${ROOT:-data/experiments/pl_va_state_v1_lag2_ema03_20260712}
 ENV=${ENV:-/home/lingfeng/.conda/envs/globalpose-gpu}
 PY="$ENV/bin/python"
 export PYTHONPATH="$PWD/custom_code/modified_official:$PWD/custom_code/extra:$PWD:${PYTHONPATH:-}"
