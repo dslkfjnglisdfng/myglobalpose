@@ -1,0 +1,21 @@
+digraph lineage {
+  rankdir=LR;
+  graph [label="Data Lineage", labelloc=t, fontsize=20];
+  node [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=9];
+  edge [fontname="DejaVu Sans", fontsize=7];
+  N1 [label="N1 DIP-IMU official test file\ndata/test_datasets/dipimu.pt\n[official; official test subjects s09/s10; verified]\nname,RIM,RSB,RIS,aS,wS,mS,tran,pose; 19 sequences; 57994 frames; 60 Hz", fillcolor="#9be3e2", color="#138d90", penwidth=1.1];
+  N2 [label="N2 TotalCapture official-calibration file\ndata/test_datasets/totalcapture_officalib.pt\n[official; official s5 test subset; verified]\nname,RIM,RSB,RIS,aS,wS,mS,tran,pose; evaluation selects four s5 sequences; 60 Hz", fillcolor="#9be3e2", color="#138d90", penwidth=1.1];
+  N3 [label="N3 Baseline original predictions\nbaseline_original/{dip,totalcapture}_run/predictions.pt\n[evaluation; DIP test and TotalCapture s5 test; verified]\nper-sequence pose rotation matrices and root translation", fillcolor="#d9d9d9", color="#666666", penwidth=1.1];
+  N4 [label="N4 Current G0 predictions\ncurrent_g0/{dip,totalcapture}_run/predictions.pt\n[evaluation; DIP test and TotalCapture s5 test; verified]\nper-sequence pose rotation matrices and root translation", fillcolor="#d9d9d9", color="#666666", penwidth=1.1];
+  N5 [label="N5 G2 VR-only swap predictions\ng2_vr_swap/{dip,totalcapture}_run/predictions.pt\n[evaluation; DIP test and TotalCapture s5 test; verified]\nper-sequence pose rotation matrices and root translation", fillcolor="#d9d9d9", color="#666666", penwidth=1.1];
+  N6 [label="N6 Official metric comparison\nofficial_metric_comparison.csv\n[evaluation; DIP test and TotalCapture s5 test; verified]\n10 MotionEvaluator metrics plus TotalCapture 1-7 m translation-window errors", fillcolor="#d9d9d9", color="#666666", penwidth=1.1];
+  N1 -> N3 [label="E1\ntest.py::compare_realimu\noriginal GP sequential inference with cached measured wM\nRIM,RSB,RIS,aS,wS,pose -> pose_prediction,tran_prediction", color="#555555", fontcolor="#555555", style="solid"];
+  N2 -> N3 [label="E2\ntest.py::compare_realimu\noriginal GP sequential inference on explicitly selected s5 names\nRIM,RSB,RIS,aS,wS,pose,tran -> pose_prediction,tran_prediction", color="#555555", fontcolor="#555555", style="solid"];
+  N1 -> N4 [label="E3\ntest.py::compare_realimu\ncurrent G0 sequential inference with default-off override\nRIM,RSB,RIS,aS,wS,pose -> pose_prediction,tran_prediction", color="#555555", fontcolor="#555555", style="solid"];
+  N2 -> N4 [label="E4\ntest.py::compare_realimu\ncurrent G0 sequential inference on s5\nRIM,RSB,RIS,aS,wS,pose,tran -> pose_prediction,tran_prediction", color="#555555", fontcolor="#555555", style="solid"];
+  N1 -> N5 [label="E5\ncustom_code/extra/run_official_test_parity.py::G2VRNet.forward_frame\nreplace VR-only angular velocity after causal RMB lag2 EMA\nRMB history,current RMB,cached wM,aM -> pose_prediction,tran_prediction", color="#555555", fontcolor="#555555", style="solid"];
+  N2 -> N5 [label="E6\ncustom_code/extra/run_official_test_parity.py::G2VRNet.forward_frame\nreplace VR-only angular velocity after causal RMB lag2 EMA\nRMB history,current RMB,cached wM,aM -> pose_prediction,tran_prediction", color="#555555", fontcolor="#555555", style="solid"];
+  N3 -> N6 [label="E7\ncustom_code/extra/summarize_official_test_parity.py::evaluate\nMotionEvaluator and translation windows\npose_prediction,tran_prediction,pose GT,tran GT -> official metrics", color="#555555", fontcolor="#555555", style="solid"];
+  N4 -> N6 [label="E8\ncustom_code/extra/summarize_official_test_parity.py::evaluate\nMotionEvaluator and translation windows\npose_prediction,tran_prediction,pose GT,tran GT -> official metrics", color="#555555", fontcolor="#555555", style="solid"];
+  N5 -> N6 [label="E9\ncustom_code/extra/summarize_official_test_parity.py::evaluate\nMotionEvaluator and translation windows\npose_prediction,tran_prediction,pose GT,tran GT -> official metrics", color="#555555", fontcolor="#555555", style="solid"];
+}

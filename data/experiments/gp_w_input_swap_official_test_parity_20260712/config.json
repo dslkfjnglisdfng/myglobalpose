@@ -1,0 +1,46 @@
+{
+  "experiment": "gp_w_input_swap_official_test_parity_20260712",
+  "baseline_commit": "90523d6f38c28ee3a1afd27346cd3624c5efe38a",
+  "current_experiment_commit": "20bfd00fa48d14d4f08d6381fafc65eb01a9d2fb",
+  "weights": "data/weights.pt",
+  "weights_sha256_expected": "0814864603885aa20165624de8db101a1d6eb9d38a7cddb8bbde39074e7014da",
+  "official_test_entry": "test.compare_realimu",
+  "official_evaluator": "test.MotionEvaluator",
+  "datasets": {
+    "dip": "data/test_datasets/dipimu.pt",
+    "totalcapture": "data/test_datasets/totalcapture_officalib.pt",
+    "totalcapture_split": [
+      "s5_freestyle1",
+      "s5_freestyle3",
+      "s5_rom3",
+      "s5_walking2"
+    ]
+  },
+  "variants": {
+    "baseline_original": "baseline commit original test.py and net.py, cached wM for PL and VR",
+    "current_g0": "current experiment commit, cached wM for PL and VR",
+    "g2_vr_swap": "current experiment commit, cached wM for PL and causal RMB-derived w for VR"
+  },
+  "causal_w": {
+    "frame": "model/world M",
+    "fps": 60,
+    "lag": 2,
+    "ema_beta": 0.3,
+    "delta_rotation": "RMB[t] @ RMB[t-2].transpose(-1,-2)",
+    "first_two_frames_zero": true
+  },
+  "determinism": {
+    "seed": 0,
+    "torch_threads": 1,
+    "torch_interop_threads": 1,
+    "cudnn_benchmark": false,
+    "cudnn_deterministic": true,
+    "cuda_visible_devices": "1"
+  },
+  "parity_gate": {
+    "pose_rotation_mean_deg": 0.00001,
+    "pose_rotation_max_deg": 0.0001,
+    "translation_max_abs_m": 0.000001,
+    "official_aggregate_metric_abs": 0.00001
+  }
+}

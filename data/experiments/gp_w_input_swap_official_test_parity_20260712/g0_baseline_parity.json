@@ -1,0 +1,62 @@
+{
+  "thresholds": {
+    "pose_rotation_mean_deg": 1e-05,
+    "pose_rotation_max_deg": 0.0001,
+    "translation_max_abs_m": 1e-06,
+    "official_aggregate_metric_abs": 1e-05
+  },
+  "datasets": {
+    "dip": {
+      "pose_max_abs_diff": 0.0,
+      "pose_mean_abs_diff": 0.0,
+      "pose_rotation_max_diff_deg": 0.0,
+      "pose_rotation_mean_diff_deg": 0.0,
+      "tran_max_abs_diff_m": 0.0,
+      "tran_mean_abs_diff_m": 0.0,
+      "official_aggregate_abs_diffs": {
+        "L SIP Err": 0.0,
+        "L Angle Err": 0.0,
+        "L Joint Err": 0.0,
+        "L Vertex Err": 0.0,
+        "G SIP Err": 0.0,
+        "G Angle Err": 0.0,
+        "G Joint Err": 0.0,
+        "G Vertex Err": 0.0,
+        "Root Jitter": 0.0,
+        "Joint Jitter": 0.0
+      },
+      "official_aggregate_max_abs_diff": 0.0,
+      "passed": true
+    },
+    "totalcapture": {
+      "pose_max_abs_diff": 0.0,
+      "pose_mean_abs_diff": 0.0,
+      "pose_rotation_max_diff_deg": 0.0,
+      "pose_rotation_mean_diff_deg": 0.0,
+      "tran_max_abs_diff_m": 0.0,
+      "tran_mean_abs_diff_m": 0.0,
+      "official_aggregate_abs_diffs": {
+        "L SIP Err": 0.0,
+        "L Angle Err": 0.0,
+        "L Joint Err": 0.0,
+        "L Vertex Err": 0.0,
+        "G SIP Err": 0.0,
+        "G Angle Err": 0.0,
+        "G Joint Err": 0.0,
+        "G Vertex Err": 0.0,
+        "Root Jitter": 0.0,
+        "Joint Jitter": 0.0,
+        "Translation 1m": 0.0,
+        "Translation 2m": 0.0,
+        "Translation 3m": 0.0,
+        "Translation 4m": 0.0,
+        "Translation 5m": 0.0,
+        "Translation 6m": 0.0,
+        "Translation 7m": 0.0
+      },
+      "official_aggregate_max_abs_diff": 0.0,
+      "passed": true
+    }
+  },
+  "passed": true
+}

@@ -1,0 +1,135 @@
+{
+  "nodes": [
+    {
+      "node_id": "N1",
+      "name": "DIP-IMU official test file",
+      "path": "data/test_datasets/dipimu.pt",
+      "category": "official",
+      "fields": "name,RIM,RSB,RIS,aS,wS,mS,tran,pose; 19 sequences; 57994 frames; 60 Hz",
+      "split": "official test subjects s09/s10",
+      "status": "verified",
+      "group": "input",
+      "note": "SHA256 3f411029fac8ff40078c836346bab99b47199d9953a7d1c245b983d931b1880c; DIP translation not evaluated"
+    },
+    {
+      "node_id": "N2",
+      "name": "TotalCapture official-calibration file",
+      "path": "data/test_datasets/totalcapture_officalib.pt",
+      "category": "official",
+      "fields": "name,RIM,RSB,RIS,aS,wS,mS,tran,pose; evaluation selects four s5 sequences; 60 Hz",
+      "split": "official s5 test subset",
+      "status": "verified",
+      "group": "input",
+      "note": "SHA256 075de0371e7b0b567b1485282cb2bbfee523d64fb499e59e72251ae12b6f637a"
+    },
+    {
+      "node_id": "N3",
+      "name": "Baseline original predictions",
+      "path": "baseline_original/{dip,totalcapture}_run/predictions.pt",
+      "category": "evaluation",
+      "fields": "per-sequence pose rotation matrices and root translation",
+      "split": "DIP test and TotalCapture s5 test",
+      "status": "verified",
+      "group": "prediction",
+      "note": "Produced from exact commit 90523d6 using unchanged compare_realimu"
+    },
+    {
+      "node_id": "N4",
+      "name": "Current G0 predictions",
+      "path": "current_g0/{dip,totalcapture}_run/predictions.pt",
+      "category": "evaluation",
+      "fields": "per-sequence pose rotation matrices and root translation",
+      "split": "DIP test and TotalCapture s5 test",
+      "status": "verified",
+      "group": "prediction",
+      "note": "Commit 20bfd00; cached measured wM for both PL and VR"
+    },
+    {
+      "node_id": "N5",
+      "name": "G2 VR-only swap predictions",
+      "path": "g2_vr_swap/{dip,totalcapture}_run/predictions.pt",
+      "category": "evaluation",
+      "fields": "per-sequence pose rotation matrices and root translation",
+      "split": "DIP test and TotalCapture s5 test",
+      "status": "verified",
+      "group": "prediction",
+      "note": "PL cached wM; VR causal lag2 EMA0.3 RMB-derived world-frame w"
+    },
+    {
+      "node_id": "N6",
+      "name": "Official metric comparison",
+      "path": "official_metric_comparison.csv",
+      "category": "evaluation",
+      "fields": "10 MotionEvaluator metrics plus TotalCapture 1-7 m translation-window errors",
+      "split": "DIP test and TotalCapture s5 test",
+      "status": "verified",
+      "group": "metric",
+      "note": "Original test.MotionEvaluator and literal compare_realimu translation-window algorithm"
+    }
+  ],
+  "edges": [
+    {
+      "edge_id": "E1", "upstream_node": "N1", "downstream_node": "N3",
+      "script": "test.py", "function": "compare_realimu", "process_type": "inference",
+      "process_action": "original GP sequential inference with cached measured wM",
+      "input_fields": "RIM,RSB,RIS,aS,wS,pose", "output_fields": "pose_prediction,tran_prediction",
+      "split": "DIP official test", "status": "verified", "note": "unchanged baseline source"
+    },
+    {
+      "edge_id": "E2", "upstream_node": "N2", "downstream_node": "N3",
+      "script": "test.py", "function": "compare_realimu", "process_type": "inference",
+      "process_action": "original GP sequential inference on explicitly selected s5 names",
+      "input_fields": "RIM,RSB,RIS,aS,wS,pose,tran", "output_fields": "pose_prediction,tran_prediction",
+      "split": "TotalCapture official s5 test", "status": "verified", "note": "four named sequences"
+    },
+    {
+      "edge_id": "E3", "upstream_node": "N1", "downstream_node": "N4",
+      "script": "test.py", "function": "compare_realimu", "process_type": "inference",
+      "process_action": "current G0 sequential inference with default-off override",
+      "input_fields": "RIM,RSB,RIS,aS,wS,pose", "output_fields": "pose_prediction,tran_prediction",
+      "split": "DIP official test", "status": "verified", "note": "bit-identical to N3"
+    },
+    {
+      "edge_id": "E4", "upstream_node": "N2", "downstream_node": "N4",
+      "script": "test.py", "function": "compare_realimu", "process_type": "inference",
+      "process_action": "current G0 sequential inference on s5",
+      "input_fields": "RIM,RSB,RIS,aS,wS,pose,tran", "output_fields": "pose_prediction,tran_prediction",
+      "split": "TotalCapture official s5 test", "status": "verified", "note": "bit-identical to N3"
+    },
+    {
+      "edge_id": "E5", "upstream_node": "N1", "downstream_node": "N5",
+      "script": "custom_code/extra/run_official_test_parity.py", "function": "G2VRNet.forward_frame",
+      "process_type": "causal inference", "process_action": "replace VR-only angular velocity after causal RMB lag2 EMA",
+      "input_fields": "RMB history,current RMB,cached wM,aM", "output_fields": "pose_prediction,tran_prediction",
+      "split": "DIP official test", "status": "verified", "note": "no future or GT input"
+    },
+    {
+      "edge_id": "E6", "upstream_node": "N2", "downstream_node": "N5",
+      "script": "custom_code/extra/run_official_test_parity.py", "function": "G2VRNet.forward_frame",
+      "process_type": "causal inference", "process_action": "replace VR-only angular velocity after causal RMB lag2 EMA",
+      "input_fields": "RMB history,current RMB,cached wM,aM", "output_fields": "pose_prediction,tran_prediction",
+      "split": "TotalCapture official s5 test", "status": "verified", "note": "no future or GT input"
+    },
+    {
+      "edge_id": "E7", "upstream_node": "N3", "downstream_node": "N6",
+      "script": "custom_code/extra/summarize_official_test_parity.py", "function": "evaluate",
+      "process_type": "official evaluation", "process_action": "MotionEvaluator and translation windows",
+      "input_fields": "pose_prediction,tran_prediction,pose GT,tran GT", "output_fields": "official metrics",
+      "split": "DIP and TotalCapture s5 test", "status": "verified", "note": "baseline row"
+    },
+    {
+      "edge_id": "E8", "upstream_node": "N4", "downstream_node": "N6",
+      "script": "custom_code/extra/summarize_official_test_parity.py", "function": "evaluate",
+      "process_type": "official evaluation", "process_action": "MotionEvaluator and translation windows",
+      "input_fields": "pose_prediction,tran_prediction,pose GT,tran GT", "output_fields": "official metrics",
+      "split": "DIP and TotalCapture s5 test", "status": "verified", "note": "G0 parity row"
+    },
+    {
+      "edge_id": "E9", "upstream_node": "N5", "downstream_node": "N6",
+      "script": "custom_code/extra/summarize_official_test_parity.py", "function": "evaluate",
+      "process_type": "official evaluation", "process_action": "MotionEvaluator and translation windows",
+      "input_fields": "pose_prediction,tran_prediction,pose GT,tran GT", "output_fields": "official metrics",
+      "split": "DIP and TotalCapture s5 test", "status": "verified", "note": "G2 row"
+    }
+  ]
+}

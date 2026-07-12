@@ -64,6 +64,24 @@ Artifacts: `data/experiments/gp_w_input_swap_lag2_ema03_20260712/`.
 
 Linked experiment log: `EXP-20260712-gp-w-input-swap-lag2-ema03`.
 
+### gp_w_input_swap_official_test_parity_20260712 — original test.py G2 parity audit
+
+Status: full official-protocol comparison completed; G0 parity passed exactly.
+
+Replaced module: no learned module. G2 changes only the VR-s1 angular-velocity source. PL continues to consume cached measured wM.
+
+Input/output contract: `RMB=R_M_B`; causal world/model-frame `log(RMB[t] @ RMB[t-2]^T)/(2dt)`, frames 0-1 zero, frame 2 raw initialization, EMA beta 0.3 thereafter. Default `forward_frame` behavior remains unchanged.
+
+Training/evaluation: no training; fixed weight SHA-256 `081486...e7014da`. Baseline exact commit 90523d6 original `test.py`/`net.py`; current G0/G2 exact experiment commit 20bfd00. Unchanged `compare_realimu`, `MotionEvaluator`, and original 1-7 m translation-window algorithm. Full DIP 19 sequences and TotalCapture official-calibration s5 four-sequence split.
+
+Measured result: G0 pose, translation, rotation-angle, and every aggregate metric difference versus baseline are exactly zero. G2 changes official pose aggregates by less than 0.08%; seven of eight TotalCapture pose aggregates are slightly worse. TotalCapture 1-7 m translation-window errors improve by 17.03%, 23.47%, 27.28%, 29.16%, 31.26%, 32.58%, and 31.85%, respectively, with 4/4 sequence wins for every window. Root jitter worsens 17.38% on TotalCapture and 3.06% on DIP; joint jitter worsens 1.84% and 2.79%.
+
+Conclusion: use the category `G2 姿态持平、平移改善、jitter 变差`. Do not state unqualified overall superiority and do not use custom Root RMSE/drift as the official conclusion.
+
+Artifacts: `data/experiments/gp_w_input_swap_official_test_parity_20260712/`.
+
+Linked experiment log: `EXP-20260712-gp-w-input-swap-official-test-parity`.
+
 ## 1. Current Best Summary
 
 Policy update on 2026-06-07: the project mainline is no longer to keep scaling the best TotalCapture/processed-input artifact directly. The new mainline is to first reproduce the official baseline route, then evaluate replacement modules under the same route:

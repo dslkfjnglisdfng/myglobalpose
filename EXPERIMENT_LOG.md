@@ -16438,3 +16438,25 @@ Artifacts: `data/experiments/gp_w_input_swap_lag2_ema03_20260712/config.json`, `
 Interpretation: improved FK consistency alone is insufficient for a frozen GP trained on a different input distribution. A worse test-time swap does not prove the causal signal is ineffective; matched-input retraining is required for that claim.
 
 Claim support: full test result.
+
+### EXP-20260712-gp-w-input-swap-official-test-parity - original test.py G2 comparison
+
+Question: Under the exact original GlobalPose `test.py` protocol, does replacing only VR angular velocity with causal RMB-derived world-frame w outperform the official baseline?
+
+Baseline/current: baseline exact commit `90523d6f38c28ee3a1afd27346cd3624c5efe38a`; current G0/G2 exact experiment commit `20bfd00fa48d14d4f08d6381fafc65eb01a9d2fb`. `test.py` SHA-256 is identical (`96fd4369...fc55fd2`). Fixed weight SHA-256 before/after: `0814864603885aa20165624de8db101a1d6eb9d38a7cddb8bbde39074e7014da`.
+
+Protocol: unchanged `test.compare_realimu` and `test.MotionEvaluator`; original 1-7 m translation-window pair construction. DIP uses all 19 `dipimu.pt` test sequences. TotalCapture uses `totalcapture_officalib.pt` restricted by explicit names to `s5_freestyle1`, `s5_freestyle3`, `s5_rom3`, `s5_walking2`. Seeds fixed to zero, Torch threads/inter-op threads fixed to one, cuDNN benchmark off/deterministic on, GPU 1. No training or checkpoint/data mutation.
+
+Implementation: root `net.py` gains default-off `w_pl_override`/`w_vr_override`; default G0 path remains bit-compatible. `G2VRNet` resets an independent causal RMB state in every `rnn_initialize` and calls the default model with only `w_vr_override`. Causal contract is lag 2, EMA beta 0.3, 60 Hz, `RMB[t] @ RMB[t-2]^T`, no future or GT inputs.
+
+Commands: py_compile; 30-frame baseline/G0/G2 smoke; `/home/lingfeng/bin/longrun -- custom_code/extra/scripts/run_gp_official_test_parity_stage.sh baseline_g0`; parity gate; `/home/lingfeng/bin/longrun -- custom_code/extra/scripts/run_gp_official_test_parity_stage.sh g2`; official evaluator summarization; lineage render; final table/report generation.
+
+Parity result: DIP and TotalCapture pose/tran element max and mean differences are all exactly zero; rotation-angle max/mean differences are zero; maximum official aggregate metric difference is zero. Gate passed.
+
+Official result: G2 pose is effectively tied but mostly directionally worse. TotalCapture official translation-window error changes: 1 m `0.126658 -> 0.105091`, 2 m `0.201038 -> 0.153863`, 3 m `0.279055 -> 0.202923`, 4 m `0.354172 -> 0.250884`, 5 m `0.410884 -> 0.282424`, 6 m `0.456512 -> 0.307762`, 7 m `0.497538 -> 0.339063`; all improve on 4/4 sequences. TotalCapture root jitter `0.399826 -> 0.469305` and joint jitter `0.859838 -> 0.875692` worsen. DIP root/joint jitter also worsen.
+
+Interpretation: supported category is `G2 姿态持平、平移改善、jitter 变差`. The unqualified statement “G2 is better than official baseline” is not supported. The official translation improvement is real and is not limited to the prior custom Root RMSE/drift metrics.
+
+Artifacts: `data/experiments/gp_w_input_swap_official_test_parity_20260712/`; full logs under each variant directory; comparison CSV, per-sequence CSV/statistics, parity JSON, metrics JSON, prediction samples, lineage registry/table, and SUMMARY.
+
+Claim support: full official test result with exact G0 parity.

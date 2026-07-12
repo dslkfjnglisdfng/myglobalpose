@@ -1,0 +1,163 @@
+{
+  "dataset": "totalcapture",
+  "test_py_sha256": "96fd4369e0eb01649726b23c5754fbeef803588022a47d17b5929078cfc55fd2",
+  "motion_evaluator_class": "test.MotionEvaluator",
+  "sequences": [
+    "s5_freestyle1",
+    "s5_freestyle3",
+    "s5_rom3",
+    "s5_walking2"
+  ],
+  "aggregate": {
+    "L SIP Err": {
+      "mean": 9.98981761932373,
+      "std": 4.460176467895508
+    },
+    "L Angle Err": {
+      "mean": 12.551104545593262,
+      "std": 4.4626336097717285
+    },
+    "L Joint Err": {
+      "mean": 4.520968437194824,
+      "std": 2.17472243309021
+    },
+    "L Vertex Err": {
+      "mean": 5.3009538650512695,
+      "std": 2.4565141201019287
+    },
+    "G SIP Err": {
+      "mean": 9.311655044555664,
+      "std": 4.486677169799805
+    },
+    "G Angle Err": {
+      "mean": 11.78155517578125,
+      "std": 4.6602277755737305
+    },
+    "G Joint Err": {
+      "mean": 3.812873363494873,
+      "std": 2.154285192489624
+    },
+    "G Vertex Err": {
+      "mean": 4.471029758453369,
+      "std": 2.3932762145996094
+    },
+    "Root Jitter": {
+      "mean": 0.46930477023124695,
+      "std": 0.6293696761131287
+    },
+    "Joint Jitter": {
+      "mean": 0.8756919503211975,
+      "std": 1.2145841121673584
+    },
+    "Translation 1m": {
+      "mean": 0.10509128868579865,
+      "std": 0.06648247689008713
+    },
+    "Translation 2m": {
+      "mean": 0.1538626104593277,
+      "std": 0.10024821013212204
+    },
+    "Translation 3m": {
+      "mean": 0.20292289555072784,
+      "std": 0.1295720636844635
+    },
+    "Translation 4m": {
+      "mean": 0.2508837580680847,
+      "std": 0.15286000072956085
+    },
+    "Translation 5m": {
+      "mean": 0.28242361545562744,
+      "std": 0.16602246463298798
+    },
+    "Translation 6m": {
+      "mean": 0.30776193737983704,
+      "std": 0.17279765009880066
+    },
+    "Translation 7m": {
+      "mean": 0.33906325697898865,
+      "std": 0.17386308312416077
+    }
+  },
+  "per_sequence": [
+    {
+      "L SIP Err": 10.663494110107422,
+      "L Angle Err": 13.079691886901855,
+      "L Joint Err": 4.990663051605225,
+      "L Vertex Err": 5.714359283447266,
+      "G SIP Err": 9.188365936279297,
+      "G Angle Err": 11.933005332946777,
+      "G Joint Err": 3.753944158554077,
+      "G Vertex Err": 4.378480434417725,
+      "Root Jitter": 0.472983717918396,
+      "Joint Jitter": 0.8684907555580139,
+      "sequence": "s5_freestyle1",
+      "Translation 1m": 0.10318690538406372,
+      "Translation 2m": 0.14799004793167114,
+      "Translation 3m": 0.18608640134334564,
+      "Translation 4m": 0.2194024920463562,
+      "Translation 5m": 0.2576516568660736,
+      "Translation 6m": 0.28520819544792175,
+      "Translation 7m": 0.3020353615283966
+    },
+    {
+      "L SIP Err": 12.167884826660156,
+      "L Angle Err": 13.495837211608887,
+      "L Joint Err": 5.2379350662231445,
+      "L Vertex Err": 6.059835910797119,
+      "G SIP Err": 11.757561683654785,
+      "G Angle Err": 12.926189422607422,
+      "G Joint Err": 4.867467403411865,
+      "G Vertex Err": 5.5476226806640625,
+      "Root Jitter": 0.8613869547843933,
+      "Joint Jitter": 1.7091007232666016,
+      "sequence": "s5_freestyle3",
+      "Translation 1m": 0.1807336062192917,
+      "Translation 2m": 0.31426888704299927,
+      "Translation 3m": 0.4292652904987335,
+      "Translation 4m": 0.5361125469207764,
+      "Translation 5m": 0.5925653576850891,
+      "Translation 6m": 0.642747163772583,
+      "Translation 7m": 0.6892890334129333
+    },
+    {
+      "L SIP Err": 7.882823467254639,
+      "L Angle Err": 11.83657169342041,
+      "L Joint Err": 3.6646974086761475,
+      "L Vertex Err": 4.513467788696289,
+      "G SIP Err": 8.056185722351074,
+      "G Angle Err": 11.469807624816895,
+      "G Joint Err": 3.2603394985198975,
+      "G Vertex Err": 3.9346165657043457,
+      "Root Jitter": 0.06255053728818893,
+      "Joint Jitter": 0.11871496587991714,
+      "sequence": "s5_rom3",
+      "Translation 1m": 0.08006225526332855,
+      "Translation 2m": 0.07349502295255661,
+      "Translation 3m": 0.10121176391839981,
+      "Translation 4m": 0.1415015459060669,
+      "Translation 5m": 0.15997929871082306,
+      "Translation 6m": 0.1735583394765854,
+      "Translation 7m": 0.2283702939748764
+    },
+    {
+      "L SIP Err": 9.245068550109863,
+      "L Angle Err": 11.792317390441895,
+      "L Joint Err": 4.190578460693359,
+      "L Vertex Err": 4.916153430938721,
+      "G SIP Err": 8.244507789611816,
+      "G Angle Err": 10.797220230102539,
+      "G Joint Err": 3.369741916656494,
+      "G Vertex Err": 4.023399829864502,
+      "Root Jitter": 0.4802979528903961,
+      "Joint Jitter": 0.8064612746238708,
+      "sequence": "s5_walking2",
+      "Translation 1m": 0.05638234689831734,
+      "Translation 2m": 0.07969645410776138,
+      "Translation 3m": 0.09512810409069061,
+      "Translation 4m": 0.10651845484972,
+      "Translation 5m": 0.11949809640645981,
+      "Translation 6m": 0.12953400611877441,
+      "Translation 7m": 0.13655826449394226
+    }
+  ]
+}

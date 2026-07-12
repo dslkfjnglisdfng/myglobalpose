@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: strict zero-shot test-time angular-velocity input swap completed on official GP weights
-Current task: compare cached measured wM with causal RMB-derived world-frame w at PL only, VR only, and both
-Review state: Implemented and validated with numerical tests, two smoke runs, full DIP test, and all four TotalCapture official test sequences
-Current changed files: custom_code/modified_official/net.py, custom_code/extra/gp_w_input_swap.py, evaluate/merge/summarize scripts, tests, experiment summary artifacts, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
-Current module: test-time PL/VR angular-velocity source interface; all learned modules and physics remain frozen
-Current replacement version: `gp_w_input_swap_lag2_ema03_20260712`
-Current experiment: `EXP-20260712-gp-w-input-swap-lag2-ema03`.
-Current result: causal RMB w reproduces the FK-consistency gain (RMSE 0.674296 vs cached 1.234275), but zero-shot pose does not improve consistently. TotalCapture G3 worsens local pose while improving root translation RMSE 0.765232 -> 0.486076 m, drift 1.296737 -> 0.824403 m, and foot slip 0.109305 -> 0.065665 m/s.
+Current stage: official `test.py` parity audit for G2 VR-only angular-velocity swap completed
+Current task: compare baseline commit 90523d6 original `compare_realimu` against current G0 and G2 under identical official metrics
+Review state: Approved for next step
+Current changed files: root net.py default-off w-source interface, official parity runner/summarizer/finalizer, experiment tables/JSON/SUMMARY, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
+Current module: VR-s1 angular-velocity input source only; PL, IK1, IK2, VR weights, acceleration, RMB, physics, contact, and fusion are frozen
+Current replacement version: `gp_w_input_swap_official_test_parity_20260712`
+Current experiment: `EXP-20260712-gp-w-input-swap-official-test-parity`.
+Current result: G0 is bit-identical to baseline on all DIP and TotalCapture-s5 frames and official metrics. G2 pose is effectively tied but directionally mostly worse; official TotalCapture 1-7 m translation-window error improves 17.0%-32.6% on all 4/4 sequences, while root/joint jitter worsens.
 Current blocker: none
-Next action: if the causal RMB w line is pursued, use matched-input retraining; do not interpret a worse zero-shot swap as proof that the signal is useless.
-Git state: dirty worktree with existing unrelated edits; do not revert unrelated files
-CodeGraph state: healthy native index checked from `/home/lingfeng/projects/GlobalposeMy`, 261 files indexed
-Detailed logs: `data/experiments/gp_w_input_swap_lag2_ema03_20260712/SUMMARY.md`, `comparison.csv`, per-sequence JSON, and EXPERIMENT_LOG.md `EXP-20260712-gp-w-input-swap-lag2-ema03`
+Next action: describe G2 as pose-tied/translation-better/jitter-worse; matched-input retraining is required before changing the official input distribution in a selected model.
+Git state: isolated experiment branch from commit 20bfd00; original dirty worktree left untouched
+CodeGraph state: healthy native index checked from `/home/lingfeng/projects/GlobalposeMy`, 826 files indexed
+Detailed logs: `data/experiments/gp_w_input_swap_official_test_parity_20260712/SUMMARY.md`, official comparison CSVs, parity JSON, per-sequence statistics, and `EXP-20260712-gp-w-input-swap-official-test-parity`
 
 ## 0. Version-Line Reading Guide
 

@@ -1,0 +1,236 @@
+[
+  {
+    "path": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/data/test_datasets/dipimu.pt",
+    "exists": true,
+    "is_dir": false,
+    "size_bytes": 42496003,
+    "sha256": "3f411029fac8ff40078c836346bab99b47199d9953a7d1c245b983d931b1880c",
+    "content": {
+      "name": {
+        "type": "list",
+        "length": 19,
+        "sample": "s09_01_a"
+      },
+      "RIM": {
+        "type": "list",
+        "length": 19,
+        "sample": {
+          "type": "Tensor",
+          "shape": [
+            6,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        }
+      },
+      "RSB": {
+        "type": "list",
+        "length": 19,
+        "sample": {
+          "type": "Tensor",
+          "shape": [
+            6,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        }
+      },
+      "RIS": {
+        "type": "list",
+        "length": 19,
+        "sample": {
+          "type": "Tensor",
+          "shape": [
+            4757,
+            6,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        }
+      },
+      "aS": {
+        "type": "list",
+        "length": 19,
+        "sample": {
+          "type": "Tensor",
+          "shape": [
+            4757,
+            6,
+            3
+          ],
+          "dtype": "torch.float32"
+        }
+      },
+      "wS": {
+        "type": "list",
+        "length": 19,
+        "sample": {
+          "type": "Tensor",
+          "shape": [
+            4757,
+            6,
+            3
+          ],
+          "dtype": "torch.float32"
+        }
+      },
+      "mS": {
+        "type": "list",
+        "length": 19,
+        "sample": {
+          "type": "Tensor",
+          "shape": [
+            4757,
+            6,
+            3
+          ],
+          "dtype": "torch.float32"
+        }
+      },
+      "tran": {
+        "type": "list",
+        "length": 19,
+        "sample": {
+          "type": "Tensor",
+          "shape": [
+            4757,
+            3
+          ],
+          "dtype": "torch.float32"
+        }
+      },
+      "pose": {
+        "type": "list",
+        "length": 19,
+        "sample": {
+          "type": "Tensor",
+          "shape": [
+            4757,
+            72
+          ],
+          "dtype": "torch.float32"
+        }
+      }
+    }
+  },
+  {
+    "path": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/data/test_datasets/totalcapture_officalib.pt",
+    "exists": true,
+    "is_dir": false,
+    "size_bytes": 129173302,
+    "sha256": "075de0371e7b0b567b1485282cb2bbfee523d64fb499e59e72251ae12b6f637a",
+    "content": {
+      "name": {
+        "type": "list",
+        "length": 45,
+        "sample": "s1_acting1"
+      },
+      "RIM": {
+        "type": "list",
+        "length": 45,
+        "sample": {
+          "type": "Tensor",
+          "shape": [
+            6,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        }
+      },
+      "RSB": {
+        "type": "list",
+        "length": 45,
+        "sample": {
+          "type": "Tensor",
+          "shape": [
+            6,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        }
+      },
+      "RIS": {
+        "type": "list",
+        "length": 45,
+        "sample": {
+          "type": "Tensor",
+          "shape": [
+            4113,
+            6,
+            3,
+            3
+          ],
+          "dtype": "torch.float32"
+        }
+      },
+      "aS": {
+        "type": "list",
+        "length": 45,
+        "sample": {
+          "type": "Tensor",
+          "shape": [
+            4113,
+            6,
+            3
+          ],
+          "dtype": "torch.float32"
+        }
+      },
+      "wS": {
+        "type": "list",
+        "length": 45,
+        "sample": {
+          "type": "Tensor",
+          "shape": [
+            4113,
+            6,
+            3
+          ],
+          "dtype": "torch.float32"
+        }
+      },
+      "mS": {
+        "type": "list",
+        "length": 45,
+        "sample": {
+          "type": "Tensor",
+          "shape": [
+            4113,
+            6,
+            3
+          ],
+          "dtype": "torch.float32"
+        }
+      },
+      "tran": {
+        "type": "list",
+        "length": 45,
+        "sample": {
+          "type": "Tensor",
+          "shape": [
+            4113,
+            3
+          ],
+          "dtype": "torch.float32"
+        }
+      },
+      "pose": {
+        "type": "list",
+        "length": 45,
+        "sample": {
+          "type": "Tensor",
+          "shape": [
+            4113,
+            72
+          ],
+          "dtype": "torch.float32"
+        }
+      }
+    }
+  }
+]

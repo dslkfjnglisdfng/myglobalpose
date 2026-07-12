@@ -634,9 +634,14 @@ class GPNet(torch.nn.Module):
         return torch.from_numpy(refined_pose), torch.from_numpy(refined_tran), debug
 
     @torch.no_grad()
-    def forward_frame(self, a, w, R, l4_a=None, l4_w=None, l4_R=None):
+    def forward_frame(
+        self, a, w, R, l4_a=None, l4_w=None, l4_R=None,
+        w_pl_override=None, w_vr_override=None,
+    ):
+        w_pl = w if w_pl_override is None else w_pl_override
+        w_vr = w if w_vr_override is None else w_vr_override
         aRB = a.mm(R[5])
-        wRB = w.mm(R[5])
+        wRB = w_pl.mm(R[5])
         RRB = R[5].t().matmul(R[:5])
         gR0 = -R[5, 1]
 
@@ -687,7 +692,7 @@ class GPNet(torch.nn.Module):
 
         # VR-s1
         aRB = a.cpu().mm(pose[0])
-        wRB = w.cpu().mm(pose[0])
+        wRB = w_vr.cpu().mm(pose[0])
         x = torch.cat((RRJ.ravel(), pRJ.ravel(), aRB.ravel(), wRB.ravel(), gR2.cpu())).to(gR2.device)
         x, self.vr1hc = self.vrnet.rnn(x.view(1, 1, -1), self.vr1hc)
         x = self.vrnet.linear2(x.squeeze())  # vRR_V, vRR_H, stationary_prob
