@@ -16162,7 +16162,7 @@ Preserved contract: same 102D cache input, train-only v/a normalization, full-se
 
 Validation: eight unit tests pass. Isolated GPU1 resume smoke used two cached sequences: legacy formal `last.pt` resumed epoch 17->18, then native Lightning `last.ckpt` resumed 18->19. Final smoke selection was `0.013525`; gradients were v head `0.124415`, a head `0.000612`, gravity head `0.052284`; all values finite. Artifact: `data/experiments/pl_va_state_v1_lag2_ema03_20260712/smoke/lightning_refactor_v2/`.
 
-Formal checkpoint boundary: old runner stopped safely with formal `best.pt` epoch 14 selection `0.115204` and `last.pt` epoch 17 selection `0.116224`. Formal Lightning resume pending after commit/push.
+Formal checkpoint boundary: old runner stopped safely with formal `best.pt` epoch 14 selection `0.115204` and `last.pt` epoch 17 selection `0.116224`. Formal Lightning training resumed from that `last.pt` on GPU1: longrun PID `1274144`, train PID `1274191`, log `data/experiments/pl_va_state_v1_lag2_ema03_20260712/logs/formal_lightning_resume.log`.
 
 Claim support: implementation and resume smoke only; no new module or full-pipeline accuracy claim.
 
