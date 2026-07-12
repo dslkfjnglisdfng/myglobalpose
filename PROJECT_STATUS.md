@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: TotalCapture FK/IMU q-smoothing diagnostic completed after both-smooth protocol and bounded smooth pose/rJS diagnostics
-Current task: evaluate whether smoothing only `q(t)=[tran, pose]`, then deriving FK acceleration without FK-acc post-smoothing, supports B-spline control-point refinement
-Review state: Implemented and validated with smoke plus full TotalCapture official test; q-smoothing does not pass the B-spline refinement gate
-Current changed files: code/tools/evaluate_q_smoothing_fk_imu_acc_consistency.py, code/outputs/q_smoothing_fk_imu_acc_consistency_smoke/, code/outputs/q_smoothing_fk_imu_acc_consistency_20260707_004014/, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
-Current module: data diagnostic only
-Current replacement version: none
-Current experiment: `EXP-20260707-q-smoothing-fk-imu-acc-consistency`.
-Current result: Full TotalCapture official q-smoothing diagnostic keeps `r_JS_projected["savgol9_p3_fd"]` fixed and smooths only q. With no FK-acceleration post-smoothing, centered-MA21 target best is `bspline_q_knot10` RMSE `2.751086`, L2 `2.844688`, corr `0.899847`, cosine `0.897525`, p95 `9.188947`; lowpass-5Hz target best is `raw_q` RMSE `2.598585`. No B-spline method passes the refinement gate because B-spline q deviations are too large: knot10 mean translation delta `0.775097 m`, mean pose delta `17.990561 deg`.
+Current stage: strict zero-shot test-time angular-velocity input swap completed on official GP weights
+Current task: compare cached measured wM with causal RMB-derived world-frame w at PL only, VR only, and both
+Review state: Implemented and validated with numerical tests, two smoke runs, full DIP test, and all four TotalCapture official test sequences
+Current changed files: custom_code/modified_official/net.py, custom_code/extra/gp_w_input_swap.py, evaluate/merge/summarize scripts, tests, experiment summary artifacts, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
+Current module: test-time PL/VR angular-velocity source interface; all learned modules and physics remain frozen
+Current replacement version: `gp_w_input_swap_lag2_ema03_20260712`
+Current experiment: `EXP-20260712-gp-w-input-swap-lag2-ema03`.
+Current result: causal RMB w reproduces the FK-consistency gain (RMSE 0.674296 vs cached 1.234275), but zero-shot pose does not improve consistently. TotalCapture G3 worsens local pose while improving root translation RMSE 0.765232 -> 0.486076 m, drift 1.296737 -> 0.824403 m, and foot slip 0.109305 -> 0.065665 m/s.
 Current blocker: none
-Next action: do not enter B-spline control-point refinement from this q-smoothing diagnostic. Keep centered_ma21 smooth/low-frequency sensor-frame specific force as the measurement target, but require a q parameterization with acceptable mean pose/translation deviation before another refinement attempt.
+Next action: if the causal RMB w line is pursued, use matched-input retraining; do not interpret a worse zero-shot swap as proof that the signal is useless.
 Git state: dirty worktree with existing unrelated edits; do not revert unrelated files
 CodeGraph state: healthy native index checked from `/home/lingfeng/projects/GlobalposeMy`, 261 files indexed
-Detailed logs: `code/outputs/q_smoothing_fk_imu_acc_consistency_20260707_004014/summary.md`, `summary.json`, CSVs, figures, and EXPERIMENT_LOG.md `EXP-20260707-q-smoothing-fk-imu-acc-consistency`
+Detailed logs: `data/experiments/gp_w_input_swap_lag2_ema03_20260712/SUMMARY.md`, `comparison.csv`, per-sequence JSON, and EXPERIMENT_LOG.md `EXP-20260712-gp-w-input-swap-lag2-ema03`
 
 ## 0. Version-Line Reading Guide
 

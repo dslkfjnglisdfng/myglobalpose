@@ -1,0 +1,99 @@
+{
+  "dip": {
+    "G1_pl_swap": {
+      "motion.local_sip_deg": 9,
+      "motion.local_angle_deg": 6,
+      "motion.local_joint_cm": 10,
+      "motion.local_mesh_cm": 9,
+      "motion.global_sip_deg": 7,
+      "motion.global_angle_deg": 5,
+      "motion.global_joint_cm": 10,
+      "motion.global_mesh_cm": 9,
+      "motion.root_jitter_km_s3": 14,
+      "motion.joint_jitter_km_s3": 15
+    },
+    "G2_vr_swap": {
+      "motion.local_sip_deg": 9,
+      "motion.local_angle_deg": 3,
+      "motion.local_joint_cm": 9,
+      "motion.local_mesh_cm": 10,
+      "motion.global_sip_deg": 7,
+      "motion.global_angle_deg": 3,
+      "motion.global_joint_cm": 6,
+      "motion.global_mesh_cm": 8,
+      "motion.root_jitter_km_s3": 4,
+      "motion.joint_jitter_km_s3": 4
+    },
+    "G3_all_swap": {
+      "motion.local_sip_deg": 9,
+      "motion.local_angle_deg": 6,
+      "motion.local_joint_cm": 10,
+      "motion.local_mesh_cm": 9,
+      "motion.global_sip_deg": 7,
+      "motion.global_angle_deg": 5,
+      "motion.global_joint_cm": 10,
+      "motion.global_mesh_cm": 9,
+      "motion.root_jitter_km_s3": 8,
+      "motion.joint_jitter_km_s3": 8
+    }
+  },
+  "totalcapture": {
+    "G1_pl_swap": {
+      "motion.local_sip_deg": 1,
+      "motion.local_angle_deg": 1,
+      "motion.local_joint_cm": 1,
+      "motion.local_mesh_cm": 1,
+      "motion.global_sip_deg": 1,
+      "motion.global_angle_deg": 2,
+      "motion.global_joint_cm": 1,
+      "motion.global_mesh_cm": 1,
+      "motion.root_jitter_km_s3": 4,
+      "motion.joint_jitter_km_s3": 4,
+      "root.root_translation_rmse_m": 4,
+      "root.root_translation_first_frame_aligned_rmse_m": 4,
+      "root.root_trajectory_drift_m": 3,
+      "root.root_velocity_rmse_m_s": 4,
+      "root.max_frame_root_step_m": 2,
+      "root.contact_velocity_mean_m_s": 2,
+      "root.foot_slip_mean_m_s": 3
+    },
+    "G2_vr_swap": {
+      "motion.local_sip_deg": 1,
+      "motion.local_angle_deg": 0,
+      "motion.local_joint_cm": 1,
+      "motion.local_mesh_cm": 1,
+      "motion.global_sip_deg": 1,
+      "motion.global_angle_deg": 2,
+      "motion.global_joint_cm": 2,
+      "motion.global_mesh_cm": 2,
+      "motion.root_jitter_km_s3": 0,
+      "motion.joint_jitter_km_s3": 1,
+      "root.root_translation_rmse_m": 3,
+      "root.root_translation_first_frame_aligned_rmse_m": 3,
+      "root.root_trajectory_drift_m": 3,
+      "root.root_velocity_rmse_m_s": 0,
+      "root.max_frame_root_step_m": 2,
+      "root.contact_velocity_mean_m_s": 4,
+      "root.foot_slip_mean_m_s": 4
+    },
+    "G3_all_swap": {
+      "motion.local_sip_deg": 1,
+      "motion.local_angle_deg": 1,
+      "motion.local_joint_cm": 1,
+      "motion.local_mesh_cm": 1,
+      "motion.global_sip_deg": 1,
+      "motion.global_angle_deg": 2,
+      "motion.global_joint_cm": 1,
+      "motion.global_mesh_cm": 1,
+      "motion.root_jitter_km_s3": 4,
+      "motion.joint_jitter_km_s3": 4,
+      "root.root_translation_rmse_m": 4,
+      "root.root_translation_first_frame_aligned_rmse_m": 4,
+      "root.root_trajectory_drift_m": 4,
+      "root.root_velocity_rmse_m_s": 4,
+      "root.max_frame_root_step_m": 3,
+      "root.contact_velocity_mean_m_s": 4,
+      "root.foot_slip_mean_m_s": 4
+    }
+  }
+}

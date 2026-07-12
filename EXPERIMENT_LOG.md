@@ -16416,3 +16416,25 @@ Interpretation: smoothing only q is not equivalent to the earlier both-smooth FK
 Claim support: full TotalCapture official test diagnostic.
 
 Next action: keep using smooth/low-frequency sensor-frame specific force as the measurement target, but require a q parameterization with acceptable mean pose/translation deviation before another refinement attempt. Do not optimize raw acceleration and do not promote this diagnostic to PL/IK/VR/full-pipeline claims.
+
+### EXP-20260712-gp-w-input-swap-lag2-ema03 - official GP zero-shot angular velocity swap
+
+Question: Does replacing cached measured world/model-frame wM with strictly causal RMB-derived w improve a frozen official GlobalPose model?
+
+Change tested: G0 cached/cached, G1 causal PL only, G2 causal VR only, G3 causal PL+VR. Causal contract is lag 2, EMA beta 0.3, 60 Hz, `R[t] @ R[t-2]^T`, with an independent per-sequence streaming state.
+
+Dataset/split: official DIP test cache, 19 sequences; official TotalCapture test cache, all four s5 test sequences.
+
+Commands: py_compile; direct five-test numerical suite; 120-frame one-sequence DIP and TotalCapture smoke; `run_gp_w_input_swap_full.sh dip`; `run_gp_w_input_swap_full.sh totalcapture`; analytic FK input audit; summary generation.
+
+Baseline: commit `90523d6f38c28ee3a1afd27346cd3624c5efe38a`, fixed `data/weights.pt`, no training and no learned-module/physics/acceleration/RMB/contact changes.
+
+Result: no consistent zero-shot pose improvement. TotalCapture G3 local SIP 9.674329 -> 10.626745 deg and local joint 4.385540 -> 4.989192 cm, but root translation RMSE 0.765232 -> 0.486076 m, drift 1.296737 -> 0.824403 m, joint jitter 0.758003 -> 0.481362 km/s^3, and foot slip 0.109305 -> 0.065665 m/s. G2 preserves pose approximately but worsens root jitter while improving root translation and slip.
+
+Input audit: cached wM vs FK RMSE/Pearson 1.234275/0.725116; causal RMB w vs FK 0.674296/0.872634.
+
+Artifacts: `data/experiments/gp_w_input_swap_lag2_ema03_20260712/config.json`, `input_signal_audit.json`, `dip_test/`, `totalcapture_test/`, `comparison.csv`, `SUMMARY.md`, and `logs/`.
+
+Interpretation: improved FK consistency alone is insufficient for a frozen GP trained on a different input distribution. A worse test-time swap does not prove the causal signal is ineffective; matched-input retraining is required for that claim.
+
+Claim support: full test result.

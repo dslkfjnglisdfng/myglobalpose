@@ -1,0 +1,37 @@
+{
+  "experiment": "gp_w_input_swap_lag2_ema03_20260712",
+  "baseline_commit": "90523d6f38c28ee3a1afd27346cd3624c5efe38a",
+  "weights": "data/weights.pt",
+  "weights_sha256": "0814864603885aa20165624de8db101a1d6eb9d38a7cddb8bbde39074e7014da",
+  "fps": 60,
+  "dt": 0.016666666666666666,
+  "lag": 2,
+  "ema_beta": 0.3,
+  "RMB": "R_M_B body-to-model/world",
+  "delta_R": "RMB[t] @ RMB[t-2].transpose(-1,-2)",
+  "output_w_frame": "model/world M",
+  "variants": {
+    "G0_official": [
+      "cached",
+      "cached"
+    ],
+    "G1_pl_swap": [
+      "causal_RMB",
+      "cached"
+    ],
+    "G2_vr_swap": [
+      "cached",
+      "causal_RMB"
+    ],
+    "G3_all_swap": [
+      "causal_RMB",
+      "causal_RMB"
+    ]
+  },
+  "dip_cache": "data/dataset_work/L4Cache/prephysics_pose_velocity_diptest_official_neural_only_offset_r/baseline_cache_manifest.json",
+  "totalcapture_cache": "data/dataset_work/L4Cache/prephysics_pose_velocity_totalcapture_test_official_neural_only/baseline_cache_manifest.json",
+  "dip_sequences": 19,
+  "totalcapture_sequences": 4,
+  "contact_metric": "GT foot velocity <0.15m/s and GT foot height < floor+0.08m; report predicted foot speed and horizontal slip",
+  "fk_audit": "analytic RBDL space Jacobian with centered n=8 qdot reference only; swapped w remains causal"
+}

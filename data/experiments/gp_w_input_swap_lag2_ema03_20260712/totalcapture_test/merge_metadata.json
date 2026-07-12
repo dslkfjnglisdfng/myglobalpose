@@ -1,0 +1,15 @@
+{
+  "dataset": "totalcapture",
+  "parts": [
+    "data/experiments/gp_w_input_swap_lag2_ema03_20260712/totalcapture_parts/part_0",
+    "data/experiments/gp_w_input_swap_lag2_ema03_20260712/totalcapture_parts/part_1",
+    "data/experiments/gp_w_input_swap_lag2_ema03_20260712/totalcapture_parts/part_2",
+    "data/experiments/gp_w_input_swap_lag2_ema03_20260712/totalcapture_parts/part_3"
+  ],
+  "sequences": [
+    "s5_freestyle1",
+    "s5_freestyle3",
+    "s5_rom3",
+    "s5_walking2"
+  ]
+}

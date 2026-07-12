@@ -1,0 +1,109 @@
+{
+  "contract": "FK w = calc_space_Jacobian(q, body)[:3] @ qdot; qdot centered n=8 reference only",
+  "overall": {
+    "cached_wM_vs_FK_w": {
+      "rmse": 1.234274844491695,
+      "pearson": 0.7251161742677658,
+      "mean_l2": 1.0841188599465115,
+      "cosine": 0.7334634330218583
+    },
+    "causal_RMB_w_vs_FK_w": {
+      "rmse": 0.6742961396468958,
+      "pearson": 0.8726335277220894,
+      "mean_l2": 0.7158307668701509,
+      "cosine": 0.8094202584471716
+    },
+    "cached_wM_vs_causal_RMB_w": {
+      "rmse": 1.148146629333496,
+      "pearson": 0.7675271929535613,
+      "mean_l2": 1.0119969844818115,
+      "cosine": 0.7863642573356628
+    }
+  },
+  "per_sequence": {
+    "s5_freestyle1": {
+      "cached_wM_vs_FK_w": {
+        "rmse": 1.2420279142229014,
+        "pearson": 0.7485198532802896,
+        "mean_l2": 1.324258890994504,
+        "cosine": 0.743926859183478
+      },
+      "causal_RMB_w_vs_FK_w": {
+        "rmse": 0.7846226024099033,
+        "pearson": 0.8517752093123826,
+        "mean_l2": 0.9236979979982991,
+        "cosine": 0.8171490434250528
+      },
+      "cached_wM_vs_causal_RMB_w": {
+        "rmse": 1.1400158405303955,
+        "pearson": 0.7931634604039359,
+        "mean_l2": 1.2332501411437988,
+        "cosine": 0.7760888934135437
+      },
+      "fk_source": "analytic_rbdl_space_jacobian"
+    },
+    "s5_freestyle3": {
+      "cached_wM_vs_FK_w": {
+        "rmse": 1.937259173913511,
+        "pearson": 0.6787980040162209,
+        "mean_l2": 1.9671591766818641,
+        "cosine": 0.718697827407891
+      },
+      "causal_RMB_w_vs_FK_w": {
+        "rmse": 0.9843963467742413,
+        "pearson": 0.859835055889234,
+        "mean_l2": 1.232368561981526,
+        "cosine": 0.7882521249714741
+      },
+      "cached_wM_vs_causal_RMB_w": {
+        "rmse": 1.8023332357406616,
+        "pearson": 0.7296495780881211,
+        "mean_l2": 1.8408337831497192,
+        "cosine": 0.7617312669754028
+      },
+      "fk_source": "analytic_rbdl_space_jacobian"
+    },
+    "s5_rom3": {
+      "cached_wM_vs_FK_w": {
+        "rmse": 0.3861207135573076,
+        "pearson": 0.8627558940380822,
+        "mean_l2": 0.304491103899746,
+        "cosine": 0.6924309737917541
+      },
+      "causal_RMB_w_vs_FK_w": {
+        "rmse": 0.3058997171137568,
+        "pearson": 0.9073974779118285,
+        "mean_l2": 0.2326162864526172,
+        "cosine": 0.7763572961161137
+      },
+      "cached_wM_vs_causal_RMB_w": {
+        "rmse": 0.29556238651275635,
+        "pearson": 0.9184175281511545,
+        "mean_l2": 0.2459087371826172,
+        "cosine": 0.7883355021476746
+      },
+      "fk_source": "analytic_rbdl_space_jacobian"
+    },
+    "s5_walking2": {
+      "cached_wM_vs_FK_w": {
+        "rmse": 1.2260782210376213,
+        "pearson": 0.756767460073844,
+        "mean_l2": 1.248107525065569,
+        "cosine": 0.8022411548157218
+      },
+      "causal_RMB_w_vs_FK_w": {
+        "rmse": 0.6239946092055815,
+        "pearson": 0.9024831650290297,
+        "mean_l2": 0.7983036596440175,
+        "cosine": 0.8742509592796668
+      },
+      "cached_wM_vs_causal_RMB_w": {
+        "rmse": 1.1802949905395508,
+        "pearson": 0.774734768892508,
+        "mean_l2": 1.222266435623169,
+        "cosine": 0.8152386546134949
+      },
+      "fk_source": "analytic_rbdl_space_jacobian"
+    }
+  }
+}

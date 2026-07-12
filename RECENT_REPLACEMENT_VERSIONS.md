@@ -46,6 +46,24 @@ Version-line index:
 | `IMU offset / r_JS` | `footlock_transpose_v1`, `totalcapture_accfit_rjs_20260704`, `totalcapture_both_smooth_fk_imu_acc_20260705`, `q_smoothing_fk_imu_acc_consistency_20260707`, retired solver/net/hybrid routes | matched smoothing confirms accfit global rJS is the best TotalCapture FK/IMU acceleration diagnostic target tested; `centered_ma21` sensor-frame specific force remains the selected measurement, but q-only smoothing with unsmoothed FK acceleration does not pass the B-spline refinement gate |
 | `Baselines / official fine-tune` | official GPNet official/processed, TotalCapture fine-tune diagnostic | references only |
 
+### gp_w_input_swap_lag2_ema03_20260712 — zero-shot PL/VR w-source swap
+
+Status: full DIP and TotalCapture official test completed; diagnostic only, not selected as a universal replacement.
+
+Replaced module: no learned module. Test-time world/model-frame angular velocity source only.
+
+Input/output contract: `RMB=R_M_B`; causal `log(RMB[t] @ RMB[t-2]^T)/(2dt)`, frames 0-1 zero, frame 2 raw initialization, then EMA beta 0.3. PL retains `wM @ RMB_root`; VR retains `wM @ predicted_pose_root`.
+
+Training/evaluation: no training; fixed `data/weights.pt`; G0 cached/cached, G1 causal/cached, G2 cached/causal, G3 causal/causal. DIP test 19 sequences and TotalCapture official test 4 sequences.
+
+Measured result: TotalCapture G1/G3 worsen PL pRB and IK1 pRJ direct errors and local pose, while root translation/jitter/slip improve. G2 preserves pose approximately and improves translation/slip, but worsens root velocity RMSE and root jitter. Causal RMB w is closer to FK w (RMSE 0.674296, Pearson 0.872634) than cached wM (RMSE 1.234275, Pearson 0.725116).
+
+Conclusion: FK angular-velocity consistency does not translate into consistent zero-shot pose improvement. Negative zero-shot results do not invalidate the new signal because official GP was trained on cached measured wM; matched-input retraining is the next fair test.
+
+Artifacts: `data/experiments/gp_w_input_swap_lag2_ema03_20260712/`.
+
+Linked experiment log: `EXP-20260712-gp-w-input-swap-lag2-ema03`.
+
 ## 1. Current Best Summary
 
 Policy update on 2026-06-07: the project mainline is no longer to keep scaling the best TotalCapture/processed-input artifact directly. The new mainline is to first reproduce the official baseline route, then evaluate replacement modules under the same route:

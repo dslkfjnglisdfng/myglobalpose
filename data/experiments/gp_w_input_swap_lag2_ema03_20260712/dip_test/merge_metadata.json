@@ -1,0 +1,30 @@
+{
+  "dataset": "dip",
+  "parts": [
+    "data/experiments/gp_w_input_swap_lag2_ema03_20260712/dip_parts/part_0",
+    "data/experiments/gp_w_input_swap_lag2_ema03_20260712/dip_parts/part_1",
+    "data/experiments/gp_w_input_swap_lag2_ema03_20260712/dip_parts/part_2",
+    "data/experiments/gp_w_input_swap_lag2_ema03_20260712/dip_parts/part_3"
+  ],
+  "sequences": [
+    "s09_01_a",
+    "s09_01_b",
+    "s09_01_c",
+    "s09_02_a",
+    "s09_02_b",
+    "s09_03_a",
+    "s09_03_b",
+    "s09_04",
+    "s09_05",
+    "s10_01_a",
+    "s10_01_b",
+    "s10_01_c",
+    "s10_02",
+    "s10_03_a",
+    "s10_03_b",
+    "s10_04_a",
+    "s10_04_b",
+    "s10_04_c",
+    "s10_05"
+  ]
+}
