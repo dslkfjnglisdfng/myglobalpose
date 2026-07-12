@@ -16126,6 +16126,20 @@ Artifacts: `data/experiments/pl_va_state_v1_lag2_ema03_20260712/smoke/`, `audits
 
 Claim support: smoke plus full TotalCapture FK diagnostic. No DIP-FK result, AMASS-FK pass, formal training, DIP/TC module test, or full-pipeline result is claimed.
 
+### EXP-20260712-PL-VA-AMASS-consistent-cache-v1
+
+Question: can the AMASS PL-VA route remove the independent per-frame orientation noise while preserving sequence identity, pose/targets, acceleration, sensor order, and downstream cache fields?
+
+Method: `pl_va_state_amass_consistent_cache.py` reads the existing 1298-record paired original/offset-overlay cache, copies every field except RMB/wM, computes `RMB=R_M_B` from GT SMPL pose FK global rotations at joints `(18,19,4,5,15,0)`, and derives `wM=Log(R[t]R[t-1]^T)/dt` from that same RMB. The old cache remains untouched.
+
+Artifact: `data/dataset_work/L4Cache/pl_va_amass_fk_rmb_w_consistent_v1_20260712/baseline_cache_manifest.json`; 7 hashed shards, 1298 records, 1,118,012 frames.
+
+Gate: 10 records per shard, 70 total. New lag2/EMA0.3 versus offline centered GT-FK rotation derivative: RMSE `0.531030 rad/s`, mean L2 `0.466941 rad/s`, Pearson `0.860114`, cosine `0.763376`. Median sequence angular-step quantiles for both original and overlay: p50 `0.007581`, p95 `0.054451`, p99 `0.082085`, max `0.129758 rad`. Pearson >= 0.8 and no-jitter conditions passed.
+
+Formal runner: `CUDA_VISIBLE_DEVICES=1 ROOT=data/experiments/pl_va_state_v1_lag2_ema03_20260712 BATCH=8 /home/lingfeng/bin/longrun -- bash custom_code/extra/scripts/run_pl_va_state_v1_full.sh`. Current stage at writeback: building `caches/amass`; AMASS pretrain has not yet started.
+
+Claim support: validated cache construction and bounded all-shard gate; training/evaluation pending.
+
 Next action: run a bounded diagnostic with more frames/iterations only if needed, and judge success by the combined gate: acc residual decrease, held-out residual non-regression, small pose/tran deviation, gyro non-regression, jerk/high-frequency non-regression, and foot-sliding/contact non-regression.
 
 ### EXP-20260705-totalcapture-pose-refinement-tuning-sweep-stage1-180f - Conservative Mode A tuning sweep

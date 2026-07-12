@@ -78,6 +78,8 @@ def audit(manifest_path, max_sequences=4):
     measured = cat["cached_measured_wM"]
     comparisons = {key + "_vs_cached_measured_wM": detailed_stats(value[2:], measured[2:])
                    for key, value in cat.items() if key != "cached_measured_wM"}
+    comparisons["new_lag2_ema03_world_vs_offline_centered_fk_rotation"] = detailed_stats(
+        cat["new_lag2_ema03_world"][2:], cat["offline_centered_world"][2:])
     return {"manifest": str(manifest_path), "sequences": names,
             "frame_contract": "RMB=R_M_B; all comparisons in model/world M; PL conversion is wRB=wM@RMB_root",
             "method": ANGULAR_VELOCITY_METHOD, "lag": ANGULAR_VELOCITY_LAG,

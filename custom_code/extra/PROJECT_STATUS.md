@@ -2,16 +2,16 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: PL-VA-State-V1 lag2/EMA0.3 correction implemented and smoke passed; formal AMASS pretrain blocked by the AMASS RMB temporal-consistency gate
+Current stage: PL-VA-State-V1 lag2/EMA0.3 correction passed the rebuilt AMASS consistency gate; formal runner is generating the 102D AMASS cache before pretraining
 Current task: correct only the opt-in PL-VA angular-velocity feature to the validated causal world-frame lag2/EMA0.3 method
-Review state: Needs revision
+Review state: Approved for next step
 Current changed files: custom_code/extra/pl_va_state*.py, custom_code/extra/tests/test_pl_va_state.py, custom_code/extra/scripts/run_pl_va_state_v1_*.sh, custom_code/modified_official/net.py, project documents
 Current module: PL-s1 only; IK1, IK2, VR, root fusion, physics, evaluator, and data/weights.pt remain frozen
 Current replacement version: PL-VA-State-V1-lag2-EMA03
 Current experiment: `data/experiments/pl_va_state_v1_lag2_ema03_20260712`
-Current result: compile/unit/cache/train/eval smoke passed on two AMASS sequences capped at 240 frames; all outputs are finite. TotalCapture FK audit exactly reproduces lag2/beta0.3 RMSE 0.674296 and Pearson 0.872634 versus cached wM RMSE 1.234275/Pearson 0.725116. AMASS sampled RMB steps are abnormally large (original-view p50 about 0.139 rad/frame), consistent with independent per-frame orientation noise.
-Current blocker: AMASS training gate failed because temporal RMB jitter is present and a valid AMASS new-w-vs-FK Pearson has not yet been established; formal training must not start.
-Next action: generate a new versioned AMASS cache with temporally consistent RMB/w (remove independent per-frame nR or replace it with synchronized random walk), rerun the AMASS FK gate, then launch AMASS pretrain only if Pearson >= 0.8.
+Current result: a new non-overwriting cache derives six RMB rotations from GT SMPL pose FK and derives wM from the same RMB. Across 70 sampled sequences from all 7 shards, new-w vs offline GT-FK rotation reference has RMSE 0.531030, Pearson 0.860114, and cosine 0.763376; median sequence angular-step p50 is 0.007581 rad/frame for both original and overlay views. The formal gate passed.
+Current blocker: none at the angular-input/data gate; formal cache generation/training is still running and module/full-pipeline results are pending.
+Next action: allow the formal runner to finish AMASS cache/pretrain, DIP fine-tune, DIP/TotalCapture module eval, and conditional full-pipeline eval.
 Git state: dirty worktree with existing unrelated edits; do not revert unrelated files
 CodeGraph state: healthy native index checked from `/home/lingfeng/projects/GlobalposeMy`, 271 files indexed
 Detailed logs: `data/experiments/pl_va_state_v1_lag2_ema03_20260712/smoke/summary.json`, `audits/amass_training_gate.json`, and EXPERIMENT_LOG.md `EXP-20260712-PL-VA-State-V1-lag2-EMA03`

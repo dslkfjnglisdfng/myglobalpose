@@ -4,7 +4,7 @@ ROOT=${ROOT:-data/experiments/pl_va_state_v1_lag2_ema03_20260712}
 ENV=${ENV:-/home/lingfeng/.conda/envs/globalpose-gpu}; PY="$ENV/bin/python"
 export PYTHONPATH="$PWD/custom_code/modified_official:$PWD/custom_code/extra:$PWD:${PYTHONPATH:-}"
 export LD_LIBRARY_PATH="$ENV/lib:${LD_LIBRARY_PATH:-}"
-AMASS=data/dataset_work/L4Cache/prephysics_pose_velocity_amass_k2_paired_offset_overlay/baseline_cache_manifest.json
+AMASS=data/dataset_work/L4Cache/pl_va_amass_fk_rmb_w_consistent_v1_20260712/baseline_cache_manifest.json
 DIP_TRAIN=data/dataset_work/L4Cache/prephysics_pose_velocity_dip_train_globalpose_neural_only/baseline_cache_manifest.json
 DIP_VAL=data/dataset_work/L4Cache/prephysics_pose_velocity_dip_val_globalpose_neural_only/baseline_cache_manifest.json
 DIP_TEST=data/experiments/dip_official_protocol_check_20260607/dip_test_prephysics_neural_only/baseline_cache_manifest.json

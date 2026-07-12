@@ -648,7 +648,7 @@ Conclusion: smoke only; no module or pose improvement claim.
 
 ### PL-VA-State-V1-lag2-EMA03 — validated realtime RMB angular input
 
-Status: implementation and Stage 0 smoke passed; formal AMASS training blocked by the AMASS temporal-consistency gate.
+Status: implementation, Stage 0 smoke, and rebuilt AMASS temporal-consistency gate passed; formal runner launched.
 
 Replaced module: only the angular-velocity source inside opt-in PL-VA. Original PL, 102D layout, 33D network output, beta=0.7 p/v/a integrator, Butterworth acceleration, and downstream 18D PL/63D IK1 contracts are unchanged.
 
@@ -658,11 +658,11 @@ Validation: sequence/step max absolute difference is 0.0. TotalCapture official 
 
 Smoke: candidate pRB L2 `5.076698 cm`; direct-v L2 `4.983681 cm/s`; state-v L2 `4.983505 cm/s`; acceleration L2 `417.789276 cm/s2`; gravity angle `2.440315 deg`. Head gradients: v `2.532255`, a `0.008683`, gravity `0.070520`; integrated-position loss gradient norm `0.044016`.
 
-AMASS gate: failed. Sampled original sequences have RMB angular-step p50 about `0.139 rad/frame` and p95 about `0.256-0.261 rad/frame`; `process_amass_globalpose.py` applies an independent per-frame `nR` after gyro-consistent integration. Do not change formula/sign and do not fall back to measured wM. Build a new versioned temporally consistent cache before training.
+AMASS gate: the old cache failed because `process_amass_globalpose.py` applies independent per-frame `nR`. New cache `pl_va_amass_fk_rmb_w_consistent_v1_20260712` uses GT-pose SMPL FK global rotations for the same six IMU joints and derives wM from the same RMB. A 70-sequence, all-shard gate reports RMSE `0.531030`, Pearson `0.860114`, cosine `0.763376`, and angular-step p50 `0.007581 rad/frame`; gate passed without changing the lag2/EMA0.3 formula.
 
 Artifacts: `data/experiments/pl_va_state_v1_lag2_ema03_20260712/`; FK audit `/home/lingfeng/projects/imu_acc_explainability/code/outputs/pl_va_lag2_ema03_tc_fk_audit_20260712/`.
 
-Conclusion: angular-velocity implementation accepted; training data gate not accepted; no formal training or full-pipeline claim.
+Conclusion: angular-velocity implementation and rebuilt training-data gate accepted; formal training running. No module or full-pipeline improvement claim yet.
 
 ## Version: newpl_v1_processed_no_baseline
 
