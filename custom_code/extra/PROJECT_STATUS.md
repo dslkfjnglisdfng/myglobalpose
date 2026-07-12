@@ -2,19 +2,23 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: PL-VA-State-V1 optimized formal AMASS pretraining resumed from epoch 5; epoch 7 completed
-Current task: correct only the opt-in PL-VA angular-velocity feature to the validated causal world-frame lag2/EMA0.3 method
-Review state: Approved for next step
-Current changed files: custom_code/extra/pl_va_state*.py, custom_code/extra/tests/test_pl_va_state.py, custom_code/extra/scripts/run_pl_va_state_v1_*.sh, custom_code/modified_official/net.py, project documents
+Current stage: PL-VA-State-V1 AMASS pretraining paused safely at epoch 17 for a readability refactor to PyTorch Lightning; refactor smoke passed
+Current task: preserve the exact PL-VA training protocol while separating data, Lightning training logic, and CLI orchestration
+Review state: Implemented, validation pending
+Current changed files: custom_code/extra/pl_va_state_data.py, pl_va_state_lightning.py, pl_va_state_train.py, tests/test_pl_va_state.py, and project documents
 Current module: PL-s1 only; IK1, IK2, VR, root fusion, physics, evaluator, and data/weights.pt remain frozen
 Current replacement version: PL-VA-State-V1-lag2-EMA03
 Current experiment: `data/experiments/pl_va_state_v1_lag2_ema03_20260712`
-Current result: performance audit found 3.28x random-length padding plus one LSTM call per frame. Training now buckets complete sequences by length and executes each padded RNN batch in one cuDNN call while preserving the explicit p/v/a rollout. A representative 8-sequence 987-1367-frame forward/backward takes 1.74 s and 0.665 GB peak allocation. Formal epoch time fell from about 18 min to 2.5-2.7 min; the current best remains epoch 6 with selection 0.122884 after epoch 7 completed at 0.129433.
-Current blocker: none at the angular-input/data gate; formal cache generation/training is still running and module/full-pipeline results are pending.
-Next action: allow the optimized formal runner to finish AMASS pretrain, DIP fine-tune, DIP/TotalCapture module eval, and conditional full-pipeline eval.
+Current result: the manual trainer was replaced by `PLVADataModule`, `PLVAStateLightning`, `ProjectCheckpointCallback`, and a thin CLI. Complete-sequence length bucketing, masks, loss weights, selection metric, optimizer state, normalization, and legacy evaluator checkpoint contract are unchanged. Legacy `last.pt` resume passed from epoch 17 to 18; native `last.ckpt` resume passed from 18 to 19; all eight unit tests and all head gradients are finite. Formal best remains epoch 14 selection 0.115204 and last is epoch 17 selection 0.116224 until the Lightning runner resumes.
+Current blocker: none; formal Lightning resume is pending commit/push.
+Next action: commit the refactor, resume AMASS from epoch 17 with Lightning, then continue DIP fine-tune and module/full-pipeline gates.
 Git state: dirty worktree with existing unrelated edits; do not revert unrelated files
 CodeGraph state: healthy native index checked from `/home/lingfeng/projects/GlobalposeMy`, 271 files indexed
 Detailed logs: `data/experiments/pl_va_state_v1_lag2_ema03_20260712/smoke/summary.json`, `audits/amass_training_gate.json`, and EXPERIMENT_LOG.md `EXP-20260712-PL-VA-State-V1-lag2-EMA03`
+
+### PL-VA Lightning training code map
+
+Read in this order: `pl_va_state_data.py` for complete-sequence cache loading, length-bucket batching, padding, and masks; `pl_va_state_lightning.py` for the seven losses, `training_step`, `validation_step`, optimizer, and dual-format checkpoints; `pl_va_state_train.py` for argument validation, official/legacy initialization, resume selection, and `Trainer.fit`; finally `pl_va_state.py::PLVAStateV1.forward_sequence` for the actual network and differentiable p/v/a rollout. Lightning does not duplicate or redefine the state equations.
 
 ## 0. Version-Line Reading Guide
 

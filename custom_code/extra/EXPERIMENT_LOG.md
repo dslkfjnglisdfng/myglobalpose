@@ -16152,6 +16152,20 @@ Runner: longrun PID `1227673`, train PID `1227739`, exec session `11111`, log `d
 
 Claim support: implementation performance validation and one resumed formal epoch; final module/full-pipeline results pending.
 
+### EXP-20260712-PL-VA-Lightning-readability-refactor
+
+Question: can the optimized PL-VA full-sequence trainer be made readable without changing its scientific or checkpoint contract?
+
+Change: split the trainer into `pl_va_state_data.py` (manifest validation, complete-sequence dataset, deterministic length-bucket batch sampler, collate/mask, DataModule), `pl_va_state_lightning.py` (loss construction, LightningModule lifecycle, gradient reporting, dual-format checkpoint callback), and a thin `pl_va_state_train.py` CLI. Network/state equations remain exclusively in `pl_va_state.py`.
+
+Preserved contract: same 102D cache input, train-only v/a normalization, full-sequence one-reset rollout, batch size 8 formal route, all seven loss formulas and weights, validation selection `p + 0.25*v_state + 0.1*a + g`, Adam state, gradient clipping, angular method guard, and evaluator-compatible `best.pt/last.pt`. Lightning additionally writes self-contained `best.ckpt/last.ckpt`.
+
+Validation: eight unit tests pass. Isolated GPU1 resume smoke used two cached sequences: legacy formal `last.pt` resumed epoch 17->18, then native Lightning `last.ckpt` resumed 18->19. Final smoke selection was `0.013525`; gradients were v head `0.124415`, a head `0.000612`, gravity head `0.052284`; all values finite. Artifact: `data/experiments/pl_va_state_v1_lag2_ema03_20260712/smoke/lightning_refactor_v2/`.
+
+Formal checkpoint boundary: old runner stopped safely with formal `best.pt` epoch 14 selection `0.115204` and `last.pt` epoch 17 selection `0.116224`. Formal Lightning resume pending after commit/push.
+
+Claim support: implementation and resume smoke only; no new module or full-pipeline accuracy claim.
+
 Next action: run a bounded diagnostic with more frames/iterations only if needed, and judge success by the combined gate: acc residual decrease, held-out residual non-regression, small pose/tran deviation, gyro non-regression, jerk/high-frequency non-regression, and foot-sliding/contact non-regression.
 
 ### EXP-20260705-totalcapture-pose-refinement-tuning-sweep-stage1-180f - Conservative Mode A tuning sweep

@@ -666,6 +666,8 @@ Conclusion: angular-velocity implementation and rebuilt training-data gate accep
 
 Training performance correction: the first full-sequence trainer randomly mixed sequence lengths (3.28x padding amplification) and called the 3-layer LSTM once per frame. It was stopped after epoch 5 without deleting checkpoints. The corrected trainer length-buckets full sequences, calls cuDNN LSTM once per batch sequence, preserves the differentiable p/v/a rollout, resumes model/optimizer/epoch from `last.pt`, and preserves the historical `best.pt` selection threshold across restarts. Sequence/step numerical tests remain passing. Epoch time improved from about 18 min to 2.5-2.7 min.
 
+Lightning readability refactor: after the optimized manual trainer reached epoch 17, it was stopped safely and split by responsibility into `pl_va_state_data.py` (`PLVADataModule` and full-sequence batching), `pl_va_state_lightning.py` (`PLVAStateLightning`, losses, logging, and checkpoint callback), and a thin `pl_va_state_train.py` CLI. It preserves the exact model, cache, normalization, complete-sequence rollout, loss weights, validation selection, and downstream `best.pt/last.pt` contract while also writing self-contained `best.ckpt/last.ckpt`. Legacy optimizer resume 17->18 and native Lightning resume 18->19 passed in an isolated two-sequence smoke.
+
 ## Version: newpl_v1_processed_no_baseline
 
 ### 1. Purpose

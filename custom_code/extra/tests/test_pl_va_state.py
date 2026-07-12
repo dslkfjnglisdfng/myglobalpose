@@ -14,6 +14,8 @@ from pl_va_state import (
     pl_va_feature_sequence,
     world_angular_velocity_to_root_frame,
 )
+from pl_va_state_data import LengthBucketBatchSampler, collate_sequences
+from pl_va_state_lightning import PLVAStateLightning, compute_losses
 
 
 def test_rmb_static_first_and_causal():
@@ -67,6 +69,42 @@ def test_world_to_root_frame_contract():
     root = art.math.axis_angle_to_rotation_matrix(torch.tensor([[0.0, 0.0, 0.7]]))[0]
     w_m = torch.tensor([[1.0, 2.0, 3.0], [-2.0, 0.5, 1.0]])
     assert torch.allclose(world_angular_velocity_to_root_frame(w_m, root), w_m @ root)
+
+
+def test_lightning_data_and_loss_contract():
+    """The readable Lightning path preserves full sequences, masks, and losses."""
+    torch.manual_seed(7)
+    records = []
+    for length in (6, 4):
+        gravity = torch.randn(length, 3)
+        gravity = gravity / gravity.norm(dim=-1, keepdim=True)
+        records.append({
+            "length": length,
+            "feature": torch.randn(length, 102),
+            "p_gt": torch.randn(length, 15),
+            "v_gt": torch.randn(length, 15),
+            "a_gt": torch.randn(length, 15),
+            "g_gt": gravity,
+            "init_legacy": torch.randn(18),
+        })
+
+    batch = collate_sequences(records)
+    assert batch["feature"].shape == (2, 6, 102)
+    assert batch["mask"].sum().item() == 10
+    assert list(LengthBucketBatchSampler([6, 4], 2, False)) == [[1, 0]]
+
+    stats = {"v_mean": torch.zeros(15), "v_std": torch.ones(15),
+             "a_mean": torch.zeros(15), "a_std": torch.ones(15)}
+    module = PLVAStateLightning(stats)
+    output = module(batch)
+    total, raw, weighted = compute_losses(output, batch, module.stats)
+    assert torch.isfinite(total)
+    assert set(raw) == set(weighted) == {
+        "p", "v_direct", "v_state", "a", "g", "consistency", "jerk"
+    }
+    total.backward()
+    gradient = module.model.net.linear2.weight.grad
+    assert gradient is not None and torch.isfinite(gradient).all()
 
 
 def test_filter_and_feature_contract():
