@@ -648,7 +648,7 @@ Conclusion: smoke only; no module or pose improvement claim.
 
 ### PL-VA-State-V1-lag2-EMA03 — validated realtime RMB angular input
 
-Status: implementation, Stage 0 smoke, and rebuilt AMASS temporal-consistency gate passed; formal runner launched.
+Status: implementation, Stage 0 smoke, and rebuilt AMASS temporal-consistency gate passed; optimized formal runner resumed from epoch 5.
 
 Replaced module: only the angular-velocity source inside opt-in PL-VA. Original PL, 102D layout, 33D network output, beta=0.7 p/v/a integrator, Butterworth acceleration, and downstream 18D PL/63D IK1 contracts are unchanged.
 
@@ -663,6 +663,8 @@ AMASS gate: the old cache failed because `process_amass_globalpose.py` applies i
 Artifacts: `data/experiments/pl_va_state_v1_lag2_ema03_20260712/`; FK audit `/home/lingfeng/projects/imu_acc_explainability/code/outputs/pl_va_lag2_ema03_tc_fk_audit_20260712/`.
 
 Conclusion: angular-velocity implementation and rebuilt training-data gate accepted; formal training running. No module or full-pipeline improvement claim yet.
+
+Training performance correction: the first full-sequence trainer randomly mixed sequence lengths (3.28x padding amplification) and called the 3-layer LSTM once per frame. It was stopped after epoch 5 without deleting checkpoints. The corrected trainer length-buckets full sequences, calls cuDNN LSTM once per batch sequence, preserves the differentiable p/v/a rollout, resumes model/optimizer/epoch from `last.pt`, and preserves the historical `best.pt` selection threshold across restarts. Sequence/step numerical tests remain passing. Epoch time improved from about 18 min to 2.5-2.7 min.
 
 ## Version: newpl_v1_processed_no_baseline
 

@@ -217,10 +217,11 @@ class PLVAStateV1(torch.nn.Module):
             state.hc = self._init_hc(init_legacy)
         outputs, debug_rows = [], []
         lengths = torch.full((b,), t, device=features.device, dtype=torch.long) if lengths is None else lengths
+        y, hc = self.net.rnn(features.transpose(0, 1), state.hc)
+        state.hc = hc
+        raw_sequence = self.net.linear2(y)
         for i in range(t):
-            y, hc = self.net.rnn(features[:, i:i + 1].transpose(0, 1), state.hc)
-            state.hc = hc
-            raw = self.net.linear2(y[0])
+            raw = raw_sequence[i]
             legacy, state, debug = self._update(raw, state, i < lengths)
             outputs.append(legacy)
             debug_rows.append(debug)

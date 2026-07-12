@@ -22,7 +22,11 @@ PY
 build(){ test -f "$3/manifest.json" || "$PY" custom_code/extra/pl_va_state_cache.py --input-cache "$2" --output-dir "$3" --shard-size 50; }
 build amass "$AMASS" "$ROOT/caches/amass"; build dip_train "$DIP_TRAIN" "$ROOT/caches/dip_train"; build dip_val "$DIP_VAL" "$ROOT/caches/dip_val"
 build dip_test "$DIP_TEST" "$ROOT/caches/dip_test"; build tc_test "$TC_TEST" "$ROOT/caches/tc_test"
-test -f "$ROOT/amass_pretrain/best.pt" || "$PY" custom_code/extra/pl_va_state_train.py --train-cache "$ROOT/caches/amass/manifest.json" --val-cache "$ROOT/caches/amass/manifest.json" --output-dir "$ROOT/amass_pretrain" --epochs 80 --batch-size "$BATCH" --max-val-sequences 20 --lr 1e-4
+if test -f "$ROOT/amass_pretrain/last.pt"; then
+  "$PY" custom_code/extra/pl_va_state_train.py --train-cache "$ROOT/caches/amass/manifest.json" --val-cache "$ROOT/caches/amass/manifest.json" --output-dir "$ROOT/amass_pretrain" --epochs 80 --batch-size "$BATCH" --max-val-sequences 20 --lr 1e-4 --resume-checkpoint "$ROOT/amass_pretrain/last.pt"
+else
+  "$PY" custom_code/extra/pl_va_state_train.py --train-cache "$ROOT/caches/amass/manifest.json" --val-cache "$ROOT/caches/amass/manifest.json" --output-dir "$ROOT/amass_pretrain" --epochs 80 --batch-size "$BATCH" --max-val-sequences 20 --lr 1e-4
+fi
 test -f "$ROOT/dip_finetune/best.pt" || "$PY" custom_code/extra/pl_va_state_train.py --train-cache "$ROOT/caches/dip_train/manifest.json" --val-cache "$ROOT/caches/dip_val/manifest.json" --output-dir "$ROOT/dip_finetune" --epochs 40 --batch-size "$BATCH" --lr 5e-6 --init-checkpoint "$ROOT/amass_pretrain/best.pt"
 "$PY" custom_code/extra/pl_va_state_eval.py --cache "$ROOT/caches/dip_test/manifest.json" --checkpoint "$ROOT/dip_finetune/best.pt" --output-dir "$ROOT/eval/dip_test" --dataset-label DIP-test
 "$PY" custom_code/extra/pl_va_state_eval.py --cache "$ROOT/caches/tc_test/manifest.json" --checkpoint "$ROOT/dip_finetune/best.pt" --output-dir "$ROOT/eval/totalcapture_test" --dataset-label TotalCapture-test

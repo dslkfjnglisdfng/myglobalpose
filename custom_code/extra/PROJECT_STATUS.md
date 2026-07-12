@@ -2,16 +2,16 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: PL-VA-State-V1 lag2/EMA0.3 correction passed the rebuilt AMASS consistency gate; formal runner is generating the 102D AMASS cache before pretraining
+Current stage: PL-VA-State-V1 optimized formal AMASS pretraining resumed from epoch 5; epoch 7 completed
 Current task: correct only the opt-in PL-VA angular-velocity feature to the validated causal world-frame lag2/EMA0.3 method
 Review state: Approved for next step
 Current changed files: custom_code/extra/pl_va_state*.py, custom_code/extra/tests/test_pl_va_state.py, custom_code/extra/scripts/run_pl_va_state_v1_*.sh, custom_code/modified_official/net.py, project documents
 Current module: PL-s1 only; IK1, IK2, VR, root fusion, physics, evaluator, and data/weights.pt remain frozen
 Current replacement version: PL-VA-State-V1-lag2-EMA03
 Current experiment: `data/experiments/pl_va_state_v1_lag2_ema03_20260712`
-Current result: a new non-overwriting cache derives six RMB rotations from GT SMPL pose FK and derives wM from the same RMB. Across 70 sampled sequences from all 7 shards, new-w vs offline GT-FK rotation reference has RMSE 0.531030, Pearson 0.860114, and cosine 0.763376; median sequence angular-step p50 is 0.007581 rad/frame for both original and overlay views. The formal gate passed.
+Current result: performance audit found 3.28x random-length padding plus one LSTM call per frame. Training now buckets complete sequences by length and executes each padded RNN batch in one cuDNN call while preserving the explicit p/v/a rollout. A representative 8-sequence 987-1367-frame forward/backward takes 1.74 s and 0.665 GB peak allocation. Formal epoch time fell from about 18 min to 2.5-2.7 min; the current best remains epoch 6 with selection 0.122884 after epoch 7 completed at 0.129433.
 Current blocker: none at the angular-input/data gate; formal cache generation/training is still running and module/full-pipeline results are pending.
-Next action: allow the formal runner to finish AMASS cache/pretrain, DIP fine-tune, DIP/TotalCapture module eval, and conditional full-pipeline eval.
+Next action: allow the optimized formal runner to finish AMASS pretrain, DIP fine-tune, DIP/TotalCapture module eval, and conditional full-pipeline eval.
 Git state: dirty worktree with existing unrelated edits; do not revert unrelated files
 CodeGraph state: healthy native index checked from `/home/lingfeng/projects/GlobalposeMy`, 271 files indexed
 Detailed logs: `data/experiments/pl_va_state_v1_lag2_ema03_20260712/smoke/summary.json`, `audits/amass_training_gate.json`, and EXPERIMENT_LOG.md `EXP-20260712-PL-VA-State-V1-lag2-EMA03`

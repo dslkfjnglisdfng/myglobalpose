@@ -35,9 +35,12 @@ def normalization(records):
 
 
 def batches(rows, batch_size, shuffle):
-    order = list(range(len(rows)))
-    if shuffle: random.shuffle(order)
-    for start in range(0, len(order), batch_size): yield [rows[i] for i in order[start:start + batch_size]]
+    order = sorted(range(len(rows)), key=lambda i: rows[i]["length"])
+    groups = [order[start:start + batch_size] for start in range(0, len(order), batch_size)]
+    if shuffle:
+        random.shuffle(groups)
+    for group in groups:
+        yield [rows[i] for i in group]
 
 
 def collate(rows, device):
@@ -110,18 +113,23 @@ def main():
     p.add_argument("--output-dir", type=Path, required=True); p.add_argument("--epochs", type=int, default=80)
     p.add_argument("--batch-size", type=int, default=8); p.add_argument("--lr", type=float, default=1e-4)
     p.add_argument("--max-train-sequences", type=int, default=0); p.add_argument("--max-val-sequences", type=int, default=0)
-    p.add_argument("--init-checkpoint", type=Path); p.add_argument("--weights", type=Path, default=Path("data/weights.pt"))
+    p.add_argument("--init-checkpoint", type=Path); p.add_argument("--resume-checkpoint", type=Path)
+    p.add_argument("--weights", type=Path, default=Path("data/weights.pt"))
     p.add_argument("--seed", type=int, default=42); p.add_argument("--grad-clip", type=float, default=1.0)
     args = p.parse_args(); random.seed(args.seed); torch.manual_seed(args.seed)
     args.output_dir.mkdir(parents=True, exist_ok=True); device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train, train_manifest = load_records(args.train_cache, args.max_train_sequences); val, _ = load_records(args.val_cache, args.max_val_sequences)
-    model = PLVAStateV1().to(device)
+    if args.init_checkpoint and args.resume_checkpoint:
+        raise ValueError("use only one of --init-checkpoint and --resume-checkpoint")
+    model = PLVAStateV1().to(device); start_epoch = 0; resume_optimizer = None
     init_report = None
-    if args.init_checkpoint:
-        checkpoint = torch.load(args.init_checkpoint, map_location="cpu", weights_only=False)
+    if args.init_checkpoint or args.resume_checkpoint:
+        checkpoint = torch.load(args.resume_checkpoint or args.init_checkpoint, map_location="cpu", weights_only=False)
         if checkpoint.get("config", {}).get("angular_velocity_method") != ANGULAR_VELOCITY_METHOD:
             raise ValueError("refusing checkpoint trained with an incompatible PL-VA angular-velocity feature")
         model.load_state_dict(checkpoint["model"]); stats = checkpoint["normalization"]
+        if args.resume_checkpoint:
+            start_epoch = int(checkpoint.get("epoch", 0)); resume_optimizer = checkpoint.get("optimizer")
     else:
         init_report = partial_initialize_from_official(model, args.weights, args.output_dir / "initialization_report.json")
         stats = normalization(train)
@@ -133,8 +141,25 @@ def main():
                            "angular_velocity_lag": ANGULAR_VELOCITY_LAG,
                            "angular_velocity_ema_beta": ANGULAR_VELOCITY_EMA_BETA}
     (args.output_dir / "config.json").write_text(json.dumps(config, indent=2, default=str) + "\n")
-    opt = torch.optim.Adam(model.parameters(), lr=args.lr); best = float("inf"); history = []; smoke_grad = None; per_loss_grad = None
-    for epoch in range(args.epochs):
+    opt = torch.optim.Adam(model.parameters(), lr=args.lr)
+    if resume_optimizer is not None:
+        opt.load_state_dict(resume_optimizer)
+    best = float("inf")
+    if args.resume_checkpoint:
+        best_checkpoint = args.output_dir / "best.pt"
+        if best_checkpoint.exists():
+            best_state = torch.load(best_checkpoint, map_location="cpu", weights_only=False)
+            best = float(best_state.get("validation", {}).get("selection", float("inf")))
+        else:
+            best = float(checkpoint.get("validation", {}).get("selection", float("inf")))
+    history = []; smoke_grad = None; per_loss_grad = None
+    if start_epoch >= args.epochs:
+        summary = {"status": "already_complete", "finite": True, "epochs": args.epochs,
+                   "resumed_from_epoch": start_epoch, "best_selection": best,
+                   "last": {"epoch": start_epoch, "validation": checkpoint.get("validation", {})}}
+        (args.output_dir / "summary.json").write_text(json.dumps(summary, indent=2, default=str) + "\n")
+        return
+    for epoch in range(start_epoch, args.epochs):
         model.train(); epoch_rows = []
         for group in batches(train, args.batch_size, True):
             b = collate(group, device); opt.zero_grad(set_to_none=True)
@@ -153,7 +178,7 @@ def main():
                  "normalization": {k: (v.cpu() if torch.is_tensor(v) else v) for k,v in stats.items()}, "config": config, "validation": vr}
         torch.save(state, args.output_dir / "last.pt")
         if vr["selection"] < best: best = vr["selection"]; torch.save(state, args.output_dir / "best.pt")
-    summary = {"status": "ok", "finite": True, "epochs": args.epochs, "best_selection": best,
+    summary = {"status": "ok", "finite": True, "epochs": args.epochs, "resumed_from_epoch": start_epoch, "best_selection": best,
                "last": history[-1], "gradient_norm": smoke_grad, "per_loss_gradient_norm": per_loss_grad,
                "initialization_report": init_report}
     (args.output_dir / "summary.json").write_text(json.dumps(summary, indent=2, default=str) + "\n")

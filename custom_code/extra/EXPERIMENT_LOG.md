@@ -16140,6 +16140,18 @@ Formal runner: `CUDA_VISIBLE_DEVICES=1 ROOT=data/experiments/pl_va_state_v1_lag2
 
 Claim support: validated cache construction and bounded all-shard gate; training/evaluation pending.
 
+### EXP-20260712-PL-VA-training-performance-correction
+
+Problem: formal AMASS training required about 18 min/epoch despite CUDA execution. The 1298 records contain 1,118,012 true frames with lengths 54-6776; random batch-of-8 padding expanded this to about 3.66 million frames/epoch (3.28x). `forward_sequence` also launched the 3-layer LSTM once per frame instead of once per sequence batch.
+
+Correction: stop the slow runner after epoch 5 while preserving `best.pt/last.pt`; sort complete sequences by length before forming batches and shuffle batch groups; execute the RNN over the full padded time dimension in one call; keep the exact explicit p/v/a state-update loop and masks; add explicit optimizer/model/epoch resume support.
+
+Validation: all seven PL-VA unit tests, including sequence-vs-step and chunk-state consistency, pass. Representative 8-sequence lengths 987-1367: forward/backward `1.7436 s`, peak CUDA allocation `0.6648 GB`, finite loss. Resumed epoch 6 completed in about 2.7 min with validation p `0.007610`, v-state `0.264901`, acceleration `0.469902`, gravity `0.002059`, selection `0.122884`; epoch 7 completed in about 2.5 min with selection `0.129433`, leaving epoch 6 as best. Resume now reads the historical `best.pt` threshold so a later restart cannot overwrite it with a checkpoint worse than the prior best.
+
+Runner: longrun PID `1227673`, train PID `1227739`, exec session `11111`, log `data/experiments/pl_va_state_v1_lag2_ema03_20260712/logs/formal_fast_resume.log`.
+
+Claim support: implementation performance validation and one resumed formal epoch; final module/full-pipeline results pending.
+
 Next action: run a bounded diagnostic with more frames/iterations only if needed, and judge success by the combined gate: acc residual decrease, held-out residual non-regression, small pose/tran deviation, gyro non-regression, jerk/high-frequency non-regression, and foot-sliding/contact non-regression.
 
 ### EXP-20260705-totalcapture-pose-refinement-tuning-sweep-stage1-180f - Conservative Mode A tuning sweep
