@@ -1,0 +1,43 @@
+{
+  "experiment": "gp_w_input_swap_official_test_full_tc_20260712",
+  "baseline_commit": "90523d6f38c28ee3a1afd27346cd3624c5efe38a",
+  "current_source_commit": "4a997e8652943879fc6e423980f292864becc305",
+  "weights_path": "data/weights.pt",
+  "weights_sha256_expected": "0814864603885aa20165624de8db101a1d6eb9d38a7cddb8bbde39074e7014da",
+  "calibrations": {
+    "officalib": "data/test_datasets/totalcapture_officalib.pt",
+    "dipcalib": "data/test_datasets/totalcapture_dipcalib.pt"
+  },
+  "sequence_policy": "all indices in range(len(data['pose'])); no subject/name/s5 filtering",
+  "variants": {
+    "baseline_original": "baseline commit original test.py/net.py, cached wM for PL and VR",
+    "current_g0": "current commit, cached wM for PL and VR",
+    "g2_vr_swap": "current commit, cached wM for PL; causal RMB-derived world/model-frame w for VR only"
+  },
+  "causal_w": {
+    "fps": 60,
+    "dt": 0.016666666666666666,
+    "lag": 2,
+    "ema_beta": 0.3,
+    "delta_R": "RMB[t] @ RMB[t-2].T"
+  },
+  "determinism": {
+    "seed": 0,
+    "torch_threads": 1,
+    "interop_threads": 1,
+    "cudnn_benchmark": false,
+    "cudnn_deterministic": true,
+    "CUBLAS_WORKSPACE_CONFIG": ":4096:8"
+  },
+  "parity_gate": {
+    "pose_rotation_mean_deg": 1e-05,
+    "pose_rotation_max_deg": 0.0001,
+    "translation_max_abs_m": 1e-06,
+    "official_aggregate_metric_abs": 1e-05
+  },
+  "official_protocol": {
+    "entrypoint": "test.compare_realimu",
+    "pose_evaluator": "test.MotionEvaluator",
+    "translation": "original start/end frame-pair algorithm"
+  }
+}

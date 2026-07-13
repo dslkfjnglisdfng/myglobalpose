@@ -16459,4 +16459,22 @@ Interpretation: supported category is `G2 姿态持平、平移改善、jitter �
 
 Artifacts: `data/experiments/gp_w_input_swap_official_test_parity_20260712/`; full logs under each variant directory; comparison CSV, per-sequence CSV/statistics, parity JSON, metrics JSON, prediction samples, lineage registry/table, and SUMMARY.
 
+### EXP-20260712-gp-w-input-swap-official-test-full-tc - complete TotalCapture rerun
+
+Question: does the prior four-sequence s5 conclusion generalize when the two published TotalCapture caches are traversed without any subject or name filter, and does baseline reproduce the paper?
+
+Baseline/current: original commit `90523d6f38c28ee3a1afd27346cd3624c5efe38a`; current source commit `4a997e8652943879fc6e423980f292864becc305`; fixed weight SHA-256 before/after `0814864603885aa20165624de8db101a1d6eb9d38a7cddb8bbde39074e7014da`.
+
+Protocol: thin wrapper calls unchanged `test.compare_realimu`; G2 monkeypatches only `test.GPNet` with the validated VR-only causal-w override. Original `MotionEvaluator` and start/end translation-window algorithm. `totalcapture_officalib.pt`: 45 sequences / 176249 frames. `totalcapture_dipcalib.pt`: 45 / 176243. No s5, name, subject, smoke truncation, or max-sequence filtering in formal runs.
+
+Validation: full baseline/current G0 prediction and aggregate parity differences are exactly zero for both calibrations. All ten Table 1 pose/jitter metrics per calibration match the paper after two-decimal rounding. Figure 4 7 m drift does not: official `4.901711%` vs `4.68%`; DIP `3.978288%` vs `3.74%`.
+
+Result: official calibration G2 improves aggregate translation windows by 2.10%-7.62%, with 25-30 wins out of 45 depending on window (7 m: 28 wins/16 losses, one unavailable). DIP calibration improves 2.80%-7.45% (7 m: 27/17, one unavailable). Pose changes are negligible but directionally 2 better/6 worse official and 0/8 DIP. Root jitter worsens 6.47%/8.89%; joint jitter worsens 2.11%/4.00%.
+
+Interpretation: full data supports `pose-tied, translation-better, jitter-worse`, not overall superiority. The s5 subset is unusually favorable: it overestimated the translation improvement from full-data 2%-8% to 17%-33% and did not expose the 15-20 losing sequences.
+
+Claim support: full test result.
+
+Artifacts: `data/experiments/gp_w_input_swap_official_test_full_tc_20260712/`; committed artifacts exclude full logs and prediction tensors.
+
 Claim support: full official test result with exact G0 parity.

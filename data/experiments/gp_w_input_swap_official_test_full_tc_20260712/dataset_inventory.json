@@ -1,0 +1,650 @@
+{
+  "officalib": {
+    "path": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/data/test_datasets/totalcapture_officalib.pt",
+    "sha256": "075de0371e7b0b567b1485282cb2bbfee523d64fb499e59e72251ae12b6f637a",
+    "sequence_count": 45,
+    "total_frames": 176249,
+    "name_note": "source name field used directly",
+    "sequences": [
+      {
+        "calibration": "officalib",
+        "index": 0,
+        "source_name": "s1_acting1",
+        "recovered_name": "s1_acting1",
+        "frames": 4113
+      },
+      {
+        "calibration": "officalib",
+        "index": 1,
+        "source_name": "s1_acting2",
+        "recovered_name": "s1_acting2",
+        "frames": 3702
+      },
+      {
+        "calibration": "officalib",
+        "index": 2,
+        "source_name": "s1_acting3",
+        "recovered_name": "s1_acting3",
+        "frames": 2768
+      },
+      {
+        "calibration": "officalib",
+        "index": 3,
+        "source_name": "s1_freestyle1",
+        "recovered_name": "s1_freestyle1",
+        "frames": 2310
+      },
+      {
+        "calibration": "officalib",
+        "index": 4,
+        "source_name": "s1_freestyle2",
+        "recovered_name": "s1_freestyle2",
+        "frames": 2463
+      },
+      {
+        "calibration": "officalib",
+        "index": 5,
+        "source_name": "s1_freestyle3",
+        "recovered_name": "s1_freestyle3",
+        "frames": 2039
+      },
+      {
+        "calibration": "officalib",
+        "index": 6,
+        "source_name": "s1_rom1",
+        "recovered_name": "s1_rom1",
+        "frames": 4890
+      },
+      {
+        "calibration": "officalib",
+        "index": 7,
+        "source_name": "s1_rom2",
+        "recovered_name": "s1_rom2",
+        "frames": 6775
+      },
+      {
+        "calibration": "officalib",
+        "index": 8,
+        "source_name": "s1_rom3",
+        "recovered_name": "s1_rom3",
+        "frames": 5941
+      },
+      {
+        "calibration": "officalib",
+        "index": 9,
+        "source_name": "s1_walking1",
+        "recovered_name": "s1_walking1",
+        "frames": 3670
+      },
+      {
+        "calibration": "officalib",
+        "index": 10,
+        "source_name": "s1_walking2",
+        "recovered_name": "s1_walking2",
+        "frames": 3188
+      },
+      {
+        "calibration": "officalib",
+        "index": 11,
+        "source_name": "s1_walking3",
+        "recovered_name": "s1_walking3",
+        "frames": 3396
+      },
+      {
+        "calibration": "officalib",
+        "index": 12,
+        "source_name": "s2_acting1",
+        "recovered_name": "s2_acting1",
+        "frames": 3385
+      },
+      {
+        "calibration": "officalib",
+        "index": 13,
+        "source_name": "s2_acting2",
+        "recovered_name": "s2_acting2",
+        "frames": 3808
+      },
+      {
+        "calibration": "officalib",
+        "index": 14,
+        "source_name": "s2_acting3",
+        "recovered_name": "s2_acting3",
+        "frames": 4826
+      },
+      {
+        "calibration": "officalib",
+        "index": 15,
+        "source_name": "s2_freestyle1",
+        "recovered_name": "s2_freestyle1",
+        "frames": 2590
+      },
+      {
+        "calibration": "officalib",
+        "index": 16,
+        "source_name": "s2_freestyle2",
+        "recovered_name": "s2_freestyle2",
+        "frames": 2089
+      },
+      {
+        "calibration": "officalib",
+        "index": 17,
+        "source_name": "s2_freestyle3",
+        "recovered_name": "s2_freestyle3",
+        "frames": 3177
+      },
+      {
+        "calibration": "officalib",
+        "index": 18,
+        "source_name": "s2_rom1",
+        "recovered_name": "s2_rom1",
+        "frames": 6419
+      },
+      {
+        "calibration": "officalib",
+        "index": 19,
+        "source_name": "s2_rom2",
+        "recovered_name": "s2_rom2",
+        "frames": 5937
+      },
+      {
+        "calibration": "officalib",
+        "index": 20,
+        "source_name": "s2_rom3",
+        "recovered_name": "s2_rom3",
+        "frames": 5993
+      },
+      {
+        "calibration": "officalib",
+        "index": 21,
+        "source_name": "s2_walking1",
+        "recovered_name": "s2_walking1",
+        "frames": 3517
+      },
+      {
+        "calibration": "officalib",
+        "index": 22,
+        "source_name": "s2_walking2",
+        "recovered_name": "s2_walking2",
+        "frames": 3574
+      },
+      {
+        "calibration": "officalib",
+        "index": 23,
+        "source_name": "s2_walking3",
+        "recovered_name": "s2_walking3",
+        "frames": 3550
+      },
+      {
+        "calibration": "officalib",
+        "index": 24,
+        "source_name": "s3_acting1",
+        "recovered_name": "s3_acting1",
+        "frames": 3623
+      },
+      {
+        "calibration": "officalib",
+        "index": 25,
+        "source_name": "s3_acting2",
+        "recovered_name": "s3_acting2",
+        "frames": 3711
+      },
+      {
+        "calibration": "officalib",
+        "index": 26,
+        "source_name": "s3_acting3",
+        "recovered_name": "s3_acting3",
+        "frames": 4292
+      },
+      {
+        "calibration": "officalib",
+        "index": 27,
+        "source_name": "s3_freestyle1",
+        "recovered_name": "s3_freestyle1",
+        "frames": 3694
+      },
+      {
+        "calibration": "officalib",
+        "index": 28,
+        "source_name": "s3_freestyle2",
+        "recovered_name": "s3_freestyle2",
+        "frames": 3499
+      },
+      {
+        "calibration": "officalib",
+        "index": 29,
+        "source_name": "s3_freestyle3",
+        "recovered_name": "s3_freestyle3",
+        "frames": 3929
+      },
+      {
+        "calibration": "officalib",
+        "index": 30,
+        "source_name": "s3_rom1",
+        "recovered_name": "s3_rom1",
+        "frames": 5698
+      },
+      {
+        "calibration": "officalib",
+        "index": 31,
+        "source_name": "s3_rom2",
+        "recovered_name": "s3_rom2",
+        "frames": 5318
+      },
+      {
+        "calibration": "officalib",
+        "index": 32,
+        "source_name": "s3_rom3",
+        "recovered_name": "s3_rom3",
+        "frames": 4858
+      },
+      {
+        "calibration": "officalib",
+        "index": 33,
+        "source_name": "s3_walking1",
+        "recovered_name": "s3_walking1",
+        "frames": 3537
+      },
+      {
+        "calibration": "officalib",
+        "index": 34,
+        "source_name": "s3_walking2",
+        "recovered_name": "s3_walking2",
+        "frames": 3237
+      },
+      {
+        "calibration": "officalib",
+        "index": 35,
+        "source_name": "s3_walking3",
+        "recovered_name": "s3_walking3",
+        "frames": 3386
+      },
+      {
+        "calibration": "officalib",
+        "index": 36,
+        "source_name": "s4_acting3",
+        "recovered_name": "s4_acting3",
+        "frames": 3575
+      },
+      {
+        "calibration": "officalib",
+        "index": 37,
+        "source_name": "s4_freestyle1",
+        "recovered_name": "s4_freestyle1",
+        "frames": 2018
+      },
+      {
+        "calibration": "officalib",
+        "index": 38,
+        "source_name": "s4_freestyle3",
+        "recovered_name": "s4_freestyle3",
+        "frames": 2825
+      },
+      {
+        "calibration": "officalib",
+        "index": 39,
+        "source_name": "s4_rom3",
+        "recovered_name": "s4_rom3",
+        "frames": 5429
+      },
+      {
+        "calibration": "officalib",
+        "index": 40,
+        "source_name": "s4_walking2",
+        "recovered_name": "s4_walking2",
+        "frames": 3376
+      },
+      {
+        "calibration": "officalib",
+        "index": 41,
+        "source_name": "s5_freestyle1",
+        "recovered_name": "s5_freestyle1",
+        "frames": 3072
+      },
+      {
+        "calibration": "officalib",
+        "index": 42,
+        "source_name": "s5_freestyle3",
+        "recovered_name": "s5_freestyle3",
+        "frames": 3561
+      },
+      {
+        "calibration": "officalib",
+        "index": 43,
+        "source_name": "s5_rom3",
+        "recovered_name": "s5_rom3",
+        "frames": 5755
+      },
+      {
+        "calibration": "officalib",
+        "index": 44,
+        "source_name": "s5_walking2",
+        "recovered_name": "s5_walking2",
+        "frames": 3736
+      }
+    ]
+  },
+  "dipcalib": {
+    "path": "/home/lingfeng/projects/GlobalposeMy/GlobalPose/data/test_datasets/totalcapture_dipcalib.pt",
+    "sha256": "f51634d2c1f61463c1472ec1af973c51f01b42c2f5dd159a52733555e352fdf1",
+    "sequence_count": 45,
+    "total_frames": 176243,
+    "name_note": "source name field contains 0..44; recovered_name uses the same-index official-calibration name only for reporting",
+    "sequences": [
+      {
+        "calibration": "dipcalib",
+        "index": 0,
+        "source_name": "0",
+        "recovered_name": "s1_acting1",
+        "frames": 4113
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 1,
+        "source_name": "1",
+        "recovered_name": "s1_acting2",
+        "frames": 3702
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 2,
+        "source_name": "2",
+        "recovered_name": "s1_acting3",
+        "frames": 2768
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 3,
+        "source_name": "3",
+        "recovered_name": "s1_freestyle1",
+        "frames": 2310
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 4,
+        "source_name": "4",
+        "recovered_name": "s1_freestyle2",
+        "frames": 2463
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 5,
+        "source_name": "5",
+        "recovered_name": "s1_freestyle3",
+        "frames": 2039
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 6,
+        "source_name": "6",
+        "recovered_name": "s1_rom1",
+        "frames": 4890
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 7,
+        "source_name": "7",
+        "recovered_name": "s1_rom2",
+        "frames": 6775
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 8,
+        "source_name": "8",
+        "recovered_name": "s1_rom3",
+        "frames": 5941
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 9,
+        "source_name": "9",
+        "recovered_name": "s1_walking1",
+        "frames": 3670
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 10,
+        "source_name": "10",
+        "recovered_name": "s1_walking2",
+        "frames": 3188
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 11,
+        "source_name": "11",
+        "recovered_name": "s1_walking3",
+        "frames": 3396
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 12,
+        "source_name": "12",
+        "recovered_name": "s2_acting1",
+        "frames": 3385
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 13,
+        "source_name": "13",
+        "recovered_name": "s2_acting2",
+        "frames": 3807
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 14,
+        "source_name": "14",
+        "recovered_name": "s2_acting3",
+        "frames": 4826
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 15,
+        "source_name": "15",
+        "recovered_name": "s2_freestyle1",
+        "frames": 2590
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 16,
+        "source_name": "16",
+        "recovered_name": "s2_freestyle2",
+        "frames": 2089
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 17,
+        "source_name": "17",
+        "recovered_name": "s2_freestyle3",
+        "frames": 3177
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 18,
+        "source_name": "18",
+        "recovered_name": "s2_rom1",
+        "frames": 6418
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 19,
+        "source_name": "19",
+        "recovered_name": "s2_rom2",
+        "frames": 5937
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 20,
+        "source_name": "20",
+        "recovered_name": "s2_rom3",
+        "frames": 5992
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 21,
+        "source_name": "21",
+        "recovered_name": "s2_walking1",
+        "frames": 3517
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 22,
+        "source_name": "22",
+        "recovered_name": "s2_walking2",
+        "frames": 3574
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 23,
+        "source_name": "23",
+        "recovered_name": "s2_walking3",
+        "frames": 3550
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 24,
+        "source_name": "24",
+        "recovered_name": "s3_acting1",
+        "frames": 3623
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 25,
+        "source_name": "25",
+        "recovered_name": "s3_acting2",
+        "frames": 3711
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 26,
+        "source_name": "26",
+        "recovered_name": "s3_acting3",
+        "frames": 4292
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 27,
+        "source_name": "27",
+        "recovered_name": "s3_freestyle1",
+        "frames": 3694
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 28,
+        "source_name": "28",
+        "recovered_name": "s3_freestyle2",
+        "frames": 3499
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 29,
+        "source_name": "29",
+        "recovered_name": "s3_freestyle3",
+        "frames": 3929
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 30,
+        "source_name": "30",
+        "recovered_name": "s3_rom1",
+        "frames": 5698
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 31,
+        "source_name": "31",
+        "recovered_name": "s3_rom2",
+        "frames": 5318
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 32,
+        "source_name": "32",
+        "recovered_name": "s3_rom3",
+        "frames": 4857
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 33,
+        "source_name": "33",
+        "recovered_name": "s3_walking1",
+        "frames": 3537
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 34,
+        "source_name": "34",
+        "recovered_name": "s3_walking2",
+        "frames": 3237
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 35,
+        "source_name": "35",
+        "recovered_name": "s3_walking3",
+        "frames": 3386
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 36,
+        "source_name": "36",
+        "recovered_name": "s4_acting3",
+        "frames": 3575
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 37,
+        "source_name": "37",
+        "recovered_name": "s4_freestyle1",
+        "frames": 2018
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 38,
+        "source_name": "38",
+        "recovered_name": "s4_freestyle3",
+        "frames": 2825
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 39,
+        "source_name": "39",
+        "recovered_name": "s4_rom3",
+        "frames": 5429
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 40,
+        "source_name": "40",
+        "recovered_name": "s4_walking2",
+        "frames": 3375
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 41,
+        "source_name": "41",
+        "recovered_name": "s5_freestyle1",
+        "frames": 3072
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 42,
+        "source_name": "42",
+        "recovered_name": "s5_freestyle3",
+        "frames": 3560
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 43,
+        "source_name": "43",
+        "recovered_name": "s5_rom3",
+        "frames": 5755
+      },
+      {
+        "calibration": "dipcalib",
+        "index": 44,
+        "source_name": "44",
+        "recovered_name": "s5_walking2",
+        "frames": 3736
+      }
+    ]
+  }
+}

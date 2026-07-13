@@ -80,6 +80,22 @@ Conclusion: use the category `G2 姿态持平、平移改善、jitter 变差`. D
 
 Artifacts: `data/experiments/gp_w_input_swap_official_test_parity_20260712/`.
 
+### gp_w_input_swap_official_test_full_tc_20260712 — full TotalCapture official-test audit
+
+Status: completed full test result.
+
+Replaced module: no learned module. G2 changes only the VR-s1 angular-velocity source; PL continues to consume cached measured wM.
+
+Input/output contract: causal RMB-derived angular velocity is model/world-frame M, lag 2 at 60 Hz, `RMB[t] @ RMB[t-2]^T`, EMA beta 0.3, with independent per-sequence state. Acceleration, RMB, weights, IK, VR, fusion, contact, physics, and initialization remain unchanged.
+
+Training/evaluation: no training; fixed weight SHA-256 `081486...e7014da`. Original `test.compare_realimu` and `test.MotionEvaluator`. All 45 sequences in `totalcapture_officalib.pt` (176249 frames) and all 45 in `totalcapture_dipcalib.pt` (176243 frames), with no s5/name/subject filter.
+
+Measured result: baseline/current G0 pose, rotation, translation, and aggregate differences are exactly zero for both calibrations. Table 1 pose/jitter values reproduce to two decimals; 7 m drift does not (`4.901711%` vs paper `4.68%`, `3.978288%` vs `3.74%`). G2 improves every aggregate 1-7 m translation window by 2.10%-7.62% official-calib and 2.80%-7.45% DIP-calib. Pose is tied/slightly worse. Root jitter worsens 6.47%/8.89%; joint jitter worsens 2.11%/4.00%.
+
+Conclusion: retain `G2 姿态持平、完整 TC 平移改善、jitter 变差`. The s5 subset correctly predicted direction but overestimated translation gains (17%-33% versus 2%-8%) and falsely suggested all-sequence consistency. Do not claim unconditional overall superiority.
+
+Artifacts: `data/experiments/gp_w_input_swap_official_test_full_tc_20260712/`.
+
 Linked experiment log: `EXP-20260712-gp-w-input-swap-official-test-parity`.
 
 ## 1. Current Best Summary

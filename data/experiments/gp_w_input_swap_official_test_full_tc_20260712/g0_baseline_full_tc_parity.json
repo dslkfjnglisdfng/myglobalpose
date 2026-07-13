@@ -1,0 +1,885 @@
+{
+  "thresholds": {
+    "pose_rotation_mean_deg": 1e-05,
+    "pose_rotation_max_deg": 0.0001,
+    "translation_max_abs_m": 1e-06,
+    "official_aggregate_metric_abs": 1e-05
+  },
+  "calibrations": {
+    "officalib": {
+      "pose_max_abs_diff": 0.0,
+      "pose_mean_abs_diff": 0.0,
+      "pose_rotation_max_diff_deg": 0.0,
+      "pose_rotation_mean_diff_deg": 0.0,
+      "translation_max_abs_diff_m": 0.0,
+      "translation_mean_abs_diff_m": 0.0,
+      "per_sequence": [
+        {
+          "sequence_index": 0,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 1,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 2,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 3,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 4,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 5,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 6,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 7,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 8,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 9,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 10,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 11,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 12,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 13,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 14,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 15,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 16,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 17,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 18,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 19,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 20,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 21,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 22,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 23,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 24,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 25,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 26,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 27,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 28,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 29,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 30,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 31,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 32,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 33,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 34,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 35,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 36,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 37,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 38,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 39,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 40,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 41,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 42,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 43,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 44,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        }
+      ],
+      "official_aggregate_abs_diffs": {
+        "L SIP Err": 0.0,
+        "L Angle Err": 0.0,
+        "L Joint Err": 0.0,
+        "L Vertex Err": 0.0,
+        "G SIP Err": 0.0,
+        "G Angle Err": 0.0,
+        "G Joint Err": 0.0,
+        "G Vertex Err": 0.0,
+        "Root Jitter": 0.0,
+        "Joint Jitter": 0.0,
+        "Translation 1m": 0.0,
+        "Translation 2m": 0.0,
+        "Translation 3m": 0.0,
+        "Translation 4m": 0.0,
+        "Translation 5m": 0.0,
+        "Translation 6m": 0.0,
+        "Translation 7m": 0.0,
+        "Translation Drift 7m percent": 0.0
+      },
+      "official_aggregate_max_abs_diff": 0.0,
+      "passed": true
+    },
+    "dipcalib": {
+      "pose_max_abs_diff": 0.0,
+      "pose_mean_abs_diff": 0.0,
+      "pose_rotation_max_diff_deg": 0.0,
+      "pose_rotation_mean_diff_deg": 0.0,
+      "translation_max_abs_diff_m": 0.0,
+      "translation_mean_abs_diff_m": 0.0,
+      "per_sequence": [
+        {
+          "sequence_index": 0,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 1,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 2,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 3,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 4,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 5,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 6,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 7,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 8,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 9,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 10,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 11,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 12,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 13,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 14,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 15,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 16,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 17,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 18,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 19,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 20,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 21,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 22,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 23,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 24,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 25,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 26,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 27,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 28,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 29,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 30,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 31,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 32,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 33,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 34,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 35,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 36,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 37,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 38,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 39,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 40,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 41,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 42,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 43,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        },
+        {
+          "sequence_index": 44,
+          "pose_max_abs_diff": 0.0,
+          "pose_mean_abs_diff": 0.0,
+          "pose_rotation_max_diff_deg": 0.0,
+          "pose_rotation_mean_diff_deg": 0.0,
+          "translation_max_abs_diff_m": 0.0,
+          "translation_mean_abs_diff_m": 0.0
+        }
+      ],
+      "official_aggregate_abs_diffs": {
+        "L SIP Err": 0.0,
+        "L Angle Err": 0.0,
+        "L Joint Err": 0.0,
+        "L Vertex Err": 0.0,
+        "G SIP Err": 0.0,
+        "G Angle Err": 0.0,
+        "G Joint Err": 0.0,
+        "G Vertex Err": 0.0,
+        "Root Jitter": 0.0,
+        "Joint Jitter": 0.0,
+        "Translation 1m": 0.0,
+        "Translation 2m": 0.0,
+        "Translation 3m": 0.0,
+        "Translation 4m": 0.0,
+        "Translation 5m": 0.0,
+        "Translation 6m": 0.0,
+        "Translation 7m": 0.0,
+        "Translation Drift 7m percent": 0.0
+      },
+      "official_aggregate_max_abs_diff": 0.0,
+      "passed": true
+    }
+  },
+  "passed": true
+}

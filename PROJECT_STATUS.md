@@ -2,19 +2,19 @@
 
 ## ACTIVE SUMMARY
 
-Current stage: official `test.py` parity audit for G2 VR-only angular-velocity swap completed
-Current task: compare baseline commit 90523d6 original `compare_realimu` against current G0 and G2 under identical official metrics
+Current stage: full TotalCapture official-protocol G2 audit completed
+Current task: record and publish baseline/G0/G2 results on every sequence in both TotalCapture calibration caches
 Review state: Approved for next step
-Current changed files: root net.py default-off w-source interface, official parity runner/summarizer/finalizer, experiment tables/JSON/SUMMARY, PROJECT_STATUS.md, RECENT_REPLACEMENT_VERSIONS.md, EXPERIMENT_LOG.md
+Current changed files: thin official-test runner, evaluator/parity summarizer, focused test, full-TC tables/JSON/SUMMARY, and project documents
 Current module: VR-s1 angular-velocity input source only; PL, IK1, IK2, VR weights, acceleration, RMB, physics, contact, and fusion are frozen
 Current replacement version: `gp_w_input_swap_official_test_parity_20260712`
-Current experiment: `EXP-20260712-gp-w-input-swap-official-test-parity`.
-Current result: G0 is bit-identical to baseline on all DIP and TotalCapture-s5 frames and official metrics. G2 pose is effectively tied but directionally mostly worse; official TotalCapture 1-7 m translation-window error improves 17.0%-32.6% on all 4/4 sequences, while root/joint jitter worsens.
+Current experiment: `EXP-20260712-gp-w-input-swap-official-test-full-tc`.
+Current result: full G0 parity is exactly zero. G2 keeps pose effectively tied, improves all aggregate 1-7 m translation windows by 2.1%-7.6%, and worsens root/joint jitter by 2.1%-8.9%. The prior s5 subset substantially overestimated translation gain.
 Current blocker: none
-Next action: describe G2 as pose-tied/translation-better/jitter-worse; matched-input retraining is required before changing the official input distribution in a selected model.
-Git state: isolated experiment branch from commit 20bfd00; original dirty worktree left untouched
-CodeGraph state: healthy native index checked from `/home/lingfeng/projects/GlobalposeMy`, 826 files indexed
-Detailed logs: `data/experiments/gp_w_input_swap_official_test_parity_20260712/SUMMARY.md`, official comparison CSVs, parity JSON, per-sequence statistics, and `EXP-20260712-gp-w-input-swap-official-test-parity`
+Next action: retain the category-specific conclusion; investigate the Figure 4 drift reproduction gap separately if needed
+Git state: isolated branch `gp_full_tc_20260712` from remote-main commit 4a997e8; experiment commit/push pending; original dirty worktree untouched
+CodeGraph state: healthy native index, 1371 files indexed in the experiment worktree
+Detailed logs: `data/experiments/gp_w_input_swap_official_test_full_tc_20260712/` and `EXP-20260712-gp-w-input-swap-official-test-full-tc`
 
 ## 0. Version-Line Reading Guide
 
