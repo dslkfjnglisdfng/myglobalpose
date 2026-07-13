@@ -96,6 +96,20 @@ Conclusion: retain `G2 姿态持平、完整 TC 平移改善、jitter 变差`. T
 
 Artifacts: `data/experiments/gp_w_input_swap_official_test_full_tc_20260712/`.
 
+### gp_w_input_swap_full_tc_root_velocity_audit_20260713 — final-translation velocity diagnostic
+
+Status: completed post-hoc diagnostic; no model change or rerun.
+
+Replaced module: none. Reads saved `current_g0` and `g2_vr_swap` final root translations only.
+
+Input/output contract: model/world-frame final root translations from full-TC predictions; `v[t]=(p[t]-p[t-1])*60` m/s. GT is the same release cache `tran`. Low frequency is a centered, edge-replicated 15-frame velocity moving average; high frequency is its residual. Aggregates are unweighted means over 45 per-sequence values.
+
+Measured result: G2 velocity RMSE worsens `0.255448 -> 0.265099` m/s (+3.78%) official and `0.243439 -> 0.255612` (+5.00%) DIP, with only 4/41 and 2/43 sequence wins/losses. Aggregate DC bias norm decreases `0.003516 -> 0.002946` and `0.002098 -> 0.000686` m/s, but low-frequency RMSE is unchanged/slightly worse and high-frequency RMSE increases 7.11%/10.04%.
+
+Conclusion: G2 lowers DC bias but does not improve overall framewise root-velocity accuracy; the high-frequency degradation is consistent with the observed jitter worsening. Do not use trajectory-window translation gains as evidence that root velocity is more accurate.
+
+Artifacts: `data/experiments/gp_w_input_swap_official_test_full_tc_20260712/root_velocity_audit/`.
+
 Linked experiment log: `EXP-20260712-gp-w-input-swap-official-test-parity`.
 
 ## 1. Current Best Summary

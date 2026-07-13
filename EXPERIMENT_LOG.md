@@ -16477,4 +16477,20 @@ Claim support: full test result.
 
 Artifacts: `data/experiments/gp_w_input_swap_official_test_full_tc_20260712/`; committed artifacts exclude full logs and prediction tensors.
 
+### EXP-20260713-gp-w-input-swap-full-tc-root-velocity-audit - saved-translation velocity accuracy
+
+Question: do full-TC G2 translation-window gains mean its final root velocity is more accurate?
+
+Protocol: no model construction, inference, data filtering, or checkpoint access. Read 45 aligned final `tran` predictions for G0 and G2 plus release GT `tran`; calculate `v[t]=(p[t]-p[t-1])*60` m/s, omit the first frame, and aggregate each metric equally across sequences. Direction error uses GT speed >0.1 m/s. A 15-frame centered edge-replicated moving average defines low frequency; residual defines high frequency.
+
+Validation: analytic finite-difference self-test `[0,1,3] m` at 1 Hz gives `[1,2] m/s`; outputs contain 24 aggregate rows and 90 aligned per-sequence rows with finite values.
+
+Result: official G2 vector velocity RMSE is +3.78%, MAE +3.40%, horizontal RMSE +3.35%, vertical RMSE +4.79%, speed MAE +3.88%, and direction error +2.17%; DIP values are +5.00%, +4.28%, +3.55%, +7.73%, +4.06%, and +2.81%. DC bias norm falls 16.20%/67.29%, while high-frequency RMSE rises 7.11%/10.04%; low-frequency RMSE is essentially unchanged/slightly worse.
+
+Interpretation: G2 does not improve final framewise velocity accuracy. It reduces a small DC bias but adds high-frequency error, consistent with root/joint jitter degradation; full translation-window gains cannot by themselves establish velocity accuracy.
+
+Claim support: full test diagnostic.
+
+Artifacts: `data/experiments/gp_w_input_swap_official_test_full_tc_20260712/root_velocity_audit/`.
+
 Claim support: full official test result with exact G0 parity.

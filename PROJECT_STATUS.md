@@ -3,18 +3,18 @@
 ## ACTIVE SUMMARY
 
 Current stage: full TotalCapture official-protocol G2 audit completed
-Current task: record and publish baseline/G0/G2 results on every sequence in both TotalCapture calibration caches
+Current task: audit whether full-TC G2 translation gains correspond to more accurate final root velocity
 Review state: Approved for next step
-Current changed files: thin official-test runner, evaluator/parity summarizer, focused test, full-TC tables/JSON/SUMMARY, and project documents
+Current changed files: full-TC root-velocity post-hoc audit script and CSV/SUMMARY under the existing experiment root
 Current module: VR-s1 angular-velocity input source only; PL, IK1, IK2, VR weights, acceleration, RMB, physics, contact, and fusion are frozen
 Current replacement version: `gp_w_input_swap_official_test_parity_20260712`
-Current experiment: `EXP-20260712-gp-w-input-swap-official-test-full-tc`.
-Current result: full G0 parity is exactly zero. G2 keeps pose effectively tied, improves all aggregate 1-7 m translation windows by 2.1%-7.6%, and worsens root/joint jitter by 2.1%-8.9%. The prior s5 subset substantially overestimated translation gain.
+Current experiment: `EXP-20260713-gp-w-input-swap-full-tc-root-velocity-audit`.
+Current result: full G0 parity is exactly zero. G2 improves translation windows but worsens framewise root velocity RMSE by 3.78% (official) / 5.00% (DIP); it lowers aggregate DC bias norm but increases high-frequency velocity RMSE by 7.11% / 10.04%, consistent with worse jitter.
 Current blocker: none
-Next action: retain the category-specific conclusion; investigate the Figure 4 drift reproduction gap separately if needed
-Git state: isolated branch `gp_full_tc_20260712` from remote-main commit 4a997e8; experiment commit/push pending; original dirty worktree untouched
+Next action: retain the category-specific G2 conclusion; do not treat trajectory-window gains as proof of more accurate framewise root velocity
+Git state: root-velocity audit code/results are uncommitted pending user Git direction; original dirty worktree untouched
 CodeGraph state: healthy native index, 1371 files indexed in the experiment worktree
-Detailed logs: `data/experiments/gp_w_input_swap_official_test_full_tc_20260712/` and `EXP-20260712-gp-w-input-swap-official-test-full-tc`
+Detailed logs: `data/experiments/gp_w_input_swap_official_test_full_tc_20260712/root_velocity_audit/` and `EXP-20260713-gp-w-input-swap-full-tc-root-velocity-audit`
 
 ## 0. Version-Line Reading Guide
 

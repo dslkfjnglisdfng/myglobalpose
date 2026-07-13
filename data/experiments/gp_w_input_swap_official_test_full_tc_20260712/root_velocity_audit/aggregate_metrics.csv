@@ -1,0 +1,25 @@
+calibration,metric,aggregation,g0,g2,g2_minus_g0,g2_relative_percent,g2_wins,g2_losses,ties
+officalib,velocity_rmse_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.2554478251271778,0.26509920491112604,0.009651379783948255,3.7782195949968256,4,41,0
+officalib,velocity_mae_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.197379981726408,0.2040837761428621,0.006703794416454106,3.3963902305687506,2,43,0
+officalib,velocity_bias_x_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.002939015848419836,0.0028287343878117908,-0.00011028146060804503,-3.752326162764245,26,19,0
+officalib,velocity_bias_y_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,1.311764136618068e-05,-7.726010063480418e-05,-9.037774200098486e-05,-688.9786012445251,26,19,0
+officalib,velocity_bias_z_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.001929085300071165,0.000818874628101993,-0.001110210671969172,-57.5511446760916,32,13,0
+officalib,velocity_bias_norm_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.003515587621540478,0.002945889172472078,-0.0005696984490684001,-16.20492817695059,28,17,0
+officalib,horizontal_velocity_rmse_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.2057200003001425,0.2126048117876053,0.006884811487462783,3.346690393456126,4,41,0
+officalib,vertical_velocity_rmse_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.14875453776783412,0.15587373851901956,0.007119200751185439,4.785871313920252,6,39,0
+officalib,speed_magnitude_mae_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.1059396112130748,0.11005161321825452,0.004112002005179721,3.8814584630760174,3,42,0
+officalib,velocity_direction_angle_deg,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,24.567807091606987,25.102114529079863,0.5343074374728758,2.174827551684128,3,42,0
+officalib,low_frequency_velocity_rmse_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.16389722377061844,0.1642726954486635,0.0003754716780450529,0.22908971208111642,11,34,0
+officalib,high_frequency_velocity_rmse_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.1724883060488436,0.18475978506935967,0.012271479020516063,7.114383172759052,3,42,0
+dipcalib,velocity_rmse_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.2434394485420651,0.2556120632423295,0.0121726147002644,5.000263832819616,2,43,0
+dipcalib,velocity_mae_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.18861317328280872,0.1966845728456974,0.008071399562888687,4.279340314574073,2,43,0
+dipcalib,velocity_bias_x_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.0009995177970267832,0.000633149618427827,-0.0003663681785989562,-36.65449276528879,22,23,0
+dipcalib,velocity_bias_y_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,-0.0001892148057423684,-0.00018762285255636218,1.591953186006232e-06,-0.8413470498570855,21,24,0
+dipcalib,velocity_bias_z_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.0018349610812341173,0.00018676454233678265,-0.0016481965388973345,-89.82187991632101,27,18,0
+dipcalib,velocity_bias_norm_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.002098075365407372,0.0006862665432548474,-0.0014118088221525245,-67.2906629299468,27,18,0
+dipcalib,horizontal_velocity_rmse_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.19531801723771625,0.2022507432434294,0.006932726005713152,3.5494554489950203,3,42,0
+dipcalib,vertical_velocity_rmse_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.14291006289422511,0.15395152043137286,0.011041457537147747,7.72615819595579,3,42,0
+dipcalib,speed_magnitude_mae_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.1013798449602392,0.10549312635428376,0.004113281394044557,4.057296986060465,7,38,0
+dipcalib,velocity_direction_angle_deg,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,22.32959115770128,22.95594645606147,0.6263552983601883,2.8050459765993696,4,41,0
+dipcalib,low_frequency_velocity_rmse_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.1581338196165032,0.15820850109060605,7.468147410286119e-05,0.047226756606508526,13,32,0
+dipcalib,high_frequency_velocity_rmse_m_s,unweighted mean of 45 per-sequence metrics; bias norm is norm of aggregate bias vector,0.16095942999753687,0.17711198412709767,0.016152554129560792,10.035171055096288,3,42,0
